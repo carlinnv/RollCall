@@ -1,8 +1,16 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, fmtDate } from "../api";
+import type { Barrier } from "../api";
 import { useLoad } from "../hooks";
 import { BarrierTag, ErrorNote, Page, StatusTag } from "../components/ui";
+
+const SOURCE_TEXT: Record<string, string> = {
+  keyword: "keyword classifier",
+  gemini: "Gemini",
+  correction_override: "a similar past staff correction",
+  staff_correction: "staff correction",
+};
 
 const ROUTE_TEXT = {
   escalated: "Safety concern detected. A counselor has taken over; no automated reply will be sent.",
@@ -19,6 +27,10 @@ export default function CaseDetail() {
   const [channel, setChannel] = useState<"text" | "voice">("text");
   const [route, setRoute] = useState<keyof typeof ROUTE_TEXT | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const taxonomy = useLoad(api.taxonomy);
+  const [label, setLabel] = useState<Barrier | "">("");
+  const [by, setBy] = useState("clerk");
+  const [corrected, setCorrected] = useState<string | null>(null);
 
   if (!a) return <Page title="Case"><ErrorNote error={error} /></Page>;
   const s = a.student;
@@ -28,6 +40,22 @@ export default function CaseDetail() {
     setRoute(res.route);
     setText("");
     reload();
+  };
+
+  const correct = async () => {
+    if (!label) return;
+    try {
+      const res = await api.correct(id, label, by);
+      setErr(null);
+      setCorrected(
+        `Saved: ${res.correction.old_label ?? "none"} → ${res.correction.new_label}. Similar replies at this school will use it.` +
+          (res.escalated ? " A counselor now has this case." : ""),
+      );
+      setLabel("");
+      reload();
+    } catch (e) {
+      setErr((e as Error).message);
+    }
   };
 
   const draft = async () => {
@@ -68,7 +96,17 @@ export default function CaseDetail() {
           </p>
           {a.classification && (
             <>
-              <p className="muted small">Evidence quote · confidence {Math.round(a.classification.confidence * 100)}%</p>
+              <p className="muted small">
+                Evidence quote · confidence {Math.round(a.classification.confidence * 100)}%
+                {a.classification.source && <> · from {SOURCE_TEXT[a.classification.source] ?? a.classification.source}</>}
+                {a.classification.source === "correction_override" && a.classification.correction_ref && (
+                  <>
+                    {" "}
+                    (<Link to={`/cases/${a.classification.correction_ref}`}>{a.classification.correction_ref}</Link>, similarity{" "}
+                    {a.classification.correction_similarity?.toFixed(2)})
+                  </>
+                )}
+              </p>
               <blockquote>{a.classification.evidence}</blockquote>
             </>
           )}
@@ -84,6 +122,32 @@ export default function CaseDetail() {
           </div>
         </div>
       </div>
+
+      {a.reply && (
+        <div className="card">
+          <h3>Correct label</h3>
+          <p className="muted small">
+            Corrections are stored for this school and used for similar replies later. Only a counselor can remove a safety label.
+          </p>
+          <div className="row">
+            <select value={label} onChange={(e) => setLabel(e.target.value as Barrier)}>
+              <option value="" disabled>
+                Correct label to…
+              </option>
+              {taxonomy.data?.map((b) => (
+                <option key={b} value={b} disabled={b === a.classification?.barrier}>
+                  {b}
+                </option>
+              ))}
+            </select>
+            <input value={by} onChange={(e) => setBy(e.target.value)} placeholder="Your role, e.g. clerk or counselor" />
+            <button disabled={!label || !by.trim()} onClick={correct}>
+              Save correction
+            </button>
+          </div>
+          {corrected && <p className="note">{corrected}</p>}
+        </div>
+      )}
 
       <div className="card">
         <h3>Simulate family reply</h3>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api, fmtDate } from "../api";
+import type { RecoveryResult } from "../api";
 import { useLoad } from "../hooks";
 import { BarrierTag, ErrorNote, Page } from "../components/ui";
 
@@ -9,13 +10,14 @@ export default function LearningPlanPage() {
   const nav = useNavigate();
   const students = useLoad(api.students);
   const plan = useLoad(() => (studentId ? api.learningPlan(studentId) : Promise.resolve(null)), [studentId]);
-  const [done, setDone] = useState<number | null>(null);
+  const [done, setDone] = useState<RecoveryResult | null>(null);
   const student = students.data?.find((s) => s.id === studentId);
   const p = plan.data;
 
   const complete = async () => {
-    if (!studentId) return;
-    setDone((await api.completeLearningPlan(studentId)).days_recovered);
+    if (!studentId || !student) return;
+    // Only a supervised Attendance Recovery session counts; the supervisor is the student's teacher.
+    setDone(await api.completeLearningPlan(studentId, student.teacher));
   };
 
   return (
@@ -48,6 +50,25 @@ export default function LearningPlanPage() {
           <p className="muted">
             {p.missed_days} missed lesson(s) · {p.total_minutes} minutes total · {p.load_note}
           </p>
+          {p.verification_status === "verified" ? (
+            <p className="note">
+              Verified ({p.verification_method}): every topic, date and source line is in the pacing guide.
+            </p>
+          ) : (
+            <div className="alert-box">
+              <b>
+                {p.verification_status === "flagged" ? `${p.flags.length} unsupported claim(s)` : "Not verified"}
+              </b>
+              <ul>
+                {p.flags.map((f, i) => (
+                  <li key={i}>
+                    <code>{f.where}</code>: “{f.claim}” — {f.reason}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {!p.eligible && <p className="note">{p.eligibility_note}</p>}
           {p.steps.length === 0 ? (
             <p className="muted">No missed lessons in the pacing guide window.</p>
           ) : (
@@ -61,6 +82,25 @@ export default function LearningPlanPage() {
               ))}
             </ol>
           )}
+          {p.eligible && (
+            <ul>
+              {p.reteach_suggestion && (
+                <li>
+                  <b>Small-group reteach:</b> {p.reteach_suggestion}
+                </li>
+              )}
+              {p.take_home && (
+                <li>
+                  <b>Take-home:</b> {p.take_home}
+                </li>
+              )}
+              {p.attendance_recovery_offer && (
+                <li>
+                  <b>Attendance Recovery:</b> {p.attendance_recovery_offer}
+                </li>
+              )}
+            </ul>
+          )}
           {p.teacher_checkins.length > 0 && (
             <p>
               <b>Teacher check-ins:</b> {p.teacher_checkins.map(fmtDate).join(", ")}
@@ -68,9 +108,13 @@ export default function LearningPlanPage() {
           )}
           {p.steps.length > 0 &&
             (done === null ? (
-              <button onClick={complete}>Mark make-up instruction complete</button>
+              <button onClick={complete} disabled={!p.eligible}>
+                Record supervised Attendance Recovery session{student ? ` (${student.teacher})` : ""}
+              </button>
             ) : (
-              <p className="note">{done} day(s) counted toward Attendance Recovery.</p>
+              <p className="note">
+                {done.counted ? `${done.days_recovered} day(s) counted toward Attendance Recovery.` : `Not counted: ${done.reason}.`}
+              </p>
             ))}
         </div>
       )}

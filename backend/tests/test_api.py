@@ -105,6 +105,8 @@ def test_rate_change_recalculates():
 
 
 def test_completing_learning_plan_recovers_dollars():
+    # PRD 1 F5: only a supervised Attendance Recovery session counts (deliberate change: the call now
+    # names the supervisor; without one it recovers nothing, see test_integration.py).
     before = client.get("/api/revenue").json()["days_recovered_to_date"]
-    client.post("/api/learning-plans/S010/complete")
+    client.post("/api/learning-plans/S010/complete", json={"supervised_by": "Ms. Rivera"})
     assert client.get("/api/revenue").json()["days_recovered_to_date"] == before + 2
