@@ -62,13 +62,14 @@ export default function Plans() {
       </div>
       {!!outbox.data?.length && (
         <>
-          <h2>Sent messages</h2>
+          <h2>Outbound messages</h2>
           <table>
             <thead>
               <tr>
                 <th>To</th>
                 <th>Message</th>
-                <th>Sent</th>
+                <th>Status</th>
+                <th>Time</th>
               </tr>
             </thead>
             <tbody>
@@ -76,6 +77,10 @@ export default function Plans() {
                 <tr key={i}>
                   <td className="muted">{m.to}</td>
                   <td className="quote">{m.text}</td>
+                  <td className="small">
+                    {m.status}
+                    {m.reason && <div className="muted">{m.reason}</div>}
+                  </td>
                   <td className="muted small">{m.sent_at.replace("T", " ")}</td>
                 </tr>
               ))}

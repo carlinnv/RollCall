@@ -107,6 +107,13 @@ def reply(absence_id: str, body: ReplyIn):
     return {"route": route, "absence": store.absences[absence_id]}
 
 
+@app.post("/api/absences/{absence_id}/check-in")
+def check_in(absence_id: str):
+    """Send the first check-in. Returns status sent | queued | blocked | failed, with the reason."""
+    _get(store.absences, absence_id, "absence")
+    return store.send_check_in(absence_id)
+
+
 @app.get("/api/escalations")
 def escalations():
     return [{**e.model_dump(), "student": store.students[e.student_id]} for e in store.escalations.values()]

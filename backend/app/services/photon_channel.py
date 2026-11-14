@@ -2,32 +2,37 @@
 
 A background thread polls Photon for inbound texts, feeds each one through the
 same `store.record_reply` path the "Simulate family reply" box uses, and sends a
-short acknowledgement. API contract: https://photon.codes/docs/beta/get-started/imessage
+short acknowledgement. It also delivers outbound messages for the store
+(`send_text`), into conversations a family has already opened.
+API contract: https://photon.codes/docs/beta/get-started/imessage
 
 Guardrails (PRD 3 section 3):
 - Inbound text is data only. It goes to the classifier and is never executed.
 - Safety-critical replies get no automated answer; the counselor takes over.
 - STOP is honored immediately: the sender is opted out and nothing is sent.
-- Outbound text is fixed templates with no links.
+- Every outbound message passes `outreach.blocked_reason` first (household
+  safety suppression, opt-out, no links).
+- A shared line cannot send first: a family is reachable only after it has
+  texted the agent line. Until then outbound messages stay queued.
 - Every inbound and outbound message is appended to `audit`.
 
 The channel is off unless the PHOTON_* variables are set, so tests never touch it.
 """
 import logging
 import os
-import re
 import threading
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
 
-from ..models import AbsenceStatus, FamilyReply
+from ..models import AbsenceStatus, FamilyReply, Student
 from ..store import store
+from . import outreach
 
 log = logging.getLogger("uvicorn.error")
 
 REQUIRED = ("PHOTON_API_KEY", "PHOTON_PROJECT_ID", "PHOTON_AGENT_HANDLE", "PHOTON_TEST_SENDER")
-DEFAULT_DEMO_STUDENT = "S002"  # Spanish-speaking family on Route 7 with an absence awaiting reply
 POLL_SECONDS = 2.0
+CONTACT_LOOKBACK_DAYS = 3  # on startup, relearn which families have already texted the agent line
 STOP_WORDS = {"stop", "stopall", "unsubscribe", "cancel", "end", "quit", "alto", "parar"}
 
 ACK = {
@@ -37,14 +42,15 @@ ACK = {
 NOT_LINKED = "This number is not linked to a student record. Please call the school office."
 
 audit: List[dict] = []
-opted_out: set = set()
+opted_out = outreach.opted_out
+contacts: Dict[str, dict] = {}  # phone digits -> {"space_id", "agent_id"} of the conversation that family opened
 _seen: set = set()
 _thread: Optional[threading.Thread] = None
 _stop = threading.Event()
+_client = None  # the live Photon client, owned by the polling thread
+_project_id = ""
 
-
-def _digits(handle: str) -> str:
-    return re.sub(r"\D", "", handle)[-10:]
+_digits = outreach.digits
 
 
 def _links() -> Dict[str, str]:
@@ -52,7 +58,7 @@ def _links() -> Dict[str, str]:
     links = {_digits(s.guardian_phone): s.id for s in store.students.values()}
     sender = os.environ.get("PHOTON_TEST_SENDER")
     if sender:
-        links[_digits(sender)] = os.environ.get("PHOTON_DEMO_STUDENT_ID", DEFAULT_DEMO_STUDENT)
+        links[_digits(sender)] = outreach.demo_student_id()
     return links
 
 
@@ -84,8 +90,11 @@ def handle_inbound(sender: str, text: str, received_at: str, message_id: str = "
             else:
                 route = store.record_reply(target.id, FamilyReply(
                     text=text, channel="text", language=student.preferred_language, received_at=received_at))
-                # Safety gate: the counselor answers, never the bot.
-                reply = None if route == "escalated" else ACK.get(student.preferred_language, ACK["en"])
+                # The acknowledgement obeys the same rules as any outbound message. In particular,
+                # an open safety escalation in the household means the counselor answers, never the bot.
+                reply = ACK.get(student.preferred_language, ACK["en"])
+                if outreach.blocked_reason(sender, reply, store.household_suppressed(student.id)):
+                    reply = None
                 result.update(route=route, absence_id=target.id, reply=reply)
 
     _record("inbound", sender, text, message_id=message_id, route=result["route"], absence_id=result["absence_id"])
@@ -93,7 +102,36 @@ def handle_inbound(sender: str, text: str, received_at: str, message_id: str = "
 
 
 # ---------- Photon polling loop ----------
-def _poll(photon, cfg: dict, created_since: str) -> str:
+def send_text(student: Student, phone: str, text: str, key: str) -> dict:
+    """Deliver one outbound message for the store. The store has already applied the outreach rules."""
+    if _client is None or not (_thread and _thread.is_alive()):
+        return {"status": "queued", "reason": "Photon channel is off", "channel": None}
+    contact = contacts.get(_digits(phone))
+    if contact is None:
+        return {"status": "queued", "channel": None,
+                "reason": "family has not texted the agent line yet (a shared line cannot send first)"}
+
+    from photon_api.generated.models import SendMessageRequest, SendTextContent
+    from photon_api.rpc_generated import SendMessageHeader, SendMessageInput, SendMessagePath
+    try:
+        _client.projects.send_message(SendMessageInput(
+            path=SendMessagePath(id=_project_id),
+            headers=SendMessageHeader.model_validate({"idempotency-key": key}),
+            body=SendMessageRequest(
+                spaceId=contact["space_id"], senderId=contact["agent_id"],
+                content=SendTextContent(type="text", format="plain", text=text)),
+        ))
+    except Exception as error:
+        detail = f"{type(error).__name__} {getattr(error, 'status', '')}".strip()
+        log.warning("photon send failed: %s", detail)
+        return {"status": "failed", "reason": f"Photon rejected the send ({detail})", "channel": "imessage"}
+    _record("outbound", phone, text, key=key)
+    # Accepted for asynchronous dispatch; Photon does not confirm delivery here.
+    return {"status": "sent", "reason": None, "channel": "imessage"}
+
+
+def _poll(photon, cfg: dict, created_since: str, handle: bool = True) -> str:
+    """Read new inbound messages. With handle=False, only relearn contacts (startup catch-up)."""
     from photon_api.generated.models import SendMessageRequest, SendTextContent, TextContent, UserSnapshot
     from photon_api.rpc_generated import ListMessagesInput, SendMessageHeader, SendMessageInput, SendMessagePath
 
@@ -116,6 +154,9 @@ def _poll(photon, cfg: dict, created_since: str) -> str:
                 continue
             if agent.handle != cfg["PHOTON_AGENT_HANDLE"]:
                 continue
+            contacts[_digits(sender.handle)] = {"space_id": space.id, "agent_id": agent.id}
+            if not handle:
+                continue
             if not (isinstance(m.content, TextContent) and m.content.format == "plain"):
                 continue  # Beta iMessage carries text and images only; non-text is skipped for now
 
@@ -137,18 +178,29 @@ def _poll(photon, cfg: dict, created_since: str) -> str:
 
 
 def _loop(cfg: dict) -> None:
+    global _client, _project_id
     from photon_api import Photon
 
+    def stamp(moment: datetime) -> str:
+        return moment.isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
+    now = datetime.now(timezone.utc)
     # Start slightly in the past; _seen prevents double handling within a run.
-    since = (datetime.now(timezone.utc) - timedelta(seconds=5)).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    since = stamp(now - timedelta(seconds=5))
     with Photon(headers={"Authorization": f"Bearer {cfg['PHOTON_API_KEY']}"}) as photon:
-        log.info("photon channel listening on %s", cfg["PHOTON_AGENT_HANDLE"])
+        try:  # older messages are never re-classified, only used to learn who can be messaged
+            _poll(photon, cfg, stamp(now - timedelta(days=CONTACT_LOOKBACK_DAYS)), handle=False)
+        except Exception as error:
+            log.warning("photon contact catch-up failed: %s", type(error).__name__)
+        _client, _project_id = photon, cfg["PHOTON_PROJECT_ID"]
+        log.info("photon channel listening on %s (%d reachable families)", cfg["PHOTON_AGENT_HANDLE"], len(contacts))
         while not _stop.is_set():
             try:
                 since = _poll(photon, cfg, since)
             except Exception as error:  # keep the loop alive through API or network errors
                 log.warning("photon poll failed: %s", type(error).__name__)
             _stop.wait(POLL_SECONDS)
+    _client = None
 
 
 def enabled() -> bool:
@@ -163,6 +215,7 @@ def start() -> bool:
     _thread = threading.Thread(target=_loop, args=({n: os.environ[n] for n in REQUIRED},),
                                name="photon-channel", daemon=True)
     _thread.start()
+    store.sender = send_text
     return True
 
 
@@ -173,5 +226,5 @@ def stop() -> None:
 def status() -> dict:
     return {"enabled": enabled(), "listening": bool(_thread and _thread.is_alive()),
             "agent_handle": os.environ.get("PHOTON_AGENT_HANDLE"),
-            "demo_student_id": os.environ.get("PHOTON_DEMO_STUDENT_ID", DEFAULT_DEMO_STUDENT),
+            "demo_student_id": outreach.demo_student_id(), "reachable_families": len(contacts),
             "opted_out": len(opted_out), "messages": audit[-50:]}

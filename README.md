@@ -60,11 +60,14 @@ The logic behind each feature is a deliberately simple stub with a stable interf
 Copy `.env.example` to `.env` and fill in the `PHOTON_*` values. When they are set, the API polls Photon every 2 seconds on startup; without them the channel stays off and the "Simulate family reply" box still works.
 
 - `backend/app/services/photon_channel.py` — an inbound text from `PHOTON_TEST_SENDER` is treated as a reply from the guardian of `PHOTON_DEMO_STUDENT_ID` (default `S002`) and goes through the same `store.record_reply` path as a simulated reply. The family gets a short acknowledgement, except on safety-flagged messages (counselor only) and after `STOP`.
-- `GET /api/channel` — listener status and the message audit trail.
+- `backend/app/services/outreach.py` — the rules every outbound message must pass: no automated message to a household with an open safety escalation, none to a number that opted out, and no links. Also builds the first check-in text (no absence count; says who reads replies).
+- `POST /api/absences/{id}/check-in` — sends the check-in for an absence with no reason on file. Approving a plan sends its family messages the same way. Each attempt is recorded in the outbox with a status: `sent`, `queued` (allowed but the family is not reachable yet), `blocked` (a rule forbids it) or `failed`.
+- `GET /api/channel` — listener status, reachable families, and the message audit trail.
 - `backend/scripts/photon_echo.py` — one-shot round-trip check for a new line or key.
+- `backend/scripts/photon_send.py` — sends one test message to your own phone to check outbound.
 - Shared lines cannot send the first message: the family phone must text the agent number once before anything can be sent to it.
 
-Not built yet: outbound check-in and approved-plan messages over Photon, SMS fallback, voice notes (Photon Beta iMessage carries text and images only), speech-to-text, language detection, persistence.
+Not built yet: closing an escalation (suppression lasts until reset), quiet hours, SMS fallback, voice notes (Photon Beta iMessage carries text and images only), speech-to-text, language detection, persistence.
 
 ## Design rules (from the PRD)
 
