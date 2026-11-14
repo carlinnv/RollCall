@@ -7,3 +7,5 @@ __pycache__/
 .DS_Store
 .env
 *.tsbuildinfo
+backend/data_raw/
+backend/eval/cache/
