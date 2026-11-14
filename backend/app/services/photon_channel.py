@@ -14,7 +14,8 @@ Guardrails (PRD 3 section 3):
   safety suppression, opt-out, no links).
 - A shared line cannot send first: a family is reachable only after it has
   texted the agent line. Until then outbound messages stay queued.
-- Every inbound and outbound message is appended to `audit`.
+- Every inbound and outbound message is written to the store's message log,
+  with the time from arrival to label (`latency_ms`).
 
 The channel is off unless the PHOTON_* variables are set, so tests never touch it.
 """
@@ -22,10 +23,10 @@ import logging
 import os
 import threading
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 from ..models import AbsenceStatus, FamilyReply, Student
-from ..store import store
+from ..store import elapsed_ms, iso, store, utc_now
 from . import outreach
 
 log = logging.getLogger("uvicorn.error")
@@ -41,7 +42,6 @@ ACK = {
 }
 NOT_LINKED = "This number is not linked to a student record. Please call the school office."
 
-audit: List[dict] = []
 opted_out = outreach.opted_out
 contacts: Dict[str, dict] = {}  # phone digits -> {"space_id", "agent_id"} of the conversation that family opened
 _seen: set = set()
@@ -62,15 +62,20 @@ def _links() -> Dict[str, str]:
     return links
 
 
-def _record(direction: str, handle: str, text: str, **extra) -> None:
-    audit.append({"direction": direction, "channel": "imessage", "handle": handle, "text": text,
-                  "at": datetime.now(timezone.utc).isoformat(timespec="seconds"), **extra})
+def _parse(received_at: str) -> datetime:
+    moment = datetime.fromisoformat(received_at.replace("Z", "+00:00"))
+    return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
 
 
 def handle_inbound(sender: str, text: str, received_at: str, message_id: str = "") -> dict:
-    """Process one inbound text. Returns {"route", "absence_id", "reply"}; reply None means send nothing."""
-    result = {"route": "ignored", "absence_id": None, "reply": None}
+    """Process one inbound text and log it.
+
+    Returns {"route", "absence_id", "student_id", "reply"}; reply None means send nothing.
+    """
+    result = {"route": "ignored", "absence_id": None, "student_id": None, "reply": None}
     key = _digits(sender)
+    received = _parse(received_at)
+    logged = False
 
     if text.strip().lower() in STOP_WORDS:
         opted_out.add(key)
@@ -85,11 +90,16 @@ def handle_inbound(sender: str, text: str, received_at: str, message_id: str = "
             mine = sorted((a for a in store.absences.values() if a.student_id == student.id), key=lambda a: a.date)
             waiting = [a for a in mine if a.status == AbsenceStatus.AWAITING_REPLY]
             target = (waiting or mine or [None])[-1]
+            result["student_id"] = student.id
             if target is None:
                 result.update(route="no_absence", reply=ACK.get(student.preferred_language, ACK["en"]))
             else:
-                route = store.record_reply(target.id, FamilyReply(
-                    text=text, channel="text", language=student.preferred_language, received_at=received_at))
+                route = store.record_reply(
+                    target.id,
+                    FamilyReply(text=text, channel="text", language=student.preferred_language,
+                                received_at=received_at),
+                    channel="imessage", received=received, external_id=message_id or None, phone=sender)
+                logged = True
                 # The acknowledgement obeys the same rules as any outbound message. In particular,
                 # an open safety escalation in the household means the counselor answers, never the bot.
                 reply = ACK.get(student.preferred_language, ACK["en"])
@@ -97,7 +107,10 @@ def handle_inbound(sender: str, text: str, received_at: str, message_id: str = "
                     reply = None
                 result.update(route=route, absence_id=target.id, reply=reply)
 
-    _record("inbound", sender, text, message_id=message_id, route=result["route"], absence_id=result["absence_id"])
+    if not logged:  # texts that never reach the classifier are still on the record
+        store.log_message(direction="inbound", channel="imessage", student_id=result["student_id"],
+                          raw_text_or_transcript=text, timestamp=iso(received), route=result["route"],
+                          phone=sender, external_id=message_id or None)
     return result
 
 
@@ -125,7 +138,6 @@ def send_text(student: Student, phone: str, text: str, key: str) -> dict:
         detail = f"{type(error).__name__} {getattr(error, 'status', '')}".strip()
         log.warning("photon send failed: %s", detail)
         return {"status": "failed", "reason": f"Photon rejected the send ({detail})", "channel": "imessage"}
-    _record("outbound", phone, text, key=key)
     # Accepted for asynchronous dispatch; Photon does not confirm delivery here.
     return {"status": "sent", "reason": None, "channel": "imessage"}
 
@@ -170,7 +182,14 @@ def _poll(photon, cfg: dict, created_since: str, handle: bool = True) -> str:
                         spaceId=space.id, senderId=agent.id, parentMessageId=m.id,
                         content=SendTextContent(type="text", format="plain", text=result["reply"])),
                 ))
-                _record("outbound", sender.handle, result["reply"], in_reply_to=m.id)
+                student = store.students.get(result["student_id"] or "")
+                store.log_message(
+                    direction="outbound", kind="ack", status="sent", channel="imessage",
+                    absence_id=result["absence_id"], student_id=result["student_id"],
+                    language=student.preferred_language if student else "en",
+                    raw_text_or_transcript=result["reply"], timestamp=iso(utc_now()),
+                    latency_ms=elapsed_ms(_parse(m.createdAt)),  # family's text arrived -> our reply accepted
+                    phone=sender.handle)
         token = page.nextPageToken
         if not isinstance(token, str):
             return newest
@@ -227,4 +246,5 @@ def status() -> dict:
     return {"enabled": enabled(), "listening": bool(_thread and _thread.is_alive()),
             "agent_handle": os.environ.get("PHOTON_AGENT_HANDLE"),
             "demo_student_id": outreach.demo_student_id(), "reachable_families": len(contacts),
-            "opted_out": len(opted_out), "messages": audit[-50:]}
+            "opted_out": len(opted_out), "latency": store.latency_summary("imessage"),
+            "messages": [m for m in store.messages if m.channel == "imessage"][-50:]}

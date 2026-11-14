@@ -64,7 +64,8 @@ When the `PHOTON_*` values are set in `.env`, the API polls Photon every 2 secon
 - `backend/app/services/photon_channel.py` — an inbound text from `PHOTON_TEST_SENDER` is treated as a reply from the guardian of `PHOTON_DEMO_STUDENT_ID` (default `S002`) and goes through the same `store.record_reply` path as a simulated reply. The family gets a short acknowledgement, except on safety-flagged messages (counselor only) and after `STOP`.
 - `backend/app/services/outreach.py` — the rules every outbound message must pass: no automated message to a household with an open safety escalation, none to a number that opted out, and no links. Also builds the first check-in text (no absence count; says who reads replies).
 - `POST /api/absences/{id}/check-in` — sends the check-in for an absence with no reason on file. Approving a plan sends its family messages the same way. Each attempt is recorded in the outbox with a status: `sent`, `queued` (allowed but the family is not reachable yet), `blocked` (a rule forbids it) or `failed`.
-- `GET /api/channel` — listener status, reachable families, and the message audit trail.
+- `GET /api/messages` — the message log: every inbound and outbound text, many per absence, with real timestamps and `latency_ms`. `GET /api/messages/latency` summarises reply latency against the 10-second target. The case page shows the full conversation.
+- `GET /api/channel` — listener status, reachable families, iMessage latency, and recent iMessage log entries.
 - `backend/scripts/photon_echo.py` — one-shot round-trip check for a new line or key.
 - `backend/scripts/photon_send.py` — sends one test message to your own phone to check outbound.
 - Shared lines cannot send the first message: the family phone must text the agent number once before anything can be sent to it.

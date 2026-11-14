@@ -197,19 +197,41 @@ Family messages from a school action plan go out over Photon.
 
 ---
 
-## 10. Audit trail and status
+## 10. Message log and latency
+
+A record of every text between the school and a family, with how long each took.
 
 **Files**
 
-- `backend/app/services/photon_channel.py`: `audit`, `status`
-- `backend/app/main.py`: `GET /api/channel`
+- `backend/app/models.py`: `Message`
+- `backend/app/store.py`: `log_message`, `record_reply`, `send_to_family`, `thread`, `latency_summary`, `outbox`
+- `backend/app/services/photon_channel.py`: `handle_inbound`, `_poll`, `status`
+- `backend/app/main.py`: `GET /api/messages`, `GET /api/messages/latency`, `GET /api/channel`
+- `frontend/src/pages/CaseDetail.tsx`, `frontend/src/api.ts`: conversation view with latency
 
 **Rules**
 
-- Every inbound message is logged with its route (`cluster`, `case`, `unknown`, `escalated`, `opted_out`, `unlinked`, `no_absence`) and the absence it was attached to.
-- Every outbound message Photon accepted is logged.
-- `GET /api/channel` returns whether the channel is on and listening, the number of reachable families, the number of opt-outs, and the last 50 log entries.
-- The log is in memory and is cleared on restart. It is not the hash-chained audit log the PRD describes.
+- Every inbound and outbound text is logged, on every channel: iMessage, the "Simulate family reply" box (`simulated`), and the sample data (`seed`).
+- An absence can have many messages. The absence itself still shows only its latest reply and label; the log keeps each message with the label it received.
+- Inbound texts that never reach the classifier (unknown number, opted out, no absence) are logged with no absence and no label.
+- Outbound messages are logged whatever the outcome: `sent`, `queued`, `blocked` or `failed`, with the reason. The outbox on the Plans page is read from this log.
+- Timestamps use the real clock in UTC, not the demo date. Sample-data messages keep their scripted times.
+- `latency_ms` means:
+
+  | Message | Measured from | Measured to |
+  | :--- | :--- | :--- |
+  | Inbound iMessage | Photon received the family's text | label stored |
+  | Inbound simulated | the request arrived | label stored |
+  | Automatic reply | Photon received the family's text | Photon accepted our reply |
+  | Check-in or plan message | we started the send | Photon accepted it |
+  | Sample data, or outbound not sent | not measured | |
+
+- iMessage latency includes the wait before the next 2-second poll, so it is the delay a family would actually see.
+- `GET /api/messages` lists the log, filtered by `absence_id`, `student_id` or `direction`.
+- `GET /api/messages/latency` reports how many replies were measured, how many met the 10-second target, and the median and maximum. `?channel=imessage` limits it to real texts.
+- `GET /api/channel` returns whether the channel is on and listening, the number of reachable families and opt-outs, the iMessage latency summary, and the last 50 iMessage log entries.
+- The case page shows the whole conversation, with "labeled in N s" under each reply.
+- The log is in memory and is cleared on restart or reset. It is not the hash-chained audit log the PRD describes.
 
 ---
 
