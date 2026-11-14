@@ -1,0 +1,5461 @@
+{
+ "methods": {
+  "bm25": {
+   "recall@5": 0.0477,
+   "mrr": 0.1114,
+   "p@5": 0.0462,
+   "recall@5_cross_lingual": 0.0625,
+   "recall@5_by_type": {
+    "flu_window": 0.0,
+    "neighborhood_cause": 0.0,
+    "route_day": 0.14,
+    "route_this_week": 0.0,
+    "section_illness": 0.0,
+    "which_class": 0.0,
+    "which_neighborhood": 0.1,
+    "xl_cause_week": 0.1667,
+    "xl_language_week": 0.0
+   },
+   "share_queries_recall_1": 0.0
+  },
+  "bm25+expansion": {
+   "recall@5": 0.0864,
+   "mrr": 0.1808,
+   "p@5": 0.0773,
+   "recall@5_cross_lingual": 0.1344,
+   "recall@5_by_type": {
+    "flu_window": 0.0,
+    "neighborhood_cause": 0.1125,
+    "route_day": 0.08,
+    "route_this_week": 0.0,
+    "section_illness": 0.05,
+    "which_class": 0.05,
+    "which_neighborhood": 0.1,
+    "xl_cause_week": 0.2,
+    "xl_language_week": 0.095
+   },
+   "share_queries_recall_1": 0.0
+  },
+  "bm25+filter": {
+   "recall@5": 0.8727,
+   "mrr": 0.9394,
+   "p@5": 0.7189,
+   "recall@5_cross_lingual": 0.9344,
+   "recall@5_by_type": {
+    "flu_window": 1.0,
+    "neighborhood_cause": 0.95,
+    "route_day": 0.92,
+    "route_this_week": 0.96,
+    "section_illness": 0.8875,
+    "which_class": 0.275,
+    "which_neighborhood": 0.9,
+    "xl_cause_week": 0.9667,
+    "xl_language_week": 0.915
+   },
+   "share_queries_recall_1": 0.6818
+  },
+  "bm25+expansion+filter": {
+   "recall@5": 0.9602,
+   "mrr": 0.9773,
+   "p@5": 0.7962,
+   "recall@5_cross_lingual": 0.9875,
+   "recall@5_by_type": {
+    "flu_window": 1.0,
+    "neighborhood_cause": 1.0,
+    "route_day": 1.0,
+    "route_this_week": 0.96,
+    "section_illness": 0.8875,
+    "which_class": 0.775,
+    "which_neighborhood": 1.0,
+    "xl_cause_week": 0.9667,
+    "xl_language_week": 1.0
+   },
+   "share_queries_recall_1": 0.8636
+  },
+  "bm25+filter (text only, no labels)": {
+   "recall@5": 0.6008,
+   "mrr": 0.6716,
+   "p@5": 0.4871,
+   "recall@5_cross_lingual": 0.7115,
+   "recall@5_by_type": {
+    "flu_window": 0.9,
+    "neighborhood_cause": 0.3125,
+    "route_day": 0.56,
+    "route_this_week": 0.96,
+    "section_illness": 0.8375,
+    "which_class": 0.1625,
+    "which_neighborhood": 0.1,
+    "xl_cause_week": 0.5889,
+    "xl_language_week": 0.785
+   },
+   "share_queries_recall_1": 0.3182
+  },
+  "bm25+expansion+filter (no labels)": {
+   "recall@5": 0.9557,
+   "mrr": 0.9773,
+   "p@5": 0.7917,
+   "recall@5_cross_lingual": 0.975,
+   "recall@5_by_type": {
+    "flu_window": 1.0,
+    "neighborhood_cause": 1.0,
+    "route_day": 1.0,
+    "route_this_week": 0.96,
+    "section_illness": 0.8875,
+    "which_class": 0.775,
+    "which_neighborhood": 1.0,
+    "xl_cause_week": 0.9667,
+    "xl_language_week": 0.98
+   },
+   "share_queries_recall_1": 0.8409
+  },
+  "dense_hash": {
+   "recall@5": 0.103,
+   "mrr": 0.1759,
+   "p@5": 0.0682,
+   "recall@5_cross_lingual": 0.1771,
+   "recall@5_by_type": {
+    "flu_window": 0.0,
+    "neighborhood_cause": 0.0,
+    "route_day": 0.26,
+    "route_this_week": 0.0,
+    "section_illness": 0.05,
+    "which_class": 0.05,
+    "which_neighborhood": 0.0,
+    "xl_cause_week": 0.1556,
+    "xl_language_week": 0.19
+   },
+   "share_queries_recall_1": 0.0227
+  },
+  "dense_hash+filter": {
+   "recall@5": 0.9231,
+   "mrr": 0.954,
+   "p@5": 0.7644,
+   "recall@5_cross_lingual": 0.9875,
+   "recall@5_by_type": {
+    "flu_window": 1.0,
+    "neighborhood_cause": 1.0,
+    "route_day": 1.0,
+    "route_this_week": 0.96,
+    "section_illness": 0.8375,
+    "which_class": 0.4167,
+    "which_neighborhood": 1.0,
+    "xl_cause_week": 0.9667,
+    "xl_language_week": 1.0
+   },
+   "share_queries_recall_1": 0.8182
+  },
+  "hybrid+filter": {
+   "recall@5": 0.9322,
+   "mrr": 0.9682,
+   "p@5": 0.7735,
+   "recall@5_cross_lingual": 1.0,
+   "recall@5_by_type": {
+    "flu_window": 1.0,
+    "neighborhood_cause": 1.0,
+    "route_day": 1.0,
+    "route_this_week": 0.96,
+    "section_illness": 0.8875,
+    "which_class": 0.4167,
+    "which_neighborhood": 1.0,
+    "xl_cause_week": 1.0,
+    "xl_language_week": 1.0
+   },
+   "share_queries_recall_1": 0.8409
+  }
+ },
+ "queries": [
+  {
+   "qid": "r0-q00",
+   "run": 0,
+   "text": "Childcare problems in neighborhood NB1 around day 41",
+   "qtype": "neighborhood_cause",
+   "as_of": null,
+   "cross_lingual": false,
+   "event_id": "E000",
+   "n_relevant_non_en": 3,
+   "n_relevant": 4,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00002",
+      "M-A00004",
+      "M-A00007",
+      "M-A00009",
+      "M-A00011"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.25,
+     "rr": 0.2,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00337",
+      "M-A00751",
+      "M-A00832",
+      "M-A00028",
+      "M-A00382"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00407",
+      "M-A00410",
+      "M-A00412",
+      "M-A00372",
+      "M-A00382"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00382",
+      "M-A00407",
+      "M-A00412",
+      "M-A00410",
+      "M-A00372"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.25,
+     "rr": 0.2,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00371",
+      "M-A00372",
+      "M-A00378",
+      "M-A00381",
+      "M-A00382"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00382",
+      "M-A00407",
+      "M-A00412",
+      "M-A00410",
+      "M-A00400"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00751",
+      "M-A00028",
+      "M-A00219",
+      "M-A00832",
+      "M-A00169"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00410",
+      "M-A00412",
+      "M-A00382",
+      "M-A00407",
+      "M-A00400"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00407",
+      "M-A00382",
+      "M-A00412",
+      "M-A00410",
+      "M-A00400"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r0-q01",
+   "run": 0,
+   "text": "Which neighborhood has families keeping kids home to babysit around day 41?",
+   "qtype": "which_neighborhood",
+   "as_of": null,
+   "cross_lingual": false,
+   "event_id": "E000",
+   "n_relevant_non_en": 3,
+   "n_relevant": 4,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00672",
+      "M-A00747",
+      "M-A00767",
+      "M-A00837",
+      "M-A01090"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.1,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00337",
+      "M-A00672",
+      "M-A00747",
+      "M-A00767",
+      "M-A00837"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00407",
+      "M-A00410",
+      "M-A00412",
+      "M-A00372",
+      "M-A00382"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00407",
+      "M-A00382",
+      "M-A00412",
+      "M-A00410",
+      "M-A00372"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00358",
+      "M-A00359",
+      "M-A00363",
+      "M-A00364",
+      "M-A00366"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00407",
+      "M-A00382",
+      "M-A00412",
+      "M-A00410",
+      "M-A00400"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00219",
+      "M-A00028",
+      "M-A00751",
+      "M-A00527",
+      "M-A00169"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00410",
+      "M-A00412",
+      "M-A00382",
+      "M-A00407",
+      "M-A00372"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00407",
+      "M-A00382",
+      "M-A00412",
+      "M-A00410",
+      "M-A00400"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r0-q02",
+   "run": 0,
+   "text": "Is there a school-wide flu outbreak around day 53?",
+   "qtype": "flu_window",
+   "as_of": null,
+   "cross_lingual": false,
+   "event_id": null,
+   "n_relevant_non_en": 5,
+   "n_relevant": 17,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.111,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00056",
+      "M-A00057",
+      "M-A00063",
+      "M-A00134",
+      "M-A00178"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.111,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00056",
+      "M-A00057",
+      "M-A00063",
+      "M-A00134",
+      "M-A00178"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00547",
+      "M-A00521",
+      "M-A00512",
+      "M-A00550",
+      "M-A00552"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00552",
+      "M-A00521",
+      "M-A00547",
+      "M-A00512",
+      "M-A00494"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00547",
+      "M-A00512",
+      "M-A00521",
+      "M-A00494",
+      "M-A00495"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00547",
+      "M-A00504",
+      "M-A00552",
+      "M-A00521",
+      "M-A00512"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.111,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00639",
+      "M-A00744",
+      "M-A00810",
+      "M-A00928",
+      "M-A01087"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00558",
+      "M-A00494",
+      "M-A00552",
+      "M-A00519",
+      "M-A00537"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00552",
+      "M-A00494",
+      "M-A00547",
+      "M-A00521",
+      "M-A00558"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r0-q03",
+   "run": 0,
+   "text": "Why are students on route R04 missing school this week?",
+   "qtype": "route_this_week",
+   "as_of": 59,
+   "cross_lingual": false,
+   "event_id": "E003",
+   "n_relevant_non_en": 5,
+   "n_relevant": 10,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00002",
+      "M-A00004",
+      "M-A00007",
+      "M-A00009",
+      "M-A00011"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00002",
+      "M-A00004",
+      "M-A00007",
+      "M-A00009",
+      "M-A00011"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00560",
+      "M-A00573",
+      "M-A00574",
+      "M-A00577",
+      "M-A00579"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00560",
+      "M-A00573",
+      "M-A00574",
+      "M-A00577",
+      "M-A00579"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00560",
+      "M-A00573",
+      "M-A00574",
+      "M-A00577",
+      "M-A00579"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00560",
+      "M-A00573",
+      "M-A00574",
+      "M-A00577",
+      "M-A00579"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00002",
+      "M-A00004",
+      "M-A00007",
+      "M-A00009",
+      "M-A00011"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00560",
+      "M-A00573",
+      "M-A00574",
+      "M-A00577",
+      "M-A00579"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00560",
+      "M-A00573",
+      "M-A00574",
+      "M-A00577",
+      "M-A00579"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r0-q04",
+   "run": 0,
+   "text": "Transportation problems on bus R04 around day 55",
+   "qtype": "route_day",
+   "as_of": null,
+   "cross_lingual": false,
+   "event_id": "E003",
+   "n_relevant_non_en": 5,
+   "n_relevant": 10,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00657"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.2,
+     "rr": 0.25,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00014",
+      "M-A00229",
+      "M-A00961",
+      "M-A00545",
+      "M-A00657"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00560",
+      "M-A00573",
+      "M-A00574",
+      "M-A00577",
+      "M-A00579"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00573",
+      "M-A00551",
+      "M-A00556",
+      "M-A00545",
+      "M-A00560"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.4,
+     "rr": 0.25,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00525",
+      "M-A00527",
+      "M-A00540",
+      "M-A00545",
+      "M-A00548"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00545",
+      "M-A00573",
+      "M-A00551",
+      "M-A00556",
+      "M-A00548"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.4,
+     "rr": 0.5,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00325",
+      "M-A00551",
+      "M-A00556",
+      "M-A00917",
+      "M-A00014"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00551",
+      "M-A00556",
+      "M-A00573",
+      "M-A00574",
+      "M-A00577"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00551",
+      "M-A00556",
+      "M-A00573",
+      "M-A00577",
+      "M-A00574"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r0-q05",
+   "run": 0,
+   "text": "Which Spanish-speaking families said the bus did not come in week 12?",
+   "qtype": "xl_language_week",
+   "as_of": null,
+   "cross_lingual": true,
+   "event_id": null,
+   "n_relevant_non_en": 5,
+   "n_relevant": 5,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A01042",
+      "M-A00548",
+      "M-A00560",
+      "M-A00739",
+      "M-A01034"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A01042",
+      "M-A01072",
+      "M-A00014",
+      "M-A00548",
+      "M-A00560"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00551",
+      "M-A00556",
+      "M-A00574",
+      "M-A00580",
+      "M-A00581"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00551",
+      "M-A00556",
+      "M-A00580",
+      "M-A00574",
+      "M-A00581"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.4,
+     "rr": 1.0,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00551",
+      "M-A00552",
+      "M-A00556",
+      "M-A00558",
+      "M-A00563"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00551",
+      "M-A00556",
+      "M-A00580",
+      "M-A00574",
+      "M-A00581"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.4,
+     "rr": 0.25,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00014",
+      "M-A01042",
+      "M-A00325",
+      "M-A00551",
+      "M-A00556"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00551",
+      "M-A00556",
+      "M-A00574",
+      "M-A00580",
+      "M-A00581"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00551",
+      "M-A00556",
+      "M-A00574",
+      "M-A00580",
+      "M-A00581"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r0-q06",
+   "run": 0,
+   "text": "Families saying the school bus never showed up during week 12",
+   "qtype": "xl_cause_week",
+   "as_of": null,
+   "cross_lingual": true,
+   "event_id": null,
+   "n_relevant_non_en": 6,
+   "n_relevant": 11,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.4,
+     "rr": 1.0,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00548",
+      "M-A00560",
+      "M-A01034",
+      "M-A00262",
+      "M-A00292"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.4,
+     "rr": 1.0,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00548",
+      "M-A01034",
+      "M-A00560",
+      "M-A00229",
+      "M-A01072"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00560",
+      "M-A00577",
+      "M-A00579",
+      "M-A00548",
+      "M-A00573"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00560",
+      "M-A00548",
+      "M-A00573",
+      "M-A00577",
+      "M-A00579"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.8,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00560",
+      "M-A00548",
+      "M-A00577",
+      "M-A00579",
+      "M-A00592"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00548",
+      "M-A00560",
+      "M-A00573",
+      "M-A00545",
+      "M-A00577"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.2,
+     "rr": 0.5,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00657",
+      "M-A00548",
+      "M-A00014",
+      "M-A01034",
+      "M-A00325"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00551",
+      "M-A00556",
+      "M-A00560",
+      "M-A00577",
+      "M-A00573"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00560",
+      "M-A00551",
+      "M-A00556",
+      "M-A00577",
+      "M-A00573"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r0-q07",
+   "run": 0,
+   "text": "Which class has an illness cluster around day 70?",
+   "qtype": "which_class",
+   "as_of": null,
+   "cross_lingual": false,
+   "event_id": "E005",
+   "n_relevant_non_en": 0,
+   "n_relevant": 4,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00002",
+      "M-A00004",
+      "M-A00007",
+      "M-A00009",
+      "M-A00011"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00041",
+      "M-A00912",
+      "M-A01016",
+      "M-A00223",
+      "M-A00639"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 0.5,
+     "rr": 1.0,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00705",
+      "M-A00706",
+      "M-A00711",
+      "M-A00737",
+      "M-A00750"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 0.5,
+     "rr": 0.5,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00706",
+      "M-A00705",
+      "M-A00737",
+      "M-A00750",
+      "M-A00711"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.25,
+     "rr": 0.333,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00700",
+      "M-A00703",
+      "M-A00705",
+      "M-A00706",
+      "M-A00710"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 0.5,
+     "rr": 0.5,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00706",
+      "M-A00705",
+      "M-A00776",
+      "M-A00737",
+      "M-A00750"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00639",
+      "M-A00744",
+      "M-A00810",
+      "M-A00928",
+      "M-A01087"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 0.0,
+     "rr": 0.143,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00720",
+      "M-A00791",
+      "M-A00700",
+      "M-A00770",
+      "M-A00751"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 0.0,
+     "rr": 0.1,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00720",
+      "M-A00791",
+      "M-A00700",
+      "M-A00770",
+      "M-A00758"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r0-q08",
+   "run": 0,
+   "text": "Students in SEC-04 out sick around day 67",
+   "qtype": "section_illness",
+   "as_of": null,
+   "cross_lingual": false,
+   "event_id": "E005",
+   "n_relevant_non_en": 0,
+   "n_relevant": 4,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00191",
+      "M-A00203",
+      "M-A00457",
+      "M-A00542",
+      "M-A00607"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00041",
+      "M-A00912",
+      "M-A01016",
+      "M-A00223",
+      "M-A00639"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 0.75,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00756",
+      "M-A00705",
+      "M-A00706",
+      "M-A00711",
+      "M-A00692"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 0.75,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00705",
+      "M-A00756",
+      "M-A00693",
+      "M-A00706",
+      "M-A00737"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.75,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00756",
+      "M-A00705",
+      "M-A00662",
+      "M-A00663",
+      "M-A00692"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 0.75,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00705",
+      "M-A00756",
+      "M-A00693",
+      "M-A00706",
+      "M-A00737"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00639",
+      "M-A00744",
+      "M-A00810",
+      "M-A00928",
+      "M-A01087"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 0.75,
+     "rr": 0.333,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00706",
+      "M-A00693",
+      "M-A00737",
+      "M-A00692",
+      "M-A00705"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 0.75,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00705",
+      "M-A00693",
+      "M-A00706",
+      "M-A00737",
+      "M-A00756"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r0-q09",
+   "run": 0,
+   "text": "Vietnamese or Chinese families reporting a sick child in week 14",
+   "qtype": "xl_language_week",
+   "as_of": null,
+   "cross_lingual": true,
+   "event_id": null,
+   "n_relevant_non_en": 3,
+   "n_relevant": 3,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00191",
+      "M-A00203",
+      "M-A00457",
+      "M-A00542",
+      "M-A00607"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00041",
+      "M-A00912",
+      "M-A01016",
+      "M-A00191",
+      "M-A00203"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00676",
+      "M-A00691",
+      "M-A00741",
+      "M-A00703",
+      "M-A00713"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00741",
+      "M-A00691",
+      "M-A00676",
+      "M-A00703",
+      "M-A00713"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00676",
+      "M-A00691",
+      "M-A00703",
+      "M-A00713",
+      "M-A00741"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00741",
+      "M-A00691",
+      "M-A00676",
+      "M-A00703",
+      "M-A00713"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00130",
+      "M-A00288",
+      "M-A00191",
+      "M-A00203",
+      "M-A00457"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00741",
+      "M-A00691",
+      "M-A00676",
+      "M-A00713",
+      "M-A00703"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00741",
+      "M-A00691",
+      "M-A00676",
+      "M-A00713",
+      "M-A00703"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r0-q10",
+   "run": 0,
+   "text": "Childcare problems in neighborhood NB6 around day 71",
+   "qtype": "neighborhood_cause",
+   "as_of": null,
+   "cross_lingual": false,
+   "event_id": "E006",
+   "n_relevant_non_en": 2,
+   "n_relevant": 6,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00002",
+      "M-A00004",
+      "M-A00007",
+      "M-A00009",
+      "M-A00011"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00337",
+      "M-A00751",
+      "M-A00832",
+      "M-A00028",
+      "M-A00382"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00758",
+      "M-A00762",
+      "M-A00764",
+      "M-A00767",
+      "M-A00778"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00758",
+      "M-A00767",
+      "M-A00802",
+      "M-A00778",
+      "M-A00764"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.8,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00758",
+      "M-A00762",
+      "M-A00764",
+      "M-A00767",
+      "M-A00771"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00758",
+      "M-A00767",
+      "M-A00802",
+      "M-A00778",
+      "M-A00764"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00751",
+      "M-A00028",
+      "M-A00219",
+      "M-A00832",
+      "M-A00169"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00758",
+      "M-A00767",
+      "M-A00778",
+      "M-A00762",
+      "M-A00764"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00758",
+      "M-A00767",
+      "M-A00778",
+      "M-A00762",
+      "M-A00802"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r0-q11",
+   "run": 0,
+   "text": "Which neighborhood has families keeping kids home to babysit around day 71?",
+   "qtype": "which_neighborhood",
+   "as_of": null,
+   "cross_lingual": false,
+   "event_id": "E006",
+   "n_relevant_non_en": 2,
+   "n_relevant": 6,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.2,
+     "rr": 0.333,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00672",
+      "M-A00747",
+      "M-A00767",
+      "M-A00837",
+      "M-A01090"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.2,
+     "rr": 0.25,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00337",
+      "M-A00672",
+      "M-A00747",
+      "M-A00767",
+      "M-A00837"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 0.8,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00767",
+      "M-A00758",
+      "M-A00762",
+      "M-A00764",
+      "M-A00747"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00767",
+      "M-A00758",
+      "M-A00778",
+      "M-A00764",
+      "M-A00762"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.2,
+     "rr": 1.0,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00767",
+      "M-A00747",
+      "M-A00714",
+      "M-A00717",
+      "M-A00718"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00767",
+      "M-A00758",
+      "M-A00778",
+      "M-A00764",
+      "M-A00762"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00219",
+      "M-A00028",
+      "M-A00751",
+      "M-A00527",
+      "M-A00169"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00758",
+      "M-A00767",
+      "M-A00778",
+      "M-A00762",
+      "M-A00764"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00767",
+      "M-A00758",
+      "M-A00762",
+      "M-A00778",
+      "M-A00764"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r0-q12",
+   "run": 0,
+   "text": "Which Spanish-speaking families said the bus did not come in week 17?",
+   "qtype": "xl_language_week",
+   "as_of": null,
+   "cross_lingual": true,
+   "event_id": null,
+   "n_relevant_non_en": 1,
+   "n_relevant": 1,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A01042",
+      "M-A00548",
+      "M-A00560",
+      "M-A00739",
+      "M-A01034"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A01042",
+      "M-A01072",
+      "M-A00014",
+      "M-A00548",
+      "M-A00560"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00917",
+      "M-A00896",
+      "M-A00898",
+      "M-A00903",
+      "M-A00914"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00917",
+      "M-A00896",
+      "M-A00898",
+      "M-A00903",
+      "M-A00914"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 1.0,
+     "rr": 0.2,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00896",
+      "M-A00898",
+      "M-A00903",
+      "M-A00914",
+      "M-A00917"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00917",
+      "M-A00896",
+      "M-A00898",
+      "M-A00903",
+      "M-A00914"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.167,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00014",
+      "M-A01042",
+      "M-A00325",
+      "M-A00551",
+      "M-A00556"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00917",
+      "M-A00903",
+      "M-A00932",
+      "M-A00898",
+      "M-A00933"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00917",
+      "M-A00903",
+      "M-A00932",
+      "M-A00898",
+      "M-A00933"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r0-q13",
+   "run": 0,
+   "text": "Families saying the school bus never showed up during week 17",
+   "qtype": "xl_cause_week",
+   "as_of": null,
+   "cross_lingual": true,
+   "event_id": null,
+   "n_relevant_non_en": 1,
+   "n_relevant": 1,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00548",
+      "M-A00560",
+      "M-A01034",
+      "M-A00262",
+      "M-A00292"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00548",
+      "M-A01034",
+      "M-A00560",
+      "M-A00229",
+      "M-A01072"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00917",
+      "M-A00896",
+      "M-A00897",
+      "M-A00898",
+      "M-A00899"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00917",
+      "M-A00925",
+      "M-A00896",
+      "M-A00897",
+      "M-A00898"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00896",
+      "M-A00897",
+      "M-A00898",
+      "M-A00899",
+      "M-A00901"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00917",
+      "M-A00925",
+      "M-A00896",
+      "M-A00897",
+      "M-A00898"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.125,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00657",
+      "M-A00548",
+      "M-A00014",
+      "M-A01034",
+      "M-A00325"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00917",
+      "M-A00916",
+      "M-A00915",
+      "M-A00925",
+      "M-A00903"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00917",
+      "M-A00925",
+      "M-A00916",
+      "M-A00915",
+      "M-A00903"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r0-q14",
+   "run": 0,
+   "text": "Which class has an illness cluster around day 89?",
+   "qtype": "which_class",
+   "as_of": null,
+   "cross_lingual": false,
+   "event_id": "E009",
+   "n_relevant_non_en": 4,
+   "n_relevant": 8,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00002",
+      "M-A00004",
+      "M-A00007",
+      "M-A00009",
+      "M-A00011"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00041",
+      "M-A00912",
+      "M-A01016",
+      "M-A00223",
+      "M-A00639"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 0.0,
+     "rr": 0.167,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00977",
+      "M-A00978",
+      "M-A00962",
+      "M-A00964",
+      "M-A01047"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00991",
+      "M-A00973",
+      "M-A01032",
+      "M-A01010",
+      "M-A00974"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.0,
+     "rr": 0.125,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00961",
+      "M-A00962",
+      "M-A00964",
+      "M-A00966",
+      "M-A00967"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00991",
+      "M-A00974",
+      "M-A00973",
+      "M-A01021",
+      "M-A01032"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00639",
+      "M-A00744",
+      "M-A00810",
+      "M-A00928",
+      "M-A01087"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 0.4,
+     "rr": 0.5,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00988",
+      "M-A01020",
+      "M-A00989",
+      "M-A00972",
+      "M-A01006"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 0.4,
+     "rr": 0.5,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00988",
+      "M-A00989",
+      "M-A01020",
+      "M-A01006",
+      "M-A00972"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r0-q15",
+   "run": 0,
+   "text": "Students in SEC-06 out sick around day 88",
+   "qtype": "section_illness",
+   "as_of": null,
+   "cross_lingual": false,
+   "event_id": "E009",
+   "n_relevant_non_en": 4,
+   "n_relevant": 6,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00191",
+      "M-A00203",
+      "M-A00457",
+      "M-A00542",
+      "M-A00607"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00041",
+      "M-A00912",
+      "M-A01016",
+      "M-A00223",
+      "M-A00639"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00973",
+      "M-A00991",
+      "M-A01010",
+      "M-A01032",
+      "M-A00974"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00991",
+      "M-A00973",
+      "M-A01032",
+      "M-A01010",
+      "M-A00974"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.8,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00973",
+      "M-A00974",
+      "M-A00990",
+      "M-A00991",
+      "M-A01010"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00991",
+      "M-A00974",
+      "M-A00973",
+      "M-A01021",
+      "M-A01032"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00639",
+      "M-A00744",
+      "M-A00810",
+      "M-A00928",
+      "M-A01087"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00991",
+      "M-A00973",
+      "M-A00974",
+      "M-A01032",
+      "M-A01010"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00991",
+      "M-A00973",
+      "M-A01032",
+      "M-A01010",
+      "M-A00974"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r0-q16",
+   "run": 0,
+   "text": "Vietnamese or Chinese families reporting a sick child in week 18",
+   "qtype": "xl_language_week",
+   "as_of": null,
+   "cross_lingual": true,
+   "event_id": null,
+   "n_relevant_non_en": 4,
+   "n_relevant": 4,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00191",
+      "M-A00203",
+      "M-A00457",
+      "M-A00542",
+      "M-A00607"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.25,
+     "rr": 0.333,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00041",
+      "M-A00912",
+      "M-A01016",
+      "M-A00191",
+      "M-A00203"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 0.75,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00956",
+      "M-A00983",
+      "M-A01016",
+      "M-A00961",
+      "M-A00970"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A01016",
+      "M-A00983",
+      "M-A00956",
+      "M-A00975",
+      "M-A00961"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.75,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00956",
+      "M-A00961",
+      "M-A00970",
+      "M-A00975",
+      "M-A00983"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A01016",
+      "M-A00983",
+      "M-A00975",
+      "M-A00956",
+      "M-A00961"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00130",
+      "M-A00288",
+      "M-A00191",
+      "M-A00203",
+      "M-A00457"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A01016",
+      "M-A00983",
+      "M-A00956",
+      "M-A00975",
+      "M-A00970"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A01016",
+      "M-A00983",
+      "M-A00956",
+      "M-A00975",
+      "M-A00970"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r0-q17",
+   "run": 0,
+   "text": "Why are students on route R02 missing school this week?",
+   "qtype": "route_this_week",
+   "as_of": 94,
+   "cross_lingual": false,
+   "event_id": "E010",
+   "n_relevant_non_en": 3,
+   "n_relevant": 8,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00002",
+      "M-A00004",
+      "M-A00007",
+      "M-A00009",
+      "M-A00011"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00002",
+      "M-A00004",
+      "M-A00007",
+      "M-A00009",
+      "M-A00011"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A01026",
+      "M-A01031",
+      "M-A01033",
+      "M-A01034",
+      "M-A01040"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A01026",
+      "M-A01031",
+      "M-A01033",
+      "M-A01034",
+      "M-A01040"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A01026",
+      "M-A01031",
+      "M-A01033",
+      "M-A01034",
+      "M-A01038"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A01026",
+      "M-A01031",
+      "M-A01033",
+      "M-A01034",
+      "M-A01038"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00002",
+      "M-A00004",
+      "M-A00007",
+      "M-A00009",
+      "M-A00011"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A01026",
+      "M-A01031",
+      "M-A01033",
+      "M-A01034",
+      "M-A01040"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A01026",
+      "M-A01031",
+      "M-A01033",
+      "M-A01034",
+      "M-A01040"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r0-q18",
+   "run": 0,
+   "text": "Transportation problems on bus R02 around day 91",
+   "qtype": "route_day",
+   "as_of": null,
+   "cross_lingual": false,
+   "event_id": "E010",
+   "n_relevant_non_en": 3,
+   "n_relevant": 8,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00657"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00014",
+      "M-A00229",
+      "M-A00961",
+      "M-A00545",
+      "M-A00657"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A01026",
+      "M-A01031",
+      "M-A01033",
+      "M-A01034",
+      "M-A01040"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A01034",
+      "M-A01041",
+      "M-A01040",
+      "M-A01031",
+      "M-A01033"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.6,
+     "rr": 0.333,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00990",
+      "M-A01018",
+      "M-A01026",
+      "M-A01031",
+      "M-A01033"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A01041",
+      "M-A01034",
+      "M-A01040",
+      "M-A01031",
+      "M-A01038"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.1,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00325",
+      "M-A00551",
+      "M-A00556",
+      "M-A00917",
+      "M-A00014"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A01033",
+      "M-A01034",
+      "M-A01026",
+      "M-A01040",
+      "M-A01042"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A01034",
+      "M-A01033",
+      "M-A01040",
+      "M-A01042",
+      "M-A01031"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r0-q19",
+   "run": 0,
+   "text": "Which Spanish-speaking families said the bus did not come in week 19?",
+   "qtype": "xl_language_week",
+   "as_of": null,
+   "cross_lingual": true,
+   "event_id": null,
+   "n_relevant_non_en": 5,
+   "n_relevant": 5,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A01042",
+      "M-A00548",
+      "M-A00560",
+      "M-A00739",
+      "M-A01034"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.2,
+     "rr": 0.5,
+     "p@5": 0.2,
+     "top5": [
+      "M-A01042",
+      "M-A01072",
+      "M-A00014",
+      "M-A00548",
+      "M-A00560"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 0.4,
+     "rr": 1.0,
+     "p@5": 0.4,
+     "top5": [
+      "M-A01072",
+      "M-A01026",
+      "M-A01018",
+      "M-A01019",
+      "M-A01022"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A01072",
+      "M-A01041",
+      "M-A01026",
+      "M-A01038",
+      "M-A01051"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.2,
+     "rr": 1.0,
+     "p@5": 0.2,
+     "top5": [
+      "M-A01072",
+      "M-A01018",
+      "M-A01019",
+      "M-A01022",
+      "M-A01024"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 0.8,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A01072",
+      "M-A01041",
+      "M-A01038",
+      "M-A01051",
+      "M-A01018"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.143,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00014",
+      "M-A01042",
+      "M-A00325",
+      "M-A00551",
+      "M-A00556"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A01072",
+      "M-A01041",
+      "M-A01026",
+      "M-A01038",
+      "M-A01051"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A01072",
+      "M-A01041",
+      "M-A01026",
+      "M-A01038",
+      "M-A01051"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r0-q20",
+   "run": 0,
+   "text": "Families saying the school bus never showed up during week 19",
+   "qtype": "xl_cause_week",
+   "as_of": null,
+   "cross_lingual": true,
+   "event_id": null,
+   "n_relevant_non_en": 5,
+   "n_relevant": 10,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.2,
+     "rr": 0.333,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00548",
+      "M-A00560",
+      "M-A01034",
+      "M-A00262",
+      "M-A00292"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.4,
+     "rr": 0.5,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00548",
+      "M-A01034",
+      "M-A00560",
+      "M-A00229",
+      "M-A01072"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A01034",
+      "M-A01040",
+      "M-A01033",
+      "M-A01042",
+      "M-A01072"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A01034",
+      "M-A01040",
+      "M-A01033",
+      "M-A01042",
+      "M-A01072"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.8,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A01034",
+      "M-A01040",
+      "M-A01033",
+      "M-A01042",
+      "M-A01066"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A01034",
+      "M-A01040",
+      "M-A01041",
+      "M-A01033",
+      "M-A01042"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.2,
+     "rr": 0.25,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00657",
+      "M-A00548",
+      "M-A00014",
+      "M-A01034",
+      "M-A00325"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A01034",
+      "M-A01040",
+      "M-A01033",
+      "M-A01072",
+      "M-A01042"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A01034",
+      "M-A01040",
+      "M-A01072",
+      "M-A01033",
+      "M-A01042"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r1-q00",
+   "run": 1,
+   "text": "Which class has an illness cluster around day 46?",
+   "qtype": "which_class",
+   "as_of": null,
+   "cross_lingual": false,
+   "event_id": "E000",
+   "n_relevant_non_en": 2,
+   "n_relevant": 8,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00001",
+      "M-A00003",
+      "M-A00011",
+      "M-A00014",
+      "M-A00017"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.2,
+     "rr": 0.333,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00050",
+      "M-A00330",
+      "M-A00417",
+      "M-A00506",
+      "M-A00636"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 0.6,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00433",
+      "M-A00439",
+      "M-A00466",
+      "M-A00404",
+      "M-A00410"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 0.6,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00417",
+      "M-A00439",
+      "M-A00433",
+      "M-A00410",
+      "M-A00404"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.4,
+     "rr": 1.0,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00404",
+      "M-A00406",
+      "M-A00407",
+      "M-A00410",
+      "M-A00411"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 0.6,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00417",
+      "M-A00439",
+      "M-A00433",
+      "M-A00411",
+      "M-A00410"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.2,
+     "rr": 0.5,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00330",
+      "M-A00417",
+      "M-A00636",
+      "M-A00868",
+      "M-A00050"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 0.6,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00433",
+      "M-A00404",
+      "M-A00417",
+      "M-A00410",
+      "M-A00439"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 0.6,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00417",
+      "M-A00433",
+      "M-A00439",
+      "M-A00404",
+      "M-A00410"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r1-q01",
+   "run": 1,
+   "text": "Students in SEC-09 out sick around day 43",
+   "qtype": "section_illness",
+   "as_of": null,
+   "cross_lingual": false,
+   "event_id": "E000",
+   "n_relevant_non_en": 2,
+   "n_relevant": 6,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.125,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00117",
+      "M-A00194",
+      "M-A00328",
+      "M-A00466",
+      "M-A00046"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.2,
+     "rr": 0.333,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00050",
+      "M-A00330",
+      "M-A00417",
+      "M-A00506",
+      "M-A00636"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 0.8,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00394",
+      "M-A00393",
+      "M-A00411",
+      "M-A00410",
+      "M-A00433"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 0.8,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00394",
+      "M-A00393",
+      "M-A00439",
+      "M-A00433",
+      "M-A00417"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.8,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00394",
+      "M-A00393",
+      "M-A00411",
+      "M-A00376",
+      "M-A00404"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 0.8,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00417",
+      "M-A00394",
+      "M-A00411",
+      "M-A00393",
+      "M-A00439"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.2,
+     "rr": 0.333,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00868",
+      "M-A00330",
+      "M-A00417",
+      "M-A00636",
+      "M-A00050"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 0.6,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00404",
+      "M-A00433",
+      "M-A00410",
+      "M-A00417",
+      "M-A00439"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 0.8,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00433",
+      "M-A00394",
+      "M-A00404",
+      "M-A00417",
+      "M-A00439"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r1-q02",
+   "run": 1,
+   "text": "Vietnamese or Chinese families reporting a sick child in week 9",
+   "qtype": "xl_language_week",
+   "as_of": null,
+   "cross_lingual": true,
+   "event_id": null,
+   "n_relevant_non_en": 1,
+   "n_relevant": 1,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00117",
+      "M-A00194",
+      "M-A00328",
+      "M-A00466",
+      "M-A00046"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00116",
+      "M-A00292",
+      "M-A00368",
+      "M-A00476",
+      "M-A00808"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.333,
+     "top5": [
+      "M-A00377",
+      "M-A00387",
+      "M-A00407"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.333,
+     "top5": [
+      "M-A00377",
+      "M-A00387",
+      "M-A00407"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.333,
+     "top5": [
+      "M-A00377",
+      "M-A00387",
+      "M-A00407"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.333,
+     "top5": [
+      "M-A00377",
+      "M-A00387",
+      "M-A00407"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00117",
+      "M-A00194",
+      "M-A00328",
+      "M-A00466",
+      "M-A00292"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.333,
+     "top5": [
+      "M-A00377",
+      "M-A00387",
+      "M-A00407"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.333,
+     "top5": [
+      "M-A00377",
+      "M-A00387",
+      "M-A00407"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r1-q03",
+   "run": 1,
+   "text": "Why are students on route R08 missing school this week?",
+   "qtype": "route_this_week",
+   "as_of": 49,
+   "cross_lingual": false,
+   "event_id": "E001",
+   "n_relevant_non_en": 1,
+   "n_relevant": 7,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00001",
+      "M-A00003",
+      "M-A00011",
+      "M-A00014",
+      "M-A00017"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00001",
+      "M-A00003",
+      "M-A00011",
+      "M-A00014",
+      "M-A00017"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00436",
+      "M-A00437",
+      "M-A00438",
+      "M-A00443",
+      "M-A00420"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00436",
+      "M-A00437",
+      "M-A00438",
+      "M-A00443",
+      "M-A00420"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00436",
+      "M-A00437",
+      "M-A00438",
+      "M-A00443",
+      "M-A00420"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00436",
+      "M-A00437",
+      "M-A00438",
+      "M-A00443",
+      "M-A00420"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00001",
+      "M-A00003",
+      "M-A00011",
+      "M-A00014",
+      "M-A00017"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00436",
+      "M-A00437",
+      "M-A00438",
+      "M-A00443",
+      "M-A00420"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00436",
+      "M-A00437",
+      "M-A00438",
+      "M-A00443",
+      "M-A00420"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r1-q04",
+   "run": 1,
+   "text": "Transportation problems on bus R08 around day 45",
+   "qtype": "route_day",
+   "as_of": null,
+   "cross_lingual": false,
+   "event_id": "E001",
+   "n_relevant_non_en": 1,
+   "n_relevant": 7,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00522",
+      "M-A00687",
+      "M-A00906",
+      "M-A00943"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00664",
+      "M-A00579",
+      "M-A00159",
+      "M-A00123",
+      "M-A00489"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00436",
+      "M-A00437",
+      "M-A00438",
+      "M-A00443",
+      "M-A00420"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00437",
+      "M-A00420",
+      "M-A00443",
+      "M-A00436",
+      "M-A00438"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.2,
+     "rr": 0.2,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00393",
+      "M-A00396",
+      "M-A00400",
+      "M-A00407",
+      "M-A00420"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00437",
+      "M-A00420",
+      "M-A00443",
+      "M-A00436",
+      "M-A00438"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.2,
+     "rr": 0.5,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00664",
+      "M-A00437",
+      "M-A00537",
+      "M-A00522",
+      "M-A00906"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00437",
+      "M-A00436",
+      "M-A00438",
+      "M-A00420",
+      "M-A00443"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00437",
+      "M-A00420",
+      "M-A00436",
+      "M-A00438",
+      "M-A00443"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r1-q05",
+   "run": 1,
+   "text": "Which Spanish-speaking families said the bus did not come in week 10?",
+   "qtype": "xl_language_week",
+   "as_of": null,
+   "cross_lingual": true,
+   "event_id": null,
+   "n_relevant_non_en": 1,
+   "n_relevant": 1,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00196",
+      "M-A00429",
+      "M-A00420",
+      "M-A00573",
+      "M-A00019"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.111,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00664",
+      "M-A00196",
+      "M-A00429",
+      "M-A00420",
+      "M-A00573"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00437",
+      "M-A00417",
+      "M-A00422",
+      "M-A00426",
+      "M-A00433"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00437",
+      "M-A00417",
+      "M-A00422",
+      "M-A00426",
+      "M-A00433"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 1.0,
+     "rr": 0.2,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00417",
+      "M-A00422",
+      "M-A00426",
+      "M-A00433",
+      "M-A00437"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00437",
+      "M-A00417",
+      "M-A00422",
+      "M-A00426",
+      "M-A00433"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 1.0,
+     "rr": 0.2,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00664",
+      "M-A00047",
+      "M-A00196",
+      "M-A00429",
+      "M-A00437"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00437",
+      "M-A00439",
+      "M-A00433",
+      "M-A00440",
+      "M-A00422"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00437",
+      "M-A00439",
+      "M-A00433",
+      "M-A00440",
+      "M-A00450"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r1-q06",
+   "run": 1,
+   "text": "Families saying the school bus never showed up during week 10",
+   "qtype": "xl_cause_week",
+   "as_of": null,
+   "cross_lingual": true,
+   "event_id": null,
+   "n_relevant_non_en": 2,
+   "n_relevant": 8,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.4,
+     "rr": 1.0,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00420",
+      "M-A00573",
+      "M-A00114",
+      "M-A00314",
+      "M-A00443"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.2,
+     "rr": 1.0,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00420",
+      "M-A00573",
+      "M-A00664",
+      "M-A00579",
+      "M-A00123"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00420",
+      "M-A00443",
+      "M-A00429",
+      "M-A00436",
+      "M-A00438"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00420",
+      "M-A00443",
+      "M-A00437",
+      "M-A00429",
+      "M-A00436"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00420",
+      "M-A00429",
+      "M-A00443",
+      "M-A00436",
+      "M-A00438"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00420",
+      "M-A00443",
+      "M-A00437",
+      "M-A00429",
+      "M-A00436"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.143,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00664",
+      "M-A00522",
+      "M-A00906",
+      "M-A00943",
+      "M-A00573"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00437",
+      "M-A00420",
+      "M-A00436",
+      "M-A00438",
+      "M-A00443"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00420",
+      "M-A00437",
+      "M-A00443",
+      "M-A00436",
+      "M-A00438"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r1-q07",
+   "run": 1,
+   "text": "Childcare problems in neighborhood NB6 around day 51",
+   "qtype": "neighborhood_cause",
+   "as_of": null,
+   "cross_lingual": false,
+   "event_id": "E002",
+   "n_relevant_non_en": 2,
+   "n_relevant": 6,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00001",
+      "M-A00003",
+      "M-A00011",
+      "M-A00014",
+      "M-A00017"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00593",
+      "M-A00817",
+      "M-A00575",
+      "M-A00722",
+      "M-A00064"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 0.8,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00484",
+      "M-A00487",
+      "M-A00488",
+      "M-A00476",
+      "M-A00493"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00484",
+      "M-A00504",
+      "M-A00487",
+      "M-A00488",
+      "M-A00493"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.2,
+     "rr": 0.2,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00457",
+      "M-A00459",
+      "M-A00466",
+      "M-A00476",
+      "M-A00484"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00484",
+      "M-A00504",
+      "M-A00490",
+      "M-A00487",
+      "M-A00488"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00593",
+      "M-A00817",
+      "M-A00064",
+      "M-A00820",
+      "M-A00112"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00488",
+      "M-A00504",
+      "M-A00484",
+      "M-A00487",
+      "M-A00493"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00484",
+      "M-A00504",
+      "M-A00488",
+      "M-A00493",
+      "M-A00487"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r1-q08",
+   "run": 1,
+   "text": "Which neighborhood has families keeping kids home to babysit around day 51?",
+   "qtype": "which_neighborhood",
+   "as_of": null,
+   "cross_lingual": false,
+   "event_id": "E002",
+   "n_relevant_non_en": 2,
+   "n_relevant": 6,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00017",
+      "M-A00384",
+      "M-A00705"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00593",
+      "M-A00817",
+      "M-A00575",
+      "M-A00722",
+      "M-A00017"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 0.8,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00484",
+      "M-A00487",
+      "M-A00488",
+      "M-A00493",
+      "M-A00476"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00484",
+      "M-A00504",
+      "M-A00493",
+      "M-A00487",
+      "M-A00488"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00457",
+      "M-A00459",
+      "M-A00460",
+      "M-A00463",
+      "M-A00465"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00484",
+      "M-A00490",
+      "M-A00504",
+      "M-A00493",
+      "M-A00487"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00593",
+      "M-A00817",
+      "M-A00112",
+      "M-A00700",
+      "M-A00811"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00488",
+      "M-A00493",
+      "M-A00484",
+      "M-A00504",
+      "M-A00487"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00484",
+      "M-A00504",
+      "M-A00488",
+      "M-A00493",
+      "M-A00487"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r1-q09",
+   "run": 1,
+   "text": "Why are students on route R04 missing school this week?",
+   "qtype": "route_this_week",
+   "as_of": 59,
+   "cross_lingual": false,
+   "event_id": "E003",
+   "n_relevant_non_en": 1,
+   "n_relevant": 2,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00001",
+      "M-A00003",
+      "M-A00011",
+      "M-A00014",
+      "M-A00017"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00001",
+      "M-A00003",
+      "M-A00011",
+      "M-A00014",
+      "M-A00017"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00520",
+      "M-A00522"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00520",
+      "M-A00522"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00520",
+      "M-A00522"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00520",
+      "M-A00522"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00001",
+      "M-A00003",
+      "M-A00011",
+      "M-A00014",
+      "M-A00017"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00520",
+      "M-A00522"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00520",
+      "M-A00522"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r1-q10",
+   "run": 1,
+   "text": "Transportation problems on bus R04 around day 56",
+   "qtype": "route_day",
+   "as_of": null,
+   "cross_lingual": false,
+   "event_id": "E003",
+   "n_relevant_non_en": 1,
+   "n_relevant": 2,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.5,
+     "rr": 1.0,
+     "p@5": 0.25,
+     "top5": [
+      "M-A00522",
+      "M-A00687",
+      "M-A00906",
+      "M-A00943"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00664",
+      "M-A00579",
+      "M-A00159",
+      "M-A00123",
+      "M-A00489"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00522",
+      "M-A00520"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00522",
+      "M-A00520"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00522",
+      "M-A00520"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00522",
+      "M-A00520"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.5,
+     "rr": 0.25,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00664",
+      "M-A00437",
+      "M-A00537",
+      "M-A00522",
+      "M-A00906"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00522",
+      "M-A00520"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00522",
+      "M-A00520"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r1-q11",
+   "run": 1,
+   "text": "Which Spanish-speaking families said the bus did not come in week 12?",
+   "qtype": "xl_language_week",
+   "as_of": null,
+   "cross_lingual": true,
+   "event_id": null,
+   "n_relevant_non_en": 2,
+   "n_relevant": 2,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00196",
+      "M-A00429",
+      "M-A00420",
+      "M-A00573",
+      "M-A00019"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.1,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00664",
+      "M-A00196",
+      "M-A00429",
+      "M-A00420",
+      "M-A00573"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00520",
+      "M-A00537",
+      "M-A00512",
+      "M-A00523",
+      "M-A00531"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00537",
+      "M-A00520",
+      "M-A00512",
+      "M-A00523",
+      "M-A00531"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.5,
+     "rr": 0.5,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00512",
+      "M-A00520",
+      "M-A00523",
+      "M-A00531",
+      "M-A00532"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00537",
+      "M-A00520",
+      "M-A00512",
+      "M-A00523",
+      "M-A00531"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.167,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00664",
+      "M-A00047",
+      "M-A00196",
+      "M-A00429",
+      "M-A00437"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00537",
+      "M-A00520",
+      "M-A00532",
+      "M-A00535",
+      "M-A00536"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00537",
+      "M-A00520",
+      "M-A00532",
+      "M-A00535",
+      "M-A00536"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r1-q12",
+   "run": 1,
+   "text": "Families saying the school bus never showed up during week 12",
+   "qtype": "xl_cause_week",
+   "as_of": null,
+   "cross_lingual": true,
+   "event_id": null,
+   "n_relevant_non_en": 2,
+   "n_relevant": 3,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00420",
+      "M-A00573",
+      "M-A00114",
+      "M-A00314",
+      "M-A00443"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00420",
+      "M-A00573",
+      "M-A00664",
+      "M-A00579",
+      "M-A00123"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 0.5,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00569",
+      "M-A00520",
+      "M-A00522",
+      "M-A00537",
+      "M-A00512"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00537",
+      "M-A00520",
+      "M-A00522",
+      "M-A00569",
+      "M-A00512"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.333,
+     "rr": 0.2,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00569",
+      "M-A00512",
+      "M-A00518",
+      "M-A00519",
+      "M-A00520"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00537",
+      "M-A00520",
+      "M-A00569",
+      "M-A00522",
+      "M-A00512"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.333,
+     "rr": 0.5,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00664",
+      "M-A00522",
+      "M-A00906",
+      "M-A00943",
+      "M-A00573"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00522",
+      "M-A00537",
+      "M-A00520",
+      "M-A00533",
+      "M-A00532"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00537",
+      "M-A00522",
+      "M-A00520",
+      "M-A00569",
+      "M-A00533"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r1-q13",
+   "run": 1,
+   "text": "Why are students on route R06 missing school this week?",
+   "qtype": "route_this_week",
+   "as_of": 69,
+   "cross_lingual": false,
+   "event_id": "E005",
+   "n_relevant_non_en": 2,
+   "n_relevant": 6,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00001",
+      "M-A00003",
+      "M-A00011",
+      "M-A00014",
+      "M-A00017"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00001",
+      "M-A00003",
+      "M-A00011",
+      "M-A00014",
+      "M-A00017"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 0.8,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00683",
+      "M-A00687",
+      "M-A00664",
+      "M-A00651",
+      "M-A00662"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 0.8,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00683",
+      "M-A00687",
+      "M-A00664",
+      "M-A00651",
+      "M-A00662"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.8,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00677",
+      "M-A00679",
+      "M-A00681",
+      "M-A00683",
+      "M-A00687"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 0.8,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00677",
+      "M-A00679",
+      "M-A00681",
+      "M-A00683",
+      "M-A00687"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00001",
+      "M-A00003",
+      "M-A00011",
+      "M-A00014",
+      "M-A00017"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 0.8,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00683",
+      "M-A00687",
+      "M-A00664",
+      "M-A00651",
+      "M-A00662"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 0.8,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00683",
+      "M-A00687",
+      "M-A00664",
+      "M-A00651",
+      "M-A00662"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r1-q14",
+   "run": 1,
+   "text": "Transportation problems on bus R06 around day 67",
+   "qtype": "route_day",
+   "as_of": null,
+   "cross_lingual": false,
+   "event_id": "E005",
+   "n_relevant_non_en": 3,
+   "n_relevant": 8,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.2,
+     "rr": 0.5,
+     "p@5": 0.25,
+     "top5": [
+      "M-A00522",
+      "M-A00687",
+      "M-A00906",
+      "M-A00943"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.2,
+     "rr": 1.0,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00664",
+      "M-A00579",
+      "M-A00159",
+      "M-A00123",
+      "M-A00489"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 0.6,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00687",
+      "M-A00683",
+      "M-A00664",
+      "M-A00638",
+      "M-A00651"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00664",
+      "M-A00687",
+      "M-A00683",
+      "M-A00676",
+      "M-A00685"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.6,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00687",
+      "M-A00638",
+      "M-A00651",
+      "M-A00662",
+      "M-A00664"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00664",
+      "M-A00687",
+      "M-A00676",
+      "M-A00685",
+      "M-A00679"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.2,
+     "rr": 1.0,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00664",
+      "M-A00437",
+      "M-A00537",
+      "M-A00522",
+      "M-A00906"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00664",
+      "M-A00687",
+      "M-A00683",
+      "M-A00679",
+      "M-A00676"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00687",
+      "M-A00664",
+      "M-A00683",
+      "M-A00679",
+      "M-A00676"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r1-q15",
+   "run": 1,
+   "text": "Which Spanish-speaking families said the bus did not come in week 14?",
+   "qtype": "xl_language_week",
+   "as_of": null,
+   "cross_lingual": true,
+   "event_id": null,
+   "n_relevant_non_en": 2,
+   "n_relevant": 2,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00196",
+      "M-A00429",
+      "M-A00420",
+      "M-A00573",
+      "M-A00019"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.5,
+     "rr": 1.0,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00664",
+      "M-A00196",
+      "M-A00429",
+      "M-A00420",
+      "M-A00573"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00664",
+      "M-A00644",
+      "M-A00679",
+      "M-A00681",
+      "M-A00700"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00664",
+      "M-A00644",
+      "M-A00679",
+      "M-A00681",
+      "M-A00700"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00664",
+      "M-A00644",
+      "M-A00679",
+      "M-A00681",
+      "M-A00700"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00664",
+      "M-A00679",
+      "M-A00644",
+      "M-A00681",
+      "M-A00700"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.5,
+     "rr": 1.0,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00664",
+      "M-A00047",
+      "M-A00196",
+      "M-A00429",
+      "M-A00437"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00664",
+      "M-A00644",
+      "M-A00679",
+      "M-A00681",
+      "M-A00700"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00664",
+      "M-A00679",
+      "M-A00644",
+      "M-A00681",
+      "M-A00700"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r1-q16",
+   "run": 1,
+   "text": "Families saying the school bus never showed up during week 14",
+   "qtype": "xl_cause_week",
+   "as_of": null,
+   "cross_lingual": true,
+   "event_id": null,
+   "n_relevant_non_en": 3,
+   "n_relevant": 8,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.167,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00420",
+      "M-A00573",
+      "M-A00114",
+      "M-A00314",
+      "M-A00443"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.2,
+     "rr": 0.333,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00420",
+      "M-A00573",
+      "M-A00664",
+      "M-A00579",
+      "M-A00123"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 0.8,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00683",
+      "M-A00664",
+      "M-A00662",
+      "M-A00692",
+      "M-A00687"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 0.8,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00664",
+      "M-A00683",
+      "M-A00687",
+      "M-A00676",
+      "M-A00644"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.6,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00683",
+      "M-A00662",
+      "M-A00664",
+      "M-A00692",
+      "M-A00644"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 0.8,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00664",
+      "M-A00683",
+      "M-A00676",
+      "M-A00685",
+      "M-A00692"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.2,
+     "rr": 1.0,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00664",
+      "M-A00522",
+      "M-A00906",
+      "M-A00943",
+      "M-A00573"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 0.8,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00664",
+      "M-A00687",
+      "M-A00683",
+      "M-A00679",
+      "M-A00644"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00664",
+      "M-A00683",
+      "M-A00687",
+      "M-A00679",
+      "M-A00676"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r1-q17",
+   "run": 1,
+   "text": "Childcare problems in neighborhood NB4 around day 70",
+   "qtype": "neighborhood_cause",
+   "as_of": null,
+   "cross_lingual": false,
+   "event_id": "E006",
+   "n_relevant_non_en": 1,
+   "n_relevant": 5,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00001",
+      "M-A00003",
+      "M-A00011",
+      "M-A00014",
+      "M-A00017"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.2,
+     "rr": 0.25,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00593",
+      "M-A00817",
+      "M-A00575",
+      "M-A00722",
+      "M-A00064"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00705",
+      "M-A00709",
+      "M-A00716",
+      "M-A00722",
+      "M-A00729"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00722",
+      "M-A00716",
+      "M-A00705",
+      "M-A00709",
+      "M-A00729"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00662",
+      "M-A00664",
+      "M-A00676",
+      "M-A00677",
+      "M-A00679"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00722",
+      "M-A00716",
+      "M-A00705",
+      "M-A00709",
+      "M-A00729"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00593",
+      "M-A00817",
+      "M-A00064",
+      "M-A00820",
+      "M-A00112"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00729",
+      "M-A00709",
+      "M-A00705",
+      "M-A00716",
+      "M-A00722"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00722",
+      "M-A00716",
+      "M-A00705",
+      "M-A00709",
+      "M-A00729"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r1-q18",
+   "run": 1,
+   "text": "Which neighborhood has families keeping kids home to babysit around day 70?",
+   "qtype": "which_neighborhood",
+   "as_of": null,
+   "cross_lingual": false,
+   "event_id": "E006",
+   "n_relevant_non_en": 1,
+   "n_relevant": 5,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.2,
+     "rr": 0.333,
+     "p@5": 0.333,
+     "top5": [
+      "M-A00017",
+      "M-A00384",
+      "M-A00705"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.2,
+     "rr": 0.25,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00593",
+      "M-A00817",
+      "M-A00575",
+      "M-A00722",
+      "M-A00017"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00705",
+      "M-A00709",
+      "M-A00716",
+      "M-A00722",
+      "M-A00729"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00705",
+      "M-A00722",
+      "M-A00716",
+      "M-A00709",
+      "M-A00729"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.2,
+     "rr": 1.0,
+     "p@5": 0.2,
+     "top5": [
+      "M-A00705",
+      "M-A00662",
+      "M-A00664",
+      "M-A00675",
+      "M-A00676"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00722",
+      "M-A00705",
+      "M-A00716",
+      "M-A00709",
+      "M-A00729"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00593",
+      "M-A00817",
+      "M-A00112",
+      "M-A00700",
+      "M-A00811"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00729",
+      "M-A00709",
+      "M-A00705",
+      "M-A00716",
+      "M-A00722"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00705",
+      "M-A00722",
+      "M-A00716",
+      "M-A00709",
+      "M-A00729"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r1-q19",
+   "run": 1,
+   "text": "Which class has an illness cluster around day 79?",
+   "qtype": "which_class",
+   "as_of": null,
+   "cross_lingual": false,
+   "event_id": "E007",
+   "n_relevant_non_en": 2,
+   "n_relevant": 3,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00001",
+      "M-A00003",
+      "M-A00011",
+      "M-A00014",
+      "M-A00017"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00050",
+      "M-A00330",
+      "M-A00417",
+      "M-A00506",
+      "M-A00636"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 0.0,
+     "rr": 0.167,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00790",
+      "M-A00792",
+      "M-A00805",
+      "M-A00799",
+      "M-A00786"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00788",
+      "M-A00780",
+      "M-A00808",
+      "M-A00800",
+      "M-A00824"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.0,
+     "rr": 0.143,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00763",
+      "M-A00765",
+      "M-A00770",
+      "M-A00773",
+      "M-A00777"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00788",
+      "M-A00780",
+      "M-A00800",
+      "M-A00824",
+      "M-A00821"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00330",
+      "M-A00417",
+      "M-A00636",
+      "M-A00868",
+      "M-A00050"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 0.667,
+     "rr": 1.0,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00780",
+      "M-A00788",
+      "M-A00821",
+      "M-A00824",
+      "M-A00778"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 0.667,
+     "rr": 1.0,
+     "p@5": 0.4,
+     "top5": [
+      "M-A00780",
+      "M-A00788",
+      "M-A00821",
+      "M-A00824",
+      "M-A00808"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r1-q20",
+   "run": 1,
+   "text": "Students in SEC-04 out sick around day 77",
+   "qtype": "section_illness",
+   "as_of": null,
+   "cross_lingual": false,
+   "event_id": "E007",
+   "n_relevant_non_en": 2,
+   "n_relevant": 3,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00117",
+      "M-A00194",
+      "M-A00328",
+      "M-A00466",
+      "M-A00046"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00050",
+      "M-A00330",
+      "M-A00417",
+      "M-A00506",
+      "M-A00636"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 0.5,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00750",
+      "M-A00780",
+      "M-A00788",
+      "M-A00778",
+      "M-A00800"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 0.5,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00750",
+      "M-A00780",
+      "M-A00788",
+      "M-A00800",
+      "M-A00778"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 1.0,
+     "rr": 0.333,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00750",
+      "M-A00778",
+      "M-A00780",
+      "M-A00788",
+      "M-A00800"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 0.5,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00750",
+      "M-A00780",
+      "M-A00788",
+      "M-A00800",
+      "M-A00778"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00868",
+      "M-A00330",
+      "M-A00417",
+      "M-A00636",
+      "M-A00050"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00780",
+      "M-A00750",
+      "M-A00788",
+      "M-A00778",
+      "M-A00800"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.6,
+     "top5": [
+      "M-A00780",
+      "M-A00750",
+      "M-A00788",
+      "M-A00800",
+      "M-A00778"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r1-q21",
+   "run": 1,
+   "text": "Vietnamese or Chinese families reporting a sick child in week 16",
+   "qtype": "xl_language_week",
+   "as_of": null,
+   "cross_lingual": true,
+   "event_id": null,
+   "n_relevant_non_en": 2,
+   "n_relevant": 2,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00117",
+      "M-A00194",
+      "M-A00328",
+      "M-A00466",
+      "M-A00046"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00116",
+      "M-A00292",
+      "M-A00368",
+      "M-A00476",
+      "M-A00808"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.5,
+     "top5": [
+      "M-A00788",
+      "M-A00789",
+      "M-A00770",
+      "M-A00778"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.5,
+     "top5": [
+      "M-A00789",
+      "M-A00788",
+      "M-A00770",
+      "M-A00778"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 1.0,
+     "rr": 0.333,
+     "p@5": 0.5,
+     "top5": [
+      "M-A00770",
+      "M-A00778",
+      "M-A00788",
+      "M-A00789"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.5,
+     "top5": [
+      "M-A00789",
+      "M-A00788",
+      "M-A00770",
+      "M-A00778"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00117",
+      "M-A00194",
+      "M-A00328",
+      "M-A00466",
+      "M-A00292"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.5,
+     "top5": [
+      "M-A00789",
+      "M-A00788",
+      "M-A00778",
+      "M-A00770"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 0.5,
+     "top5": [
+      "M-A00789",
+      "M-A00788",
+      "M-A00778",
+      "M-A00770"
+     ]
+    }
+   }
+  },
+  {
+   "qid": "r1-q22",
+   "run": 1,
+   "text": "Is there a school-wide flu outbreak around day 91?",
+   "qtype": "flu_window",
+   "as_of": null,
+   "cross_lingual": false,
+   "event_id": null,
+   "n_relevant_non_en": 14,
+   "n_relevant": 29,
+   "methods": {
+    "bm25": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00081",
+      "M-A00106",
+      "M-A00277",
+      "M-A00317",
+      "M-A00495"
+     ]
+    },
+    "bm25+expansion": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00050",
+      "M-A00330",
+      "M-A00417",
+      "M-A00506",
+      "M-A00636"
+     ]
+    },
+    "bm25+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00904",
+      "M-A00910",
+      "M-A00913",
+      "M-A00916",
+      "M-A00917"
+     ]
+    },
+    "bm25+expansion+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00920",
+      "M-A00913",
+      "M-A00896",
+      "M-A00916",
+      "M-A00893"
+     ]
+    },
+    "bm25+filter (text only, no labels)": {
+     "recall@5": 0.8,
+     "rr": 1.0,
+     "p@5": 0.8,
+     "top5": [
+      "M-A00904",
+      "M-A00886",
+      "M-A00887",
+      "M-A00888",
+      "M-A00889"
+     ]
+    },
+    "bm25+expansion+filter (no labels)": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00920",
+      "M-A00913",
+      "M-A00896",
+      "M-A00916",
+      "M-A00893"
+     ]
+    },
+    "dense_hash": {
+     "recall@5": 0.0,
+     "rr": 0.0,
+     "p@5": 0.0,
+     "top5": [
+      "M-A00868",
+      "M-A00330",
+      "M-A00417",
+      "M-A00636",
+      "M-A00050"
+     ]
+    },
+    "dense_hash+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00913",
+      "M-A00919",
+      "M-A00893",
+      "M-A00920",
+      "M-A00918"
+     ]
+    },
+    "hybrid+filter": {
+     "recall@5": 1.0,
+     "rr": 1.0,
+     "p@5": 1.0,
+     "top5": [
+      "M-A00913",
+      "M-A00920",
+      "M-A00893",
+      "M-A00896",
+      "M-A00919"
+     ]
+    }
+   }
+  }
+ ],
+ "setup": {
+  "school": "lyon_primary_2009",
+  "config": "B",
+  "seeds": [
+   1000,
+   1001
+  ],
+  "n_queries": 44,
+  "n_messages": [
+   555,
+   508
+  ],
+  "query_types": {
+   "neighborhood_cause": 4,
+   "which_neighborhood": 4,
+   "flu_window": 2,
+   "route_this_week": 5,
+   "route_day": 5,
+   "xl_language_week": 10,
+   "xl_cause_week": 6,
+   "which_class": 4,
+   "section_illness": 4
+  },
+  "n_cross_lingual": 16,
+  "mean_relevant": 6.0227,
+  "share_relevant_non_english": 0.5494,
+  "seconds": 1.51,
+  "default_method": "bm25+expansion+filter",
+  "target_recall@5": 0.85
+ },
+ "notes": [
+  "Recall@5 = |top5 ∩ R| / min(5, |R|); MRR over the top 10; P@5 is the citation-precision proxy for an agent that cites the top 5 hits.",
+  "R(q) is ground truth from the simulator (planted-event absences or true barrier + language + week); retrieval sees only reply text, metadata and the pipeline's noisy observed label.",
+  "dense_hash is a local hashed character 3-4-gram TF-IDF vector baseline, not a semantic embedding model; Gemini embeddings are off by default because of free-tier rate limits (MessageIndex accepts embed_fn).",
+  "Queries name the route / section / neighborhood / week, so metadata filtering does most of the work; text-only methods cannot know a reply's route and score near zero by construction.",
+  "The cross-lingual barrier lexicon is hand-written and overlaps the template vocabulary of the simulator's reply generator (app/ml/reply_text.py), so cross-lingual numbers are optimistic for real family messages. The '(no labels)' rows show its effect when observed labels are not used.",
+  "Weeks are 1-based school weeks (week w = days 5(w-1)..5(w-1)+4); 'this week' is relative to the query's as_of, and replies received after as_of are hidden."
+ ]
+}

@@ -7,3 +7,5 @@ numpy==2.4.6
 networkx==3.6.1
 scipy==1.17.1
 google-genai==3.3.0
+deepagents==0.7.38
+langchain-google-genai==4.5.0
