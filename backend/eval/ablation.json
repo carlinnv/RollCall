@@ -1,0 +1,1977 @@
+{
+  "meta": {
+    "school": "lyon_primary_2009",
+    "tune_school": "marseille_hs_2013",
+    "runs": 10,
+    "perms": 199,
+    "baseline_days": 40,
+    "target_fa_per_20_days": 1.0,
+    "scan_params": {
+      "baseline_days": 40,
+      "windows": [
+        1,
+        2,
+        3
+      ],
+      "n_perm": 199,
+      "min_window_obs": 2,
+      "min_cases": 2,
+      "min_units": 2,
+      "spells": true,
+      "report_p": 0.25,
+      "seed": 0,
+      "ks": [
+        5,
+        10,
+        20
+      ]
+    },
+    "seeds": {
+      "tune_null": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "test": [
+        1000,
+        1001,
+        1002,
+        1003,
+        1004,
+        1005,
+        1006,
+        1007,
+        1008,
+        1009
+      ],
+      "test_null": [
+        1000,
+        1001,
+        1002,
+        1003,
+        1004,
+        1005,
+        1006,
+        1007,
+        1008,
+        1009
+      ],
+      "label_noise": [
+        1000,
+        1001,
+        1002,
+        1003,
+        1004,
+        1005,
+        1006,
+        1007,
+        1008,
+        1009
+      ]
+    },
+    "configs": {
+      "tune_null": {
+        "name": "A-null",
+        "n_days": 100,
+        "seed": 0,
+        "base_absence_rate": 0.03,
+        "chronic_shape": 0.6,
+        "n_contagion": 0,
+        "beta": 0.0002,
+        "infectious_days": 2,
+        "n_route_failures": 0,
+        "route_absent_frac": [
+          0.5,
+          0.8
+        ],
+        "n_caregiving_spikes": 0,
+        "n_flu_waves": 1,
+        "reply_rate": [
+          0.6,
+          0.9
+        ],
+        "reply_delay_max": 2,
+        "label_accuracy": 0.85
+      },
+      "test": {
+        "name": "B",
+        "n_days": 100,
+        "seed": 1000,
+        "base_absence_rate": 0.045,
+        "chronic_shape": 0.4,
+        "n_contagion": 2,
+        "beta": 8e-05,
+        "infectious_days": 3,
+        "n_route_failures": 3,
+        "route_absent_frac": [
+          0.3,
+          0.5
+        ],
+        "n_caregiving_spikes": 2,
+        "n_flu_waves": 1,
+        "reply_rate": [
+          0.4,
+          0.6
+        ],
+        "reply_delay_max": 3,
+        "label_accuracy": 0.8
+      },
+      "test_null": {
+        "name": "B-null",
+        "n_days": 100,
+        "seed": 1000,
+        "base_absence_rate": 0.045,
+        "chronic_shape": 0.4,
+        "n_contagion": 0,
+        "beta": 8e-05,
+        "infectious_days": 3,
+        "n_route_failures": 0,
+        "route_absent_frac": [
+          0.3,
+          0.5
+        ],
+        "n_caregiving_spikes": 0,
+        "n_flu_waves": 1,
+        "reply_rate": [
+          0.4,
+          0.6
+        ],
+        "reply_delay_max": 3,
+        "label_accuracy": 0.8
+      }
+    },
+    "label_noise_model": "observed = true w.p. accuracy, else a uniformly drawn other barrier (evaluate.relabel; the default rows use the simulator's own noise model)",
+    "timings_s": {
+      "total": 129.26,
+      "simulate_and_scan_wall": 128.12,
+      "simulate_cpu": 4.44,
+      "scan_cpu": 123.68,
+      "evaluate": 1.14,
+      "n_runs_scanned": 90,
+      "scan_ms_per_run_day": 22.53,
+      "jobs": 1
+    },
+    "n_events_test": 70
+  },
+  "thresholds": {
+    "content_only": {
+      "threshold": [
+        0.045,
+        1.2589188554292037
+      ],
+      "p_threshold": 0.045,
+      "llr_tiebreak": 1.2589188554292037,
+      "null_false_alarms": 30,
+      "null_days": 610,
+      "null_fa_per_20_days": 0.9836065573770492
+    },
+    "graph_only": {
+      "threshold": [
+        0.03,
+        6.7951485454332765
+      ],
+      "p_threshold": 0.03,
+      "llr_tiebreak": 6.7951485454332765,
+      "null_false_alarms": 30,
+      "null_days": 610,
+      "null_fa_per_20_days": 0.9836065573770492
+    },
+    "combined": {
+      "threshold": [
+        0.01,
+        1.6223760934165177
+      ],
+      "p_threshold": 0.01,
+      "llr_tiebreak": 1.6223760934165177,
+      "null_false_alarms": 30,
+      "null_days": 610,
+      "null_fa_per_20_days": 0.9836065573770492
+    },
+    "graph_labels": {
+      "threshold": [
+        0.03,
+        6.7951485454332765
+      ],
+      "p_threshold": 0.03,
+      "llr_tiebreak": 6.7951485454332765,
+      "null_false_alarms": 30,
+      "null_days": 610,
+      "null_fa_per_20_days": 0.9836065573770492
+    }
+  },
+  "test": {
+    "content_only": {
+      "n_events": 70,
+      "n_events_excluded": 0,
+      "recall": 0.14285714285714285,
+      "recall_by_kind": {
+        "caregiving_spike": {
+          "n": 20,
+          "detected": 1,
+          "recall": 0.05
+        },
+        "contagion": {
+          "n": 20,
+          "detected": 4,
+          "recall": 0.2
+        },
+        "route_failure": {
+          "n": 30,
+          "detected": 5,
+          "recall": 0.16666666666666666
+        }
+      },
+      "pct_detected_by_onset_plus_2": 0.11428571428571428,
+      "delay": {
+        "n": 10,
+        "median": 1.0,
+        "q1": 0.0,
+        "q3": 2.0
+      },
+      "false_alarms": 48,
+      "days": 610,
+      "fa_per_20_days": 1.5737704918032787,
+      "attribution_confusion": {
+        "illness": {
+          "illness": 4,
+          "transportation": 0,
+          "other": 0,
+          "missed": 16
+        },
+        "transportation": {
+          "illness": 0,
+          "transportation": 5,
+          "other": 0,
+          "missed": 25
+        },
+        "other": {
+          "illness": 0,
+          "transportation": 0,
+          "other": 1,
+          "missed": 19
+        }
+      },
+      "first_tp_layer": {
+        "grade": 4,
+        "school": 6
+      },
+      "contagion_tp_via": {
+        "contact_only": 0,
+        "section_only": 0,
+        "both": 0
+      },
+      "lead_vs_ears_c1": {
+        "lead": {
+          "n": 9,
+          "median": 1.0,
+          "q1": 0.0,
+          "q3": 2.0
+        },
+        "only_ours": 1,
+        "only_baseline": 31,
+        "neither": 29
+      },
+      "test_null_fa_per_20_days": 1.180327868852459
+    },
+    "graph_only": {
+      "n_events": 70,
+      "n_events_excluded": 0,
+      "recall": 0.5285714285714286,
+      "recall_by_kind": {
+        "caregiving_spike": {
+          "n": 20,
+          "detected": 6,
+          "recall": 0.3
+        },
+        "contagion": {
+          "n": 20,
+          "detected": 3,
+          "recall": 0.15
+        },
+        "route_failure": {
+          "n": 30,
+          "detected": 28,
+          "recall": 0.9333333333333333
+        }
+      },
+      "pct_detected_by_onset_plus_2": 0.5,
+      "delay": {
+        "n": 37,
+        "median": 0.0,
+        "q1": 0.0,
+        "q3": 0.0
+      },
+      "false_alarms": 26,
+      "days": 610,
+      "fa_per_20_days": 0.8524590163934426,
+      "attribution_confusion": {
+        "illness": {
+          "illness": 3,
+          "transportation": 0,
+          "other": 0,
+          "missed": 17
+        },
+        "transportation": {
+          "illness": 0,
+          "transportation": 27,
+          "other": 1,
+          "missed": 2
+        },
+        "other": {
+          "illness": 0,
+          "transportation": 0,
+          "other": 6,
+          "missed": 14
+        }
+      },
+      "first_tp_layer": {
+        "route": 28,
+        "section": 2,
+        "neighborhood": 6,
+        "contact": 1
+      },
+      "contagion_tp_via": {
+        "contact_only": 1,
+        "section_only": 1,
+        "both": 1
+      },
+      "lead_vs_ears_c1": {
+        "lead": {
+          "n": 21,
+          "median": 0.0,
+          "q1": 0.0,
+          "q3": 0.0
+        },
+        "only_ours": 16,
+        "only_baseline": 19,
+        "neither": 14
+      },
+      "test_null_fa_per_20_days": 0.5573770491803278
+    },
+    "combined": {
+      "n_events": 70,
+      "n_events_excluded": 0,
+      "recall": 0.3,
+      "recall_by_kind": {
+        "caregiving_spike": {
+          "n": 20,
+          "detected": 3,
+          "recall": 0.15
+        },
+        "contagion": {
+          "n": 20,
+          "detected": 7,
+          "recall": 0.35
+        },
+        "route_failure": {
+          "n": 30,
+          "detected": 11,
+          "recall": 0.36666666666666664
+        }
+      },
+      "pct_detected_by_onset_plus_2": 0.24285714285714285,
+      "delay": {
+        "n": 21,
+        "median": 2.0,
+        "q1": 1.0,
+        "q3": 2.0
+      },
+      "false_alarms": 13,
+      "days": 610,
+      "fa_per_20_days": 0.4262295081967213,
+      "attribution_confusion": {
+        "illness": {
+          "illness": 7,
+          "transportation": 0,
+          "other": 0,
+          "missed": 13
+        },
+        "transportation": {
+          "illness": 1,
+          "transportation": 10,
+          "other": 0,
+          "missed": 19
+        },
+        "other": {
+          "illness": 0,
+          "transportation": 0,
+          "other": 3,
+          "missed": 17
+        }
+      },
+      "first_tp_layer": {
+        "route": 10,
+        "section": 3,
+        "contact": 2,
+        "neighborhood": 4,
+        "grade": 2
+      },
+      "contagion_tp_via": {
+        "contact_only": 3,
+        "section_only": 3,
+        "both": 1
+      },
+      "lead_vs_ears_c1": {
+        "lead": {
+          "n": 13,
+          "median": -1.0,
+          "q1": -2.0,
+          "q3": 2.0
+        },
+        "only_ours": 8,
+        "only_baseline": 27,
+        "neither": 22
+      },
+      "test_null_fa_per_20_days": 0.45901639344262296
+    },
+    "graph_labels": {
+      "n_events": 70,
+      "n_events_excluded": 0,
+      "recall": 0.5142857142857142,
+      "recall_by_kind": {
+        "caregiving_spike": {
+          "n": 20,
+          "detected": 6,
+          "recall": 0.3
+        },
+        "contagion": {
+          "n": 20,
+          "detected": 3,
+          "recall": 0.15
+        },
+        "route_failure": {
+          "n": 30,
+          "detected": 27,
+          "recall": 0.9
+        }
+      },
+      "pct_detected_by_onset_plus_2": 0.4714285714285714,
+      "delay": {
+        "n": 36,
+        "median": 0.0,
+        "q1": 0.0,
+        "q3": 0.0
+      },
+      "false_alarms": 26,
+      "days": 610,
+      "fa_per_20_days": 0.8524590163934426,
+      "attribution_confusion": {
+        "illness": {
+          "illness": 2,
+          "transportation": 0,
+          "other": 1,
+          "missed": 17
+        },
+        "transportation": {
+          "illness": 0,
+          "transportation": 26,
+          "other": 2,
+          "missed": 2
+        },
+        "other": {
+          "illness": 0,
+          "transportation": 0,
+          "other": 6,
+          "missed": 14
+        }
+      },
+      "first_tp_layer": {
+        "route": 26,
+        "section": 2,
+        "neighborhood": 7,
+        "contact": 1
+      },
+      "contagion_tp_via": {
+        "contact_only": 1,
+        "section_only": 1,
+        "both": 1
+      },
+      "lead_vs_ears_c1": {
+        "lead": {
+          "n": 21,
+          "median": 0.0,
+          "q1": 0.0,
+          "q3": 0.0
+        },
+        "only_ours": 15,
+        "only_baseline": 19,
+        "neither": 15
+      },
+      "test_null_fa_per_20_days": 0.6229508196721312
+    }
+  },
+  "bh_q_0.10": {
+    "content_only": {
+      "recall": 0.11428571428571428,
+      "fa_per_20_days": 1.0163934426229508,
+      "pct_detected_by_onset_plus_2": 0.08571428571428572,
+      "tune_null_fa_per_20_days": 0.6885245901639344,
+      "test_null_fa_per_20_days": 0.8852459016393442
+    },
+    "graph_only": {
+      "recall": 0.5571428571428572,
+      "fa_per_20_days": 1.2459016393442623,
+      "pct_detected_by_onset_plus_2": 0.5285714285714286,
+      "tune_null_fa_per_20_days": 1.180327868852459,
+      "test_null_fa_per_20_days": 0.5901639344262295
+    },
+    "combined": {
+      "recall": 0.3,
+      "fa_per_20_days": 0.6229508196721312,
+      "pct_detected_by_onset_plus_2": 0.24285714285714285,
+      "tune_null_fa_per_20_days": 0.6229508196721312,
+      "test_null_fa_per_20_days": 1.0163934426229508
+    },
+    "graph_labels": {
+      "recall": 0.5428571428571428,
+      "fa_per_20_days": 1.0819672131147542,
+      "pct_detected_by_onset_plus_2": 0.5,
+      "tune_null_fa_per_20_days": 1.2131147540983607,
+      "test_null_fa_per_20_days": 0.6557377049180327
+    }
+  },
+  "ears_c1": {
+    "n_events": 70,
+    "recall": 0.5714285714285714,
+    "pct_detected_by_onset_plus_2": 0.4142857142857143,
+    "delay": {
+      "n": 40,
+      "median": 0.0,
+      "q1": 0.0,
+      "q3": 3.0
+    },
+    "false_alarm_days": 19,
+    "days": 610,
+    "fa_per_20_days": 0.6229508196721312,
+    "test_null_fa_per_20_days": 1.5737704918032787
+  },
+  "curve": {
+    "content_only": [
+      {
+        "threshold": 1e-06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.014285714285714285
+      },
+      {
+        "threshold": 3.0954359274983764e-06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.014285714285714285
+      },
+      {
+        "threshold": 9.581723581247715e-06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.014285714285714285
+      },
+      {
+        "threshold": 2.9659611420752585e-05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.014285714285714285
+      },
+      {
+        "threshold": 9.180942678743853e-05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.06557377049180328,
+        "recall": 0.014285714285714285
+      },
+      {
+        "threshold": 0.0002841901981608691,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.09836065573770492,
+        "recall": 0.014285714285714285
+      },
+      {
+        "threshold": 0.0008796925496300363,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.09836065573770492,
+        "recall": 0.02857142857142857
+      },
+      {
+        "threshold": 0.0027230319232774605,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.06557377049180328,
+        "test_fa_per_20_days": 0.16393442622950818,
+        "recall": 0.04285714285714286
+      },
+      {
+        "threshold": 0.005,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.06557377049180328,
+        "test_fa_per_20_days": 0.19672131147540983,
+        "recall": 0.04285714285714286
+      },
+      {
+        "threshold": 0.008428970847038045,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.06557377049180328,
+        "test_fa_per_20_days": 0.19672131147540983,
+        "recall": 0.04285714285714286
+      },
+      {
+        "threshold": 0.01,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.32786885245901637,
+        "test_fa_per_20_days": 0.39344262295081966,
+        "recall": 0.05714285714285714
+      },
+      {
+        "threshold": 0.015,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.45901639344262296,
+        "test_fa_per_20_days": 0.5901639344262295,
+        "recall": 0.07142857142857142
+      },
+      {
+        "threshold": 0.02,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.4918032786885246,
+        "test_fa_per_20_days": 0.7213114754098361,
+        "recall": 0.07142857142857142
+      },
+      {
+        "threshold": 0.025,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.5901639344262295,
+        "test_fa_per_20_days": 0.9508196721311475,
+        "recall": 0.07142857142857142
+      },
+      {
+        "threshold": 0.02609133919175796,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.5901639344262295,
+        "test_fa_per_20_days": 0.9508196721311475,
+        "recall": 0.07142857142857142
+      },
+      {
+        "threshold": 0.03,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.7540983606557377,
+        "test_fa_per_20_days": 1.0163934426229508,
+        "recall": 0.11428571428571428
+      },
+      {
+        "threshold": 0.035,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.819672131147541,
+        "test_fa_per_20_days": 1.0819672131147542,
+        "recall": 0.11428571428571428
+      },
+      {
+        "threshold": 0.04,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.8852459016393442,
+        "test_fa_per_20_days": 1.3442622950819672,
+        "recall": 0.12857142857142856
+      },
+      {
+        "threshold": 0.045,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.0163934426229508,
+        "test_fa_per_20_days": 1.5737704918032787,
+        "recall": 0.14285714285714285
+      },
+      {
+        "threshold": [
+          0.045,
+          1.2589188554292037
+        ],
+        "calibrated": true,
+        "tune_null_fa_per_20_days": 0.9836065573770492,
+        "test_fa_per_20_days": 1.5737704918032787,
+        "recall": 0.14285714285714285
+      },
+      {
+        "threshold": 0.05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.1147540983606556,
+        "test_fa_per_20_days": 1.7704918032786885,
+        "recall": 0.14285714285714285
+      },
+      {
+        "threshold": 0.055,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.2459016393442623,
+        "test_fa_per_20_days": 1.9672131147540983,
+        "recall": 0.15714285714285714
+      },
+      {
+        "threshold": 0.06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.4098360655737705,
+        "test_fa_per_20_days": 2.098360655737705,
+        "recall": 0.15714285714285714
+      },
+      {
+        "threshold": 0.065,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.639344262295082,
+        "test_fa_per_20_days": 2.2295081967213113,
+        "recall": 0.15714285714285714
+      },
+      {
+        "threshold": 0.07,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.7704918032786885,
+        "test_fa_per_20_days": 2.2950819672131146,
+        "recall": 0.17142857142857143
+      },
+      {
+        "threshold": 0.075,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.9344262295081966,
+        "test_fa_per_20_days": 2.360655737704918,
+        "recall": 0.18571428571428572
+      },
+      {
+        "threshold": 0.08,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.0327868852459017,
+        "test_fa_per_20_days": 2.459016393442623,
+        "recall": 0.18571428571428572
+      },
+      {
+        "threshold": 0.08076406873071404,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.0327868852459017,
+        "test_fa_per_20_days": 2.459016393442623,
+        "recall": 0.18571428571428572
+      },
+      {
+        "threshold": 0.085,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.1311475409836067,
+        "test_fa_per_20_days": 2.6557377049180326,
+        "recall": 0.2
+      },
+      {
+        "threshold": 0.09,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.360655737704918,
+        "test_fa_per_20_days": 2.9836065573770494,
+        "recall": 0.2
+      },
+      {
+        "threshold": 0.095,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.4918032786885247,
+        "test_fa_per_20_days": 3.081967213114754,
+        "recall": 0.2
+      },
+      {
+        "threshold": 0.1,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.5901639344262297,
+        "test_fa_per_20_days": 3.278688524590164,
+        "recall": 0.2
+      },
+      {
+        "threshold": 0.25,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 5.278688524590164,
+        "test_fa_per_20_days": 7.868852459016393,
+        "recall": 0.2857142857142857
+      }
+    ],
+    "graph_only": [
+      {
+        "threshold": 1e-06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.15714285714285714
+      },
+      {
+        "threshold": 3.0954359274983764e-06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.17142857142857143
+      },
+      {
+        "threshold": 9.581723581247715e-06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.18571428571428572
+      },
+      {
+        "threshold": 2.9659611420752585e-05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.06557377049180328,
+        "recall": 0.2
+      },
+      {
+        "threshold": 9.180942678743853e-05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.06557377049180328,
+        "recall": 0.2857142857142857
+      },
+      {
+        "threshold": 0.0002841901981608691,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.06557377049180328,
+        "recall": 0.32857142857142857
+      },
+      {
+        "threshold": 0.0008796925496300363,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.06557377049180328,
+        "recall": 0.37142857142857144
+      },
+      {
+        "threshold": 0.0027230319232774605,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.03278688524590164,
+        "test_fa_per_20_days": 0.13114754098360656,
+        "recall": 0.4
+      },
+      {
+        "threshold": 0.005,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.06557377049180328,
+        "test_fa_per_20_days": 0.16393442622950818,
+        "recall": 0.4
+      },
+      {
+        "threshold": 0.008428970847038045,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.06557377049180328,
+        "test_fa_per_20_days": 0.16393442622950818,
+        "recall": 0.4
+      },
+      {
+        "threshold": 0.01,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.26229508196721313,
+        "test_fa_per_20_days": 0.4918032786885246,
+        "recall": 0.45714285714285713
+      },
+      {
+        "threshold": 0.015,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.4262295081967213,
+        "test_fa_per_20_days": 0.6229508196721312,
+        "recall": 0.5
+      },
+      {
+        "threshold": 0.02,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.7213114754098361,
+        "test_fa_per_20_days": 0.7213114754098361,
+        "recall": 0.5142857142857142
+      },
+      {
+        "threshold": 0.025,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.9508196721311475,
+        "test_fa_per_20_days": 0.8524590163934426,
+        "recall": 0.5285714285714286
+      },
+      {
+        "threshold": 0.02609133919175796,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.9508196721311475,
+        "test_fa_per_20_days": 0.8524590163934426,
+        "recall": 0.5285714285714286
+      },
+      {
+        "threshold": 0.03,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.2131147540983607,
+        "test_fa_per_20_days": 1.1147540983606556,
+        "recall": 0.5428571428571428
+      },
+      {
+        "threshold": [
+          0.03,
+          6.7951485454332765
+        ],
+        "calibrated": true,
+        "tune_null_fa_per_20_days": 0.9836065573770492,
+        "test_fa_per_20_days": 0.8524590163934426,
+        "recall": 0.5285714285714286
+      },
+      {
+        "threshold": 0.035,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.4754098360655739,
+        "test_fa_per_20_days": 1.1475409836065573,
+        "recall": 0.5428571428571428
+      },
+      {
+        "threshold": 0.04,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.7049180327868851,
+        "test_fa_per_20_days": 1.3770491803278688,
+        "recall": 0.5571428571428572
+      },
+      {
+        "threshold": 0.045,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.9344262295081966,
+        "test_fa_per_20_days": 1.5081967213114753,
+        "recall": 0.5571428571428572
+      },
+      {
+        "threshold": 0.05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.0655737704918034,
+        "test_fa_per_20_days": 1.6065573770491803,
+        "recall": 0.5571428571428572
+      },
+      {
+        "threshold": 0.055,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.3934426229508197,
+        "test_fa_per_20_days": 1.8360655737704918,
+        "recall": 0.5571428571428572
+      },
+      {
+        "threshold": 0.06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.5901639344262297,
+        "test_fa_per_20_days": 1.9672131147540983,
+        "recall": 0.5571428571428572
+      },
+      {
+        "threshold": 0.065,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.721311475409836,
+        "test_fa_per_20_days": 2.0655737704918034,
+        "recall": 0.5571428571428572
+      },
+      {
+        "threshold": 0.07,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.8524590163934427,
+        "test_fa_per_20_days": 2.3278688524590163,
+        "recall": 0.5857142857142857
+      },
+      {
+        "threshold": 0.075,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 3.0163934426229506,
+        "test_fa_per_20_days": 2.5901639344262297,
+        "recall": 0.6
+      },
+      {
+        "threshold": 0.08,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 3.2459016393442623,
+        "test_fa_per_20_days": 2.721311475409836,
+        "recall": 0.6142857142857143
+      },
+      {
+        "threshold": 0.08076406873071404,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 3.2459016393442623,
+        "test_fa_per_20_days": 2.721311475409836,
+        "recall": 0.6142857142857143
+      },
+      {
+        "threshold": 0.085,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 3.377049180327869,
+        "test_fa_per_20_days": 2.8852459016393444,
+        "recall": 0.6142857142857143
+      },
+      {
+        "threshold": 0.09,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 3.5081967213114753,
+        "test_fa_per_20_days": 3.081967213114754,
+        "recall": 0.6285714285714286
+      },
+      {
+        "threshold": 0.095,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 3.7049180327868854,
+        "test_fa_per_20_days": 3.278688524590164,
+        "recall": 0.6428571428571429
+      },
+      {
+        "threshold": 0.1,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 3.901639344262295,
+        "test_fa_per_20_days": 3.442622950819672,
+        "recall": 0.6428571428571429
+      },
+      {
+        "threshold": 0.25,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 10.131147540983607,
+        "test_fa_per_20_days": 9.180327868852459,
+        "recall": 0.7571428571428571
+      }
+    ],
+    "combined": [
+      {
+        "threshold": 1e-06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.014285714285714285
+      },
+      {
+        "threshold": 3.0954359274983764e-06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.014285714285714285
+      },
+      {
+        "threshold": 9.581723581247715e-06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.02857142857142857
+      },
+      {
+        "threshold": 2.9659611420752585e-05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.02857142857142857
+      },
+      {
+        "threshold": 9.180942678743853e-05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.04285714285714286
+      },
+      {
+        "threshold": 0.0002841901981608691,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.03278688524590164,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.1
+      },
+      {
+        "threshold": 0.0008796925496300363,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.13114754098360656,
+        "test_fa_per_20_days": 0.06557377049180328,
+        "recall": 0.1
+      },
+      {
+        "threshold": 0.0027230319232774605,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.16393442622950818,
+        "test_fa_per_20_days": 0.09836065573770492,
+        "recall": 0.18571428571428572
+      },
+      {
+        "threshold": 0.005,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.4262295081967213,
+        "test_fa_per_20_days": 0.16393442622950818,
+        "recall": 0.2571428571428571
+      },
+      {
+        "threshold": 0.008428970847038045,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.4262295081967213,
+        "test_fa_per_20_days": 0.16393442622950818,
+        "recall": 0.2571428571428571
+      },
+      {
+        "threshold": 0.01,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.0163934426229508,
+        "test_fa_per_20_days": 0.4262295081967213,
+        "recall": 0.3
+      },
+      {
+        "threshold": [
+          0.01,
+          1.6223760934165177
+        ],
+        "calibrated": true,
+        "tune_null_fa_per_20_days": 0.9836065573770492,
+        "test_fa_per_20_days": 0.4262295081967213,
+        "recall": 0.3
+      },
+      {
+        "threshold": 0.015,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.5737704918032787,
+        "test_fa_per_20_days": 0.7213114754098361,
+        "recall": 0.34285714285714286
+      },
+      {
+        "threshold": 0.02,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.0655737704918034,
+        "test_fa_per_20_days": 1.0491803278688525,
+        "recall": 0.38571428571428573
+      },
+      {
+        "threshold": 0.025,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.6557377049180326,
+        "test_fa_per_20_days": 1.3770491803278688,
+        "recall": 0.4142857142857143
+      },
+      {
+        "threshold": 0.02609133919175796,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.6557377049180326,
+        "test_fa_per_20_days": 1.3770491803278688,
+        "recall": 0.4142857142857143
+      },
+      {
+        "threshold": 0.03,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 3.442622950819672,
+        "test_fa_per_20_days": 1.7377049180327868,
+        "recall": 0.42857142857142855
+      },
+      {
+        "threshold": 0.035,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 4.131147540983607,
+        "test_fa_per_20_days": 2.1311475409836067,
+        "recall": 0.4857142857142857
+      },
+      {
+        "threshold": 0.04,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 4.622950819672131,
+        "test_fa_per_20_days": 2.459016393442623,
+        "recall": 0.5
+      },
+      {
+        "threshold": 0.045,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 5.213114754098361,
+        "test_fa_per_20_days": 3.1147540983606556,
+        "recall": 0.5285714285714286
+      },
+      {
+        "threshold": 0.05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 5.967213114754099,
+        "test_fa_per_20_days": 3.442622950819672,
+        "recall": 0.5571428571428572
+      },
+      {
+        "threshold": 0.055,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 6.622950819672131,
+        "test_fa_per_20_days": 3.7704918032786887,
+        "recall": 0.5714285714285714
+      },
+      {
+        "threshold": 0.06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 7.278688524590164,
+        "test_fa_per_20_days": 4.19672131147541,
+        "recall": 0.5714285714285714
+      },
+      {
+        "threshold": 0.065,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 7.868852459016393,
+        "test_fa_per_20_days": 4.655737704918033,
+        "recall": 0.5857142857142857
+      },
+      {
+        "threshold": 0.07,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 8.655737704918034,
+        "test_fa_per_20_days": 4.918032786885246,
+        "recall": 0.5857142857142857
+      },
+      {
+        "threshold": 0.075,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 9.180327868852459,
+        "test_fa_per_20_days": 5.147540983606557,
+        "recall": 0.6
+      },
+      {
+        "threshold": 0.08,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 9.672131147540984,
+        "test_fa_per_20_days": 5.60655737704918,
+        "recall": 0.6285714285714286
+      },
+      {
+        "threshold": 0.08076406873071404,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 9.672131147540984,
+        "test_fa_per_20_days": 5.60655737704918,
+        "recall": 0.6285714285714286
+      },
+      {
+        "threshold": 0.085,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 10.19672131147541,
+        "test_fa_per_20_days": 6.131147540983607,
+        "recall": 0.6285714285714286
+      },
+      {
+        "threshold": 0.09,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 11.049180327868852,
+        "test_fa_per_20_days": 6.590163934426229,
+        "recall": 0.6285714285714286
+      },
+      {
+        "threshold": 0.095,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 11.737704918032787,
+        "test_fa_per_20_days": 6.918032786885246,
+        "recall": 0.6285714285714286
+      },
+      {
+        "threshold": 0.1,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 12.459016393442623,
+        "test_fa_per_20_days": 7.344262295081967,
+        "recall": 0.6428571428571429
+      },
+      {
+        "threshold": 0.25,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 36.19672131147541,
+        "test_fa_per_20_days": 20.721311475409838,
+        "recall": 0.7571428571428571
+      }
+    ],
+    "graph_labels": [
+      {
+        "threshold": 1e-06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.15714285714285714
+      },
+      {
+        "threshold": 3.0954359274983764e-06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.17142857142857143
+      },
+      {
+        "threshold": 9.581723581247715e-06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.2
+      },
+      {
+        "threshold": 2.9659611420752585e-05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.2
+      },
+      {
+        "threshold": 9.180942678743853e-05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.2857142857142857
+      },
+      {
+        "threshold": 0.0002841901981608691,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.32857142857142857
+      },
+      {
+        "threshold": 0.0008796925496300363,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.37142857142857144
+      },
+      {
+        "threshold": 0.0027230319232774605,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.03278688524590164,
+        "test_fa_per_20_days": 0.13114754098360656,
+        "recall": 0.38571428571428573
+      },
+      {
+        "threshold": 0.005,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.06557377049180328,
+        "test_fa_per_20_days": 0.16393442622950818,
+        "recall": 0.38571428571428573
+      },
+      {
+        "threshold": 0.008428970847038045,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.06557377049180328,
+        "test_fa_per_20_days": 0.16393442622950818,
+        "recall": 0.38571428571428573
+      },
+      {
+        "threshold": 0.01,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.26229508196721313,
+        "test_fa_per_20_days": 0.36065573770491804,
+        "recall": 0.44285714285714284
+      },
+      {
+        "threshold": 0.015,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.4262295081967213,
+        "test_fa_per_20_days": 0.4918032786885246,
+        "recall": 0.4857142857142857
+      },
+      {
+        "threshold": 0.02,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.7213114754098361,
+        "test_fa_per_20_days": 0.6557377049180327,
+        "recall": 0.5
+      },
+      {
+        "threshold": 0.025,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.9508196721311475,
+        "test_fa_per_20_days": 0.8524590163934426,
+        "recall": 0.5142857142857142
+      },
+      {
+        "threshold": 0.02609133919175796,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.9508196721311475,
+        "test_fa_per_20_days": 0.8524590163934426,
+        "recall": 0.5142857142857142
+      },
+      {
+        "threshold": 0.03,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.2459016393442623,
+        "test_fa_per_20_days": 1.0163934426229508,
+        "recall": 0.5428571428571428
+      },
+      {
+        "threshold": [
+          0.03,
+          6.7951485454332765
+        ],
+        "calibrated": true,
+        "tune_null_fa_per_20_days": 0.9836065573770492,
+        "test_fa_per_20_days": 0.8524590163934426,
+        "recall": 0.5142857142857142
+      },
+      {
+        "threshold": 0.035,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.540983606557377,
+        "test_fa_per_20_days": 1.0819672131147542,
+        "recall": 0.5428571428571428
+      },
+      {
+        "threshold": 0.04,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.7704918032786885,
+        "test_fa_per_20_days": 1.278688524590164,
+        "recall": 0.5571428571428572
+      },
+      {
+        "threshold": 0.045,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.0327868852459017,
+        "test_fa_per_20_days": 1.3770491803278688,
+        "recall": 0.5571428571428572
+      },
+      {
+        "threshold": 0.05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.1639344262295084,
+        "test_fa_per_20_days": 1.4426229508196722,
+        "recall": 0.5571428571428572
+      },
+      {
+        "threshold": 0.055,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.5245901639344264,
+        "test_fa_per_20_days": 1.6721311475409837,
+        "recall": 0.5571428571428572
+      },
+      {
+        "threshold": 0.06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.7868852459016393,
+        "test_fa_per_20_days": 1.8032786885245902,
+        "recall": 0.5571428571428572
+      },
+      {
+        "threshold": 0.065,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.918032786885246,
+        "test_fa_per_20_days": 1.901639344262295,
+        "recall": 0.5571428571428572
+      },
+      {
+        "threshold": 0.07,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 3.081967213114754,
+        "test_fa_per_20_days": 2.19672131147541,
+        "recall": 0.5857142857142857
+      },
+      {
+        "threshold": 0.075,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 3.2459016393442623,
+        "test_fa_per_20_days": 2.4918032786885247,
+        "recall": 0.6
+      },
+      {
+        "threshold": 0.08,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 3.4754098360655736,
+        "test_fa_per_20_days": 2.622950819672131,
+        "recall": 0.6285714285714286
+      },
+      {
+        "threshold": 0.08076406873071404,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 3.4754098360655736,
+        "test_fa_per_20_days": 2.622950819672131,
+        "recall": 0.6285714285714286
+      },
+      {
+        "threshold": 0.085,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 3.6065573770491803,
+        "test_fa_per_20_days": 2.819672131147541,
+        "recall": 0.6285714285714286
+      },
+      {
+        "threshold": 0.09,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 3.7704918032786887,
+        "test_fa_per_20_days": 3.0163934426229506,
+        "recall": 0.6285714285714286
+      },
+      {
+        "threshold": 0.095,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 3.9672131147540983,
+        "test_fa_per_20_days": 3.180327868852459,
+        "recall": 0.6428571428571429
+      },
+      {
+        "threshold": 0.1,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 4.229508196721311,
+        "test_fa_per_20_days": 3.377049180327869,
+        "recall": 0.6428571428571429
+      },
+      {
+        "threshold": 0.25,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 11.311475409836065,
+        "test_fa_per_20_days": 9.180327868852459,
+        "recall": 0.7714285714285715
+      }
+    ]
+  },
+  "label_noise": [
+    {
+      "label_accuracy": 0.5,
+      "oracle": false,
+      "content_only": {
+        "recall": 0.04285714285714286,
+        "fa_per_20_days": 2.0,
+        "pct_detected_by_onset_plus_2": 0.014285714285714285,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 3,
+            "transportation": 0,
+            "other": 0,
+            "missed": 17
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 0,
+            "other": 2,
+            "missed": 28
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 0,
+            "other": 0,
+            "missed": 20
+          }
+        }
+      },
+      "combined": {
+        "recall": 0.14285714285714285,
+        "fa_per_20_days": 1.0163934426229508,
+        "pct_detected_by_onset_plus_2": 0.1,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 3,
+            "transportation": 0,
+            "other": 0,
+            "missed": 17
+          },
+          "transportation": {
+            "illness": 1,
+            "transportation": 5,
+            "other": 0,
+            "missed": 24
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 0,
+            "other": 3,
+            "missed": 17
+          }
+        }
+      },
+      "graph_labels": {
+        "recall": 0.45714285714285713,
+        "fa_per_20_days": 1.278688524590164,
+        "pct_detected_by_onset_plus_2": 0.4142857142857143,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 2,
+            "transportation": 0,
+            "other": 1,
+            "missed": 17
+          },
+          "transportation": {
+            "illness": 2,
+            "transportation": 20,
+            "other": 6,
+            "missed": 2
+          },
+          "other": {
+            "illness": 1,
+            "transportation": 0,
+            "other": 5,
+            "missed": 14
+          }
+        }
+      }
+    },
+    {
+      "label_accuracy": 0.6,
+      "oracle": false,
+      "content_only": {
+        "recall": 0.07142857142857142,
+        "fa_per_20_days": 2.1639344262295084,
+        "pct_detected_by_onset_plus_2": 0.05714285714285714,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 2,
+            "transportation": 0,
+            "other": 3,
+            "missed": 15
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 3,
+            "other": 0,
+            "missed": 27
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 0,
+            "other": 0,
+            "missed": 20
+          }
+        }
+      },
+      "combined": {
+        "recall": 0.14285714285714285,
+        "fa_per_20_days": 0.8524590163934426,
+        "pct_detected_by_onset_plus_2": 0.12857142857142856,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 1,
+            "transportation": 0,
+            "other": 2,
+            "missed": 17
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 8,
+            "other": 0,
+            "missed": 22
+          },
+          "other": {
+            "illness": 1,
+            "transportation": 0,
+            "other": 1,
+            "missed": 18
+          }
+        }
+      },
+      "graph_labels": {
+        "recall": 0.5,
+        "fa_per_20_days": 0.9180327868852459,
+        "pct_detected_by_onset_plus_2": 0.45714285714285713,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 2,
+            "transportation": 0,
+            "other": 1,
+            "missed": 17
+          },
+          "transportation": {
+            "illness": 1,
+            "transportation": 25,
+            "other": 2,
+            "missed": 2
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 0,
+            "other": 6,
+            "missed": 14
+          }
+        }
+      }
+    },
+    {
+      "label_accuracy": 0.7,
+      "oracle": false,
+      "content_only": {
+        "recall": 0.11428571428571428,
+        "fa_per_20_days": 1.7704918032786885,
+        "pct_detected_by_onset_plus_2": 0.08571428571428572,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 2,
+            "transportation": 0,
+            "other": 3,
+            "missed": 15
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 5,
+            "other": 0,
+            "missed": 25
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 0,
+            "other": 1,
+            "missed": 19
+          }
+        }
+      },
+      "combined": {
+        "recall": 0.22857142857142856,
+        "fa_per_20_days": 0.9508196721311475,
+        "pct_detected_by_onset_plus_2": 0.18571428571428572,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 3,
+            "transportation": 0,
+            "other": 1,
+            "missed": 16
+          },
+          "transportation": {
+            "illness": 1,
+            "transportation": 8,
+            "other": 0,
+            "missed": 21
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 0,
+            "other": 4,
+            "missed": 16
+          }
+        }
+      },
+      "graph_labels": {
+        "recall": 0.4857142857142857,
+        "fa_per_20_days": 0.9836065573770492,
+        "pct_detected_by_onset_plus_2": 0.44285714285714284,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 2,
+            "transportation": 0,
+            "other": 1,
+            "missed": 17
+          },
+          "transportation": {
+            "illness": 2,
+            "transportation": 23,
+            "other": 3,
+            "missed": 2
+          },
+          "other": {
+            "illness": 1,
+            "transportation": 0,
+            "other": 5,
+            "missed": 14
+          }
+        }
+      }
+    },
+    {
+      "label_accuracy": 0.8,
+      "oracle": false,
+      "content_only": {
+        "recall": 0.11428571428571428,
+        "fa_per_20_days": 2.0,
+        "pct_detected_by_onset_plus_2": 0.07142857142857142,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 4,
+            "transportation": 0,
+            "other": 0,
+            "missed": 16
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 3,
+            "other": 2,
+            "missed": 25
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 0,
+            "other": 1,
+            "missed": 19
+          }
+        }
+      },
+      "combined": {
+        "recall": 0.22857142857142856,
+        "fa_per_20_days": 0.9180327868852459,
+        "pct_detected_by_onset_plus_2": 0.17142857142857143,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 4,
+            "transportation": 0,
+            "other": 1,
+            "missed": 15
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 9,
+            "other": 1,
+            "missed": 20
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 0,
+            "other": 3,
+            "missed": 17
+          }
+        }
+      },
+      "graph_labels": {
+        "recall": 0.5285714285714286,
+        "fa_per_20_days": 0.9836065573770492,
+        "pct_detected_by_onset_plus_2": 0.4857142857142857,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 2,
+            "transportation": 0,
+            "other": 1,
+            "missed": 17
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 24,
+            "other": 4,
+            "missed": 2
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 0,
+            "other": 6,
+            "missed": 14
+          }
+        }
+      }
+    },
+    {
+      "label_accuracy": 0.9,
+      "oracle": false,
+      "content_only": {
+        "recall": 0.12857142857142856,
+        "fa_per_20_days": 1.8360655737704918,
+        "pct_detected_by_onset_plus_2": 0.1,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 2,
+            "transportation": 0,
+            "other": 0,
+            "missed": 18
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 6,
+            "other": 0,
+            "missed": 24
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 0,
+            "other": 1,
+            "missed": 19
+          }
+        }
+      },
+      "combined": {
+        "recall": 0.3,
+        "fa_per_20_days": 0.7213114754098361,
+        "pct_detected_by_onset_plus_2": 0.22857142857142856,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 5,
+            "transportation": 0,
+            "other": 0,
+            "missed": 15
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 13,
+            "other": 1,
+            "missed": 16
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 0,
+            "other": 3,
+            "missed": 17
+          }
+        }
+      },
+      "graph_labels": {
+        "recall": 0.5142857142857142,
+        "fa_per_20_days": 0.8852459016393442,
+        "pct_detected_by_onset_plus_2": 0.4714285714285714,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 2,
+            "transportation": 0,
+            "other": 1,
+            "missed": 17
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 26,
+            "other": 2,
+            "missed": 2
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 0,
+            "other": 6,
+            "missed": 14
+          }
+        }
+      }
+    },
+    {
+      "label_accuracy": 1.0,
+      "oracle": true,
+      "content_only": {
+        "recall": 0.14285714285714285,
+        "fa_per_20_days": 1.8688524590163935,
+        "pct_detected_by_onset_plus_2": 0.1,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 3,
+            "transportation": 0,
+            "other": 0,
+            "missed": 17
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 6,
+            "other": 0,
+            "missed": 24
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 0,
+            "other": 1,
+            "missed": 19
+          }
+        }
+      },
+      "combined": {
+        "recall": 0.35714285714285715,
+        "fa_per_20_days": 0.5901639344262295,
+        "pct_detected_by_onset_plus_2": 0.3142857142857143,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 4,
+            "transportation": 0,
+            "other": 0,
+            "missed": 16
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 16,
+            "other": 0,
+            "missed": 14
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 0,
+            "other": 5,
+            "missed": 15
+          }
+        }
+      },
+      "graph_labels": {
+        "recall": 0.5285714285714286,
+        "fa_per_20_days": 0.819672131147541,
+        "pct_detected_by_onset_plus_2": 0.4857142857142857,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 2,
+            "transportation": 0,
+            "other": 1,
+            "missed": 17
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 27,
+            "other": 1,
+            "missed": 2
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 0,
+            "other": 6,
+            "missed": 14
+          }
+        }
+      }
+    }
+  ]
+}

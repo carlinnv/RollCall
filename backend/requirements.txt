@@ -6,3 +6,4 @@ httpx==0.28.1
 numpy==2.4.6
 networkx==3.6.1
 scipy==1.17.1
+google-genai==3.3.0

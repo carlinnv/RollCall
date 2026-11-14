@@ -93,6 +93,7 @@ class SimRun:
     absences: List[AbsenceEvent]
     replies: List[Reply]
     events: List[PlantedEvent]
+    meta: dict = field(default_factory=dict)  # debug info from the simulator (route ids, seeds, ...)
 
 
 @dataclass

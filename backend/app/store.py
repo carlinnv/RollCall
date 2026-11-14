@@ -8,7 +8,7 @@ State lives in memory for the hackathon demo; `reset()` reloads the seed.
 import csv
 import io
 from datetime import date, datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 from .data import seed
 from .models import (
@@ -19,6 +19,8 @@ from .services import action_plan, classifier, clustering, learning_plan, revenu
 
 TODAY = date(2026, 11, 14)
 PRIOR_DAYS_RECOVERED = 14  # recovered through Attendance Recovery before this week (synthetic)
+COUNSELOR_ONLY_NOTE = ("Safety: with counselor. Automated messages to this household are paused; "
+                       "only the counselor contacts the family.")
 
 
 class Store:
@@ -72,7 +74,7 @@ class Store:
         """Run the safety gate, classify, and return the route: escalated | cluster | case | unknown."""
         absence = self.absences[absence_id]
         absence.reply = reply
-        result: Classification = classifier.classify(reply.text)
+        result: Classification = classifier.classify(reply.text, language=reply.language)
         absence.classification = result
 
         if result.safety_critical:
@@ -95,8 +97,21 @@ class Store:
     def absence_count(self, student_id: str) -> int:
         return sum(1 for a in self.absences.values() if a.student_id == student_id)
 
+    # ---------- safety gate (PRD 3 section 3) ----------
+    def suppressed_student_ids(self) -> Set[str]:
+        """Students no automated or drafted message may reach: anyone with an open safety
+        escalation, plus everyone in that student's household. Only the counselor contacts them."""
+        flagged = {e.student_id for e in self.escalations.values() if e.status == "open"}
+        households = {self.students[sid].household_id for sid in flagged if sid in self.students}
+        return {sid for sid, s in self.students.items() if sid in flagged or s.household_id in households}
+
+    def is_suppressed(self, student_id: str) -> bool:
+        return student_id in self.suppressed_student_ids()
+
     def check_in_message(self, absence: Absence) -> str:
         s = self.students[absence.student_id]
+        if self.is_suppressed(s.id):
+            return COUNSELOR_ONLY_NOTE
         n = self.absence_count(s.id)
         if s.preferred_language == "es":
             return (f"Hola {s.guardian_name}, extrañamos a {s.first_name} hoy ({n} ausencia(s) este año). "
@@ -131,10 +146,22 @@ class Store:
             cluster = next((c for c in self.clusters() if c.id == cluster_id), None)
             if cluster is None:
                 raise KeyError(f"cluster {cluster_id} not found")
-            plan = action_plan.for_cluster(cluster, self.students, TODAY)
+            suppressed = self.suppressed_student_ids()
+            withheld = [sid for sid in cluster.student_ids if sid in suppressed]
+            reachable = [sid for sid in cluster.student_ids if sid not in suppressed]
+            if not reachable:
+                raise ValueError("every family in this cluster is with the counselor; no automated plan")
+            plan = action_plan.for_cluster(cluster.model_copy(update={"student_ids": reachable}),
+                                           self.students, TODAY)
+            if withheld:
+                # Staff-facing note only; never names the student or the disclosure.
+                n = len(withheld)
+                plan.school_action += (f" Note: {n} student{'s' if n != 1 else ''} in this cluster "
+                                       f"{'are' if n != 1 else 'is'} with the counselor (safety) and "
+                                       f"excluded from this message.")
         elif absence_id:
             absence = self.absences[absence_id]
-            if absence_id in self.escalations:
+            if absence_id in self.escalations or self.is_suppressed(absence.student_id):
                 raise ValueError("safety cases are handled by the counselor, not automated plans")
             barrier = absence.classification.barrier if absence.classification else Barrier.UNKNOWN
             plan = action_plan.for_case(absence_id, barrier, self.students[absence.student_id], TODAY)
@@ -161,7 +188,10 @@ class Store:
             plan.approved_by = approved_by
         if send and plan.status == PlanStatus.APPROVED:
             sent_at = datetime.now().isoformat(timespec="seconds")
+            suppressed = self.suppressed_student_ids()  # an escalation may have opened after drafting
             for sid in plan.recipient_student_ids:
+                if sid in suppressed:
+                    continue
                 self.outbox.append({**action_plan.outbox_entry(plan, self.students[sid]), "sent_at": sent_at})
             plan.status = PlanStatus.SENT
         return plan
