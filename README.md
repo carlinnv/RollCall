@@ -57,7 +57,9 @@ The logic behind each feature is a deliberately simple stub with a stable interf
 
 ### iMessage channel (Photon 2.0 Beta)
 
-Copy `.env.example` to `.env` and fill in the `PHOTON_*` values. When they are set, the API polls Photon every 2 seconds on startup; without them the channel stays off and the "Simulate family reply" box still works.
+**Setting it up:** follow [PHOTON_SETUP.md](PHOTON_SETUP.md). For the full list of features and rules, see [PHOTON_FEATURES.md](PHOTON_FEATURES.md).
+
+When the `PHOTON_*` values are set in `.env`, the API polls Photon every 2 seconds on startup; without them the channel stays off and the "Simulate family reply" box still works.
 
 - `backend/app/services/photon_channel.py` — an inbound text from `PHOTON_TEST_SENDER` is treated as a reply from the guardian of `PHOTON_DEMO_STUDENT_ID` (default `S002`) and goes through the same `store.record_reply` path as a simulated reply. The family gets a short acknowledgement, except on safety-flagged messages (counselor only) and after `STOP`.
 - `backend/app/services/outreach.py` — the rules every outbound message must pass: no automated message to a household with an open safety escalation, none to a number that opted out, and no links. Also builds the first check-in text (no absence count; says who reads replies).

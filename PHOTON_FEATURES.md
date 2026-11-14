@@ -2,6 +2,8 @@
 
 What this branch adds: the Photon 2.0 (Beta) iMessage channel for PRD feature F2. Each section lists the files a feature uses and the rules it follows. Last updated Nov 14, 2026.
 
+To set the channel up on your machine, see [PHOTON_SETUP.md](PHOTON_SETUP.md).
+
 All paths are relative to the repo root. Tests for every feature are in `backend/tests/test_api.py` and run with Photon off.
 
 ---
