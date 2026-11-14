@@ -14,6 +14,23 @@ Definitions
   * Equal false-alarm rate: each detector's p-value threshold is chosen on null runs so false alarms are
     at most 1 per 20 scanned school days, then applied to event runs.
   * Delay d = first TP day - onset; lead vs EARS-C1 = d_ears - d_ours, paired per event.
+
+Detection vs attribution (two_stage and the confounded event types)
+  * A *matched* alarm for e is any alarm with purity >= 0.5 and t_a in [t_e, t_e + D_e + 2], whatever
+    its cause. For the all-cause detectors (ANY_DETECTORS: graph_only, two_stage) a matched alarm is a
+    true positive: detection is scored on purity and time only, and their cause is scored separately.
+    For the label detectors a TP also needs b_a == b_e, as in the PRD. Episodes of all-cause detectors
+    merge regardless of the cause (two_stage's cause changes as replies arrive).
+  * Detection recall = events with >= 1 matched alarm (any detector, cause ignored).
+  * The cause of alarm a on day t is detectors.attribution_at(a, t): two_stage re-attributes as replies
+    arrive; every other detector keeps a.barrier. Event e is correctly attributed on day t when some
+    matched alarm fired by t has cause b_e on t (the same "some alarm" rule as the PRD's TP).
+  * Actionable recall = events correctly attributed by the deadline t_e + D_e + 2 / evaluable events.
+    For label detectors it equals recall (a TP already has the right cause).
+  * Attribution accuracy among detected = actionable / detected. A stricter variant
+    (attribution_accuracy_first_alarm) scores only the first matched alarm, with its cause at the deadline.
+  * Time to correct attribution = first day correctly attributed - onset (actionable events);
+    also from the first matched alarm (detection_to_correct_attribution).
 """
 from __future__ import annotations
 
@@ -24,7 +41,7 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 import numpy as np
 
-from .detectors import DayResult, ears_c1, jaccard, select
+from .detectors import ANY_DETECTORS, DayResult, attribution_at, ears_c1, jaccard, select
 from .scan import BARRIERS
 from .types import Alarm, PlantedEvent, Reply, SimRun
 
@@ -87,15 +104,17 @@ def is_true_positive(alarm: Alarm, event: PlantedEvent, truth: TruthIndex, min_p
     return purity(alarm, event, truth) >= min_purity
 
 
-def merge_alarms(alarms: Iterable[Alarm], threshold: float = 0.5, max_gap: int = 2) -> List[List[Alarm]]:
-    """Group alarms into episodes: same barrier, Jaccard > threshold with the episode's latest zone,
-    and at most max_gap days after the episode's latest alarm."""
+def merge_alarms(alarms: Iterable[Alarm], threshold: float = 0.5, max_gap: int = 2,
+                 same_barrier: bool = True) -> List[List[Alarm]]:
+    """Group alarms into episodes: same barrier (unless same_barrier=False), Jaccard > threshold with the
+    episode's latest zone, and at most max_gap days after the episode's latest alarm."""
     episodes: List[List[Alarm]] = []
     for a in sorted(alarms, key=lambda x: (x.day, x.p_value)):
         best = None
         for ep in episodes:
             last = ep[-1]
-            if last.barrier == a.barrier and 0 <= a.day - last.day <= max_gap and jaccard(a.zone, last.zone) > threshold:
+            if ((not same_barrier or last.barrier == a.barrier) and 0 <= a.day - last.day <= max_gap
+                    and jaccard(a.zone, last.zone) > threshold):
                 best = ep
                 break
         if best is None:
@@ -103,6 +122,16 @@ def merge_alarms(alarms: Iterable[Alarm], threshold: float = 0.5, max_gap: int =
         else:
             best.append(a)
     return episodes
+
+
+def first_correct_day(alarm: Alarm, barrier: str) -> Optional[int]:
+    """First day >= alarm.day on which the alarm's cause is `barrier` (None: never, within its history)."""
+    if not alarm.attribution_history:
+        return alarm.day if alarm.barrier == barrier else None
+    for d, b, _ in alarm.attribution_history:
+        if b == barrier:
+            return max(d, alarm.day)
+    return None
 
 
 @dataclass
@@ -115,15 +144,32 @@ class EventOutcome:
     first_tp_day: Optional[int] = None
     first_tp_layer: Optional[str] = None
     tp_layers: List[str] = field(default_factory=list)
-    attributed: Optional[str] = None      # barrier of the first localized alarm (barrier ignored)
+    attributed: Optional[str] = None      # cause of the first matched alarm, as of the deadline
+    first_match_day: Optional[int] = None  # first matched alarm (purity + time, cause ignored)
+    first_match_layer: Optional[str] = None
+    first_match_provisional: Optional[bool] = None
+    first_correct_day: Optional[int] = None  # first day some matched alarm carries the right cause
+    deadline: int = 0                      # onset + duration + slack
 
     @property
     def detected(self) -> bool:
         return self.first_tp_day is not None
 
     @property
+    def detected_any(self) -> bool:
+        return self.first_match_day is not None
+
+    @property
+    def actionable(self) -> bool:
+        return self.first_correct_day is not None and self.first_correct_day <= self.deadline
+
+    @property
     def delay(self) -> Optional[int]:
         return None if self.first_tp_day is None else self.first_tp_day - self.onset
+
+    @property
+    def time_to_correct(self) -> Optional[int]:
+        return self.first_correct_day - self.onset if self.actionable else None
 
 
 @dataclass
@@ -137,35 +183,41 @@ class RunScore:
 
 
 def score_run(alarms: Sequence[Alarm], run: SimRun, days: Sequence[int], truth: Optional[TruthIndex] = None,
-              min_purity: float = 0.5, slack: int = SLACK_DAYS, merge_gap: int = 2) -> RunScore:
+              min_purity: float = 0.5, slack: int = SLACK_DAYS, merge_gap: int = 2,
+              match_barrier: Optional[bool] = None) -> RunScore:
+    """Score one run's alarms. match_barrier: does a TP need the right cause? Default: False when the
+    alarms come from an all-cause detector (ANY_DETECTORS), else True (PRD definition)."""
+    if match_barrier is None:
+        match_barrier = not any(a.detector in ANY_DETECTORS for a in alarms)
     days = list(days)
     lo, hi = (min(days), max(days)) if days else (0, -1)
     truth = truth or truth_index(run)
     targets = [e for e in run.events if e.should_alarm and lo <= e.onset <= hi]
     excluded = sum(1 for e in run.events if e.should_alarm and not lo <= e.onset <= hi)
-    outcomes = {e.id: EventOutcome(e.id, e.kind, e.barrier, e.onset, e.duration) for e in targets}
+    outcomes = {e.id: EventOutcome(e.id, e.kind, e.barrier, e.onset, e.duration,
+                                   deadline=e.onset + e.duration + slack) for e in targets}
     tp_alarm = set()
-    pur_cache: Dict[Tuple[int, str], float] = {}
-    for i, a in enumerate(sorted(alarms, key=lambda x: (x.day, x.p_value))):
+    for a in sorted(alarms, key=lambda x: (x.day, x.p_value)):
         for e in targets:
             if not in_interval(a.day, e, slack):
                 continue
-            key = (id(a), e.id)
-            pur = pur_cache.get(key)
-            if pur is None:
-                pur = pur_cache[key] = purity(a, e, truth)
-            if pur < min_purity:
+            if purity(a, e, truth) < min_purity:
                 continue
             o = outcomes[e.id]
-            if o.attributed is None:
-                o.attributed = a.barrier
-            if a.barrier == e.barrier:
+            if o.first_match_day is None:
+                o.first_match_day, o.first_match_layer = a.day, a.layer
+                o.first_match_provisional = bool(a.provisional)
+                o.attributed = attribution_at(a, o.deadline)
+            c = first_correct_day(a, e.barrier)
+            if c is not None and (o.first_correct_day is None or c < o.first_correct_day):
+                o.first_correct_day = c
+            if not match_barrier or a.barrier == e.barrier:
                 tp_alarm.add(id(a))
                 if o.first_tp_day is None:
                     o.first_tp_day, o.first_tp_layer = a.day, a.layer
                 if a.layer not in o.tp_layers:
                     o.tp_layers.append(a.layer)
-    episodes = merge_alarms(alarms, max_gap=merge_gap)
+    episodes = merge_alarms(alarms, max_gap=merge_gap, same_barrier=match_barrier)
     n_fa = sum(1 for ep in episodes if not any(id(a) in tp_alarm for a in ep))
     return RunScore(len(days), len(alarms), len(episodes), n_fa, list(outcomes.values()), excluded)
 
@@ -268,6 +320,28 @@ def _quantiles(x: Sequence[float]) -> Dict[str, Optional[float]]:
             "q3": float(np.percentile(a, 75))}
 
 
+def _attribution_block(events: Sequence[EventOutcome]) -> dict:
+    """Detection / actionable / attribution metrics over a list of event outcomes."""
+    n = len(events)
+    det = [e for e in events if e.detected_any]
+    act = [e for e in events if e.actionable]
+    first_ok = [e for e in det if e.attributed == e.barrier]
+    return {
+        "n": n,
+        "detected": len(det),
+        "actionable": len(act),
+        "detection_recall": (len(det) / n) if n else None,
+        "actionable_recall": (len(act) / n) if n else None,
+        "attribution_accuracy_among_detected": (len(act) / len(det)) if det else None,
+        "attribution_accuracy_first_alarm": (len(first_ok) / len(det)) if det else None,
+        "pct_actionable_by_onset_plus_2": (sum(1 for e in act if e.time_to_correct <= 2) / n) if n else None,
+        "time_to_correct_attribution": _quantiles([e.time_to_correct for e in act]),
+        "detection_to_correct_attribution": _quantiles([e.first_correct_day - e.first_match_day for e in act
+                                                        if e.first_match_day is not None]),
+        "provisional_at_first_alarm": (sum(1 for e in det if e.first_match_provisional) / len(det)) if det else None,
+    }
+
+
 def summarize(scores: Sequence[RunScore], slack: int = SLACK_DAYS) -> dict:
     events = [e for s in scores for e in s.events]
     n = len(events)
@@ -287,7 +361,13 @@ def summarize(scores: Sequence[RunScore], slack: int = SLACK_DAYS) -> dict:
     for e in det:
         layers[e.first_tp_layer] = layers.get(e.first_tp_layer, 0) + 1
     contagion = [e for e in events if e.kind == "contagion"]
+    kinds = sorted({e.kind for e in events})
     return {
+        **{k: v for k, v in _attribution_block(events).items() if k not in ("n", "detected", "actionable")},
+        "by_event_type": {k: {**_attribution_block([e for e in events if e.kind == k]),
+                              "recall": (sum(1 for e in events if e.kind == k and e.detected)
+                                         / max(1, sum(1 for e in events if e.kind == k)))}
+                          for k in kinds},
         "n_events": n,
         "n_events_excluded": sum(s.n_events_excluded for s in scores),
         "recall": (len(det) / n) if n else None,

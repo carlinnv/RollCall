@@ -20,6 +20,8 @@ Mechanisms (the detectors must not encode these; see PRD 2 "circularity"):
     neighborhood's households with younger kids keep a child home 1-3 days.
   * Flu wave (should_alarm=False): the illness rate of every student rises x2-3 for ~5 days,
     uniformly at random (not along contacts).
+  * Confounded events (bus_illness, road_closure, section_caregiving): events whose zone type
+    points at the wrong cause. See CONFOUNDED_EVENTS below; they were pre-registered.
 A student-day carries one cause. Planted events only take students who would otherwise be
 in school, except contagion, which overrides any other cause on its symptomatic days.
 
@@ -82,6 +84,57 @@ FLU_DAYS = (4, 6)
 FLU_MULT = (2.0, 3.0)
 BASELINE_DAYS = 40              # no planted event starts before this day when n_days >= 60
 
+# ----------------------------------------------------------------------------------------------
+# Pre-registered confounded events.
+CONFOUNDED_EVENTS = """
+These three event types were written down and fixed on 2026-11-14 BEFORE any detector was evaluated
+on them, and they must not be tuned afterwards to favour any detector. Each one breaks the
+"zone type = cause" shortcut that graph-only attribution relies on (in the original simulator every
+event type lined up with exactly one zone type, which is a simulator artifact, not reality):
+
+  bus_illness (truth: illness; zone type: route -> graph-only says "transportation")
+      An SEIR outbreak seeded in 1-2 riders of one bus route. Besides the school contact graph it
+      transmits along co-ridership: every pair of riders of that route who are both at school that
+      day shares BUS_CONTACT_S (~20 min) of contact, with the same p = 1 - exp(-beta * w). Same
+      outbreak-size conditioning as contagion (each re-seeding try draws a route afresh); school
+      contacts can still carry it off the bus. Realistic: respiratory and GI illness spreading on
+      school buses is well documented; the absences then cluster by route although the barrier is
+      illness, not a bus that failed to come.
+  road_closure (truth: transportation; zone type: neighborhood -> graph-only says "caregiving")
+      A road into one neighborhood served by (at least) two routes is closed for 1-2 days. Per
+      household and day: riders of those two routes living in the neighborhood are absent with
+      probability f ~ U(route_absent_frac); riders of those routes living elsewhere (bus delayed
+      or rerouted) with ROAD_THROUGH_FRAC * f; non-riders living in the neighborhood (car trips)
+      with ROAD_CAR_FRAC. Realistic: closures, floods, a broken bridge, or construction strand a
+      whole neighborhood, riders and drivers alike, and do not respect route boundaries.
+  section_caregiving (truth: caregiving or family obligation; zone type: section -> "illness")
+      A cultural or religious observance kept by families concentrated in one class section (for
+      example a language-program class): a share SECTION_OBS_FRAC of the section's households keep
+      their child home on the same 1-2 days (siblings in other sections join with
+      SECTION_SIBLING_JOIN), plus SECTION_OUTSIDE_RATE of other households in the school.
+      Realistic: families sharing a language or culture are often placed in the same section, and
+      observances fall on the same day(s) for all of them.
+
+One revision, made before any detector had been run on these events: a simulator-only check of
+event sizes showed bus_illness did not meet its own declared size conditioning (bus contacts on
+every route exploded to ~40% of Marseille under config A's beta; a single fixed small route
+fizzled to one case in Lyon under config B). Bus contacts were restricted to the seeded route and
+each re-seeding try now draws the route afresh. Nothing has been changed since detectors were run.
+"""
+BUS_CONTACT_S = 1200.0          # seconds of contact per co-rider pair per school day (~20 min ride)
+ROAD_DAYS = (1, 2)
+ROAD_THROUGH_FRAC = 0.5         # riders of the closed routes living elsewhere: absent w.p. 0.5 * f
+ROAD_CAR_FRAC = (0.15, 0.35)    # non-rider households of the closed neighborhood
+MIN_ROAD_HOUSEHOLDS = 3
+SECTION_OBS_FRAC = (0.25, 0.45)
+SECTION_OUTSIDE_RATE = 0.03
+SECTION_SIBLING_JOIN = 0.9
+SECTION_TWO_DAY_P = 0.4         # observance lasts 2 days with this probability, else 1
+MIN_SECTION_HOUSEHOLDS = 3
+MIN_SECTION_SIZE = 8
+
+ILLNESS_KINDS = ("contagion", "bus_illness")
+
 LANGUAGE_MIX: Dict[str, float] = {"en": 0.50, "es": 0.35, "vi": 0.10, "zh": 0.05}
 STYLE_MIX: Dict[str, float] = {"normal": 0.55, "terse": 0.30, "noisy": 0.15}
 DELAY_DECAY = 0.5               # P(delay = d) proportional to DELAY_DECAY ** d
@@ -98,7 +151,15 @@ CONFUSION: Dict[str, List[str]] = {
 }
 P_CONFUSE_TO_UNKNOWN = 0.4
 
-_PRIORITY_KINDS = ("contagion", "route_failure", "caregiving_spike", "flu_wave")
+# Planted events are applied from the end of this tuple to its start; later-applied kinds win
+# student-days (contagion and bus_illness override any other cause).
+_PRIORITY_KINDS = ("contagion", "bus_illness", "route_failure", "road_closure", "caregiving_spike",
+                   "section_caregiving", "flu_wave")
+BARRIER_OF_KIND: Dict[str, str] = {
+    "contagion": ILLNESS, "bus_illness": ILLNESS, "route_failure": TRANSPORTATION,
+    "road_closure": TRANSPORTATION, "caregiving_spike": CAREGIVING, "section_caregiving": CAREGIVING,
+    "flu_wave": ILLNESS,
+}
 
 
 # ----------------------------------------------------------------------------------------------
@@ -111,6 +172,7 @@ CONFIG_A = SimConfig(
     n_route_failures=2, route_absent_frac=(0.5, 0.8),
     n_caregiving_spikes=1, n_flu_waves=1,
     reply_rate=(0.6, 0.9), reply_delay_max=2, label_accuracy=0.85,
+    n_bus_illness=1, n_road_closures=1, n_section_caregiving=1,
 )
 
 # Held-out config B: different (mostly non-overlapping) ranges, tested once.
@@ -121,13 +183,15 @@ CONFIG_B = SimConfig(
     n_route_failures=3, route_absent_frac=(0.3, 0.5),
     n_caregiving_spikes=2, n_flu_waves=1,
     reply_rate=(0.4, 0.6), reply_delay_max=3, label_accuracy=0.80,
+    n_bus_illness=1, n_road_closures=1, n_section_caregiving=1,
 )
 
 
 def null_config(cfg: SimConfig) -> SimConfig:
     """Same config with no alarmable planted events (flu waves kept): for false-alarm calibration."""
     return dataclasses.replace(cfg, name=f"{cfg.name}-null", n_contagion=0, n_route_failures=0,
-                               n_caregiving_spikes=0)
+                               n_caregiving_spikes=0, n_bus_illness=0, n_road_closures=0,
+                               n_section_caregiving=0)
 
 
 # ----------------------------------------------------------------------------------------------
@@ -177,7 +241,10 @@ class _Grid:
 def _schedule(rng: np.random.Generator, cfg: SimConfig) -> List[Tuple[str, int]]:
     """Spread planted event onsets over [BASELINE_DAYS, n_days) in shuffled, non-overlapping slots."""
     kinds = (["contagion"] * cfg.n_contagion + ["route_failure"] * cfg.n_route_failures
-             + ["caregiving_spike"] * cfg.n_caregiving_spikes + ["flu_wave"] * cfg.n_flu_waves)
+             + ["caregiving_spike"] * cfg.n_caregiving_spikes + ["flu_wave"] * cfg.n_flu_waves
+             + ["bus_illness"] * getattr(cfg, "n_bus_illness", 0)
+             + ["road_closure"] * getattr(cfg, "n_road_closures", 0)
+             + ["section_caregiving"] * getattr(cfg, "n_section_caregiving", 0))
     if not kinds:
         return []
     start = BASELINE_DAYS if cfg.n_days >= 60 else max(1, cfg.n_days // 3)
@@ -185,9 +252,10 @@ def _schedule(rng: np.random.Generator, cfg: SimConfig) -> List[Tuple[str, int]]
     best, best_bad = None, None
     for _ in range(50):
         order = [kinds[i] for i in rng.permutation(len(kinds))]
-        # avoid: contagion in the last slot; flu wave right after a contagion (both illness)
-        bad = (order[-1] == "contagion" and len(order) > 1) + sum(
-            1 for a, b in zip(order, order[1:]) if {a, b} == {"contagion", "flu_wave"})
+        # avoid: an outbreak in the last slot; flu wave next to an outbreak (both illness)
+        bad = (order[-1] in ILLNESS_KINDS and len(order) > 1) + sum(
+            1 for a, b in zip(order, order[1:])
+            if (a in ILLNESS_KINDS and b == "flu_wave") or (b in ILLNESS_KINDS and a == "flu_wave"))
         if best_bad is None or bad < best_bad:
             best, best_bad = order, bad
         if bad == 0:
@@ -304,8 +372,12 @@ def _caregiving_spike(rng, cfg, school, hh_members, grid, ev, onset, young, used
     return {"neighborhood": nb, "households": len(hit)}
 
 
-def _seir(rng, cfg, school, idx, grid, seed_day, seeds, susceptible):
-    """One SEIR run (read-only on grid). Returns {student index: exposure day}."""
+def _seir(rng, cfg, school, idx, grid, seed_day, seeds, susceptible, bus=None):
+    """One SEIR run (read-only on grid). Returns {student index: exposure day}.
+
+    bus: optional (route group per student, -1 = no route). Riders of the same route who are both
+    at school that day add BUS_CONTACT_S seconds of contact per pair (bus_illness only).
+    """
     T, names = cfg.n_days, school.students
     susc = susceptible.copy()
     exposed_on: Dict[int, int] = {}
@@ -330,6 +402,16 @@ def _seir(rng, cfg, school, idx, grid, seed_day, seeds, susceptible):
                 j = idx.get(v)
                 if j is not None and susc[j] and grid.free(j, d):
                     pressure[j] += float(data.get("weight", 1.0))
+        if bus is not None:
+            n_inf = defaultdict(int)
+            for i in infectious:
+                if bus[i] >= 0:
+                    n_inf[int(bus[i])] += 1
+            for r, k in n_inf.items():
+                for j in np.flatnonzero((bus == r) & susc):
+                    j = int(j)
+                    if grid.free(j, d):
+                        pressure[j] += k * BUS_CONTACT_S
         # 1 - prod_i exp(-beta w_ij) = 1 - exp(-beta * sum_i w_ij)
         for j in sorted(pressure):
             if rng.random() < 1.0 - np.exp(-cfg.beta * pressure[j]):
@@ -372,12 +454,149 @@ def _contagion(rng, cfg, school, idx, grid, ev, onset, susceptible):
         if miss(len(exposed_on)) == 0:
             break
     seeds, exposed_on = best
+    _apply_outbreak(rng, cfg, grid, ev, exposed_on, susceptible)
+    return {"seeds": [names[s] for s in seeds], "infected": len(exposed_on)}
+
+
+def _apply_outbreak(rng, cfg, grid, ev, exposed_on, susceptible):
     for i, e in sorted(exposed_on.items()):
         susceptible[i] = False
         first = e + 1 + cfg.infectious_days
-        for dd in range(first, min(T, first + _rint(rng, SYMPTOMATIC_DAYS))):
+        for dd in range(first, min(cfg.n_days, first + _rint(rng, SYMPTOMATIC_DAYS))):
             grid.set(i, dd, ILLNESS, ev)  # contagion overrides any other cause
-    return {"seeds": [names[s] for s in seeds], "infected": len(exposed_on)}
+
+
+def _riders(school, idx) -> Dict[str, List[int]]:
+    riders: Dict[str, List[int]] = defaultdict(list)
+    for s in school.students:
+        r = school.bus_route.get(s)
+        if r is not None:
+            riders[r].append(idx[s])
+    return riders
+
+
+def _bus_illness(rng, cfg, school, idx, grid, ev, onset, susceptible, used_routes):
+    """Pre-registered (CONFOUNDED_EVENTS): an outbreak seeded on one route, spreading on its bus too.
+
+    Same conditioning as _contagion (re-seeded until MIN_OUTBREAK <= size <= MAX_OUTBREAK_FRAC * n,
+    CONTAGION_TRIES tries); each try draws the route and its 1-2 rider seeds afresh.
+    """
+    n = len(school.students)
+    riders = _riders(school, idx)
+    routes = sorted(r for r, m in riders.items() if len(m) >= MIN_ROUTE_RIDERS and r not in used_routes)
+    if not routes:
+        routes = sorted(r for r, m in riders.items() if len(m) >= 2)
+    if not routes:
+        return None
+    seed_day = max(0, onset - 1 - cfg.infectious_days)
+    max_size = max(MIN_OUTBREAK, int(MAX_OUTBREAK_FRAC * n))
+
+    def miss(size: int) -> int:
+        return max(0, MIN_OUTBREAK - size) + max(0, size - max_size)
+
+    best = None
+    for _ in range(CONTAGION_TRIES):
+        route = routes[int(rng.integers(len(routes)))]
+        pool = [i for i in riders[route] if susceptible[i] and grid.free(i, seed_day)] or list(riders[route])
+        seeds = [pool[int(rng.integers(len(pool)))]]
+        if rng.random() < 0.5:
+            mates = [i for i in pool if i != seeds[0]]
+            if mates:
+                seeds.append(mates[int(rng.integers(len(mates)))])
+        bus = np.full(n, -1, dtype=np.int64)
+        bus[riders[route]] = 0
+        exposed_on = _seir(rng, cfg, school, idx, grid, seed_day, seeds, susceptible, bus)
+        if best is None or miss(len(exposed_on)) < miss(len(best[2])):
+            best = (route, seeds, exposed_on)
+        if miss(len(exposed_on)) == 0:
+            break
+    route, seeds, exposed_on = best
+    used_routes.add(route)
+    _apply_outbreak(rng, cfg, grid, ev, exposed_on, susceptible)
+    return {"route": route, "seeds": [school.students[s] for s in seeds], "infected": len(exposed_on)}
+
+
+def _road_closure(rng, cfg, school, hh_members, grid, ev, onset, used_routes, used_nbs):
+    """Pre-registered (CONFOUNDED_EVENTS): a neighborhood cut off; its 2 routes and car trips fail."""
+    names = school.students
+    nb_routes: Dict[str, set] = defaultdict(set)
+    for s in names:
+        r, nb = school.bus_route.get(s), school.neighborhood.get(s)
+        if r is not None and nb is not None:
+            nb_routes[nb].add(r)
+    nbs = sorted(nb for nb, rs in nb_routes.items() if len(rs) >= 2 and nb not in used_nbs)
+    if not nbs:
+        nbs = sorted(nb for nb, rs in nb_routes.items() if len(rs) >= 2) or sorted(nb_routes)
+    if not nbs:
+        return None
+    nb = nbs[int(rng.integers(len(nbs)))]
+    used_nbs.add(nb)
+    cand = sorted(nb_routes[nb])
+    routes = sorted(cand[int(k)] for k in rng.permutation(len(cand))[:2])
+    used_routes.update(routes)
+    frac = _runif(rng, cfg.route_absent_frac)
+    car = _runif(rng, ROAD_CAR_FRAC)
+    days = _rint(rng, ROAD_DAYS)
+    p_of: Dict[str, float] = {}
+    for h, members in hh_members.items():
+        s0 = names[members[0]]
+        r, home = school.bus_route.get(s0), school.neighborhood.get(s0)
+        if r in routes:
+            p_of[h] = frac if home == nb else ROAD_THROUGH_FRAC * frac
+        elif r is None and home == nb:
+            p_of[h] = car
+    hit = set()
+    for d in range(onset, min(cfg.n_days, onset + days)):
+        for h in sorted(p_of):
+            if rng.random() < p_of[h]:
+                for i in hh_members[h]:
+                    if grid.free(i, d):
+                        grid.set(i, d, TRANSPORTATION, ev)
+                        hit.add(h)
+    if len(hit) < MIN_ROAD_HOUSEHOLDS and onset < cfg.n_days:   # a closure nobody notices is not an event
+        local = [h for h in sorted(p_of) if h not in hit
+                 and school.neighborhood.get(names[hh_members[h][0]]) == nb]
+        for k in rng.permutation(len(local))[: MIN_ROAD_HOUSEHOLDS - len(hit)]:
+            for i in hh_members[local[int(k)]]:
+                if grid.free(i, onset):
+                    grid.set(i, onset, TRANSPORTATION, ev)
+    return {"neighborhood": nb, "routes": routes, "frac": frac, "car_frac": car}
+
+
+def _section_caregiving(rng, cfg, school, idx, hh_members, hh_of, grid, ev, onset, used_secs):
+    """Pre-registered (CONFOUNDED_EVENTS): a family observance concentrated in one class section."""
+    names = school.students
+    by_sec: Dict[str, List[int]] = defaultdict(list)
+    for s in names:
+        by_sec[school.section[s]].append(idx[s])
+    secs = sorted(k for k, m in by_sec.items() if len(m) >= MIN_SECTION_SIZE and k not in used_secs)
+    if not secs:
+        secs = sorted(by_sec)
+    if not secs:
+        return None
+    sec = secs[int(rng.integers(len(secs)))]
+    used_secs.add(sec)
+    frac = _runif(rng, SECTION_OBS_FRAC)
+    days = 2 if rng.random() < SECTION_TWO_DAY_P else 1
+    in_sec = sorted({hh_of[i] for i in by_sec[sec]})
+    in_sec_set = set(in_sec)
+    observe = [h for h in in_sec if rng.random() < frac]
+    if len(observe) < MIN_SECTION_HOUSEHOLDS:
+        rest = [h for h in in_sec if h not in observe]
+        observe += [rest[int(k)] for k in rng.permutation(len(rest))[: MIN_SECTION_HOUSEHOLDS - len(observe)]]
+    outside = [h for h in sorted(hh_members) if h not in in_sec_set and rng.random() < SECTION_OUTSIDE_RATE]
+    for h in sorted(observe) + outside:
+        members = hh_members[h]
+        if h in in_sec_set:
+            anchor = [i for i in members if school.section[names[i]] == sec]
+        else:
+            anchor = [members[int(rng.integers(len(members)))]]
+        kids = anchor + [i for i in members if i not in anchor and rng.random() < SECTION_SIBLING_JOIN]
+        for i in kids:
+            for d in range(onset, min(cfg.n_days, onset + days)):
+                if grid.free(i, d):
+                    grid.set(i, d, CAREGIVING, ev)
+    return {"section": sec, "households": len(observe), "outside_households": len(outside), "frac": frac}
 
 
 # ----------------------------------------------------------------------------------------------
@@ -443,6 +662,7 @@ def simulate(school: SchoolGraph, config: SimConfig,
     order = sorted(range(len(plan)), key=lambda k: (_PRIORITY_KINDS.index(plan[k][0]) * -1, plan[k][1]))
     used_routes: set = set()
     used_nbs: set = set()
+    used_secs: set = set()
     illness_share = BACKGROUND_MIX[ILLNESS] / sum(BACKGROUND_MIX.values())
     flu_q = np.full(n, cfg.base_absence_rate * illness_share)  # uniform, not propensity-weighted
     for k in order:
@@ -454,6 +674,12 @@ def simulate(school: SchoolGraph, config: SimConfig,
             info = _caregiving_spike(rng, cfg, school, households, grid, k, onset, young, used_nbs)
         elif kind == "route_failure":
             info = _route_failure(rng, cfg, school, idx, grid, k, onset, used_routes)
+        elif kind == "bus_illness":
+            info = _bus_illness(rng, cfg, school, idx, grid, k, onset, susceptible, used_routes)
+        elif kind == "road_closure":
+            info = _road_closure(rng, cfg, school, households, grid, k, onset, used_routes, used_nbs)
+        elif kind == "section_caregiving":
+            info = _section_caregiving(rng, cfg, school, idx, households, hh_of, grid, k, onset, used_secs)
         else:
             info = _contagion(rng, cfg, school, idx, grid, k, onset, susceptible)
         meta[k]["info"] = info or {}
@@ -475,9 +701,7 @@ def simulate(school: SchoolGraph, config: SimConfig,
 
     kept = sorted((k for k in range(len(plan)) if members[k]), key=lambda k: (min(days_of[k]), k))
     eid = {k: f"E{r:03d}" for r, k in enumerate(kept)}
-    barrier_of = {"contagion": ILLNESS, "route_failure": TRANSPORTATION,
-                  "caregiving_spike": CAREGIVING, "flu_wave": ILLNESS}
-    events = [PlantedEvent(id=eid[k], kind=plan[k][0], barrier=barrier_of[plan[k][0]],
+    events = [PlantedEvent(id=eid[k], kind=plan[k][0], barrier=BARRIER_OF_KIND[plan[k][0]],
                            members=frozenset(members[k]), onset=min(days_of[k]),
                            duration=max(days_of[k]) - min(days_of[k]) + 1,
                            should_alarm=plan[k][0] != "flu_wave")

@@ -12,8 +12,12 @@ Protocol
      CONFIG_B null runs on the held-out school (does the false-alarm rate transfer?), the
      production operating point (BH q = 0.10), EARS-C1 lead time, a recall vs false-alarm curve,
      and a label-noise sweep (accuracy 0.5 -> 1.0, 1.0 = oracle labels) for the label detectors.
-Detectors: content_only, graph_only, combined (PRD), plus graph_labels (all-cause scan as graph_only,
-cause = majority reply label among the alarm's absences): does using labels only for attribution help?
+Detectors: content_only, graph_only, combined (PRD), plus two_stage (graph_only's all-cause scan and
+calibration; cause from the replies of the alarm's absentees, re-attributed as replies arrive), and
+the EARS-C1 baseline. Both configs include the pre-registered confounded events (bus_illness,
+road_closure, section_caregiving; simulator.CONFOUNDED_EVENTS), where zone type points at the wrong cause.
+Detection (graph_only / two_stage: purity + time only) and actionable recall (right cause by onset +
+duration + 2) are reported separately, overall and per event type; see app.ml.evaluate.
 Seeds: run i of config X uses seed X.seed + i for both the simulator and assign_logistics.
 """
 from __future__ import annotations
@@ -36,7 +40,7 @@ from app.ml.evaluate import (alarms_at, calibrate_threshold, false_alarm_rate, l
                              ears_outcomes, relabel, score_run, summarize, summarize_ears, truth_index)
 from app.ml.graphs import assign_logistics, load_school  # noqa: E402
 from app.ml.scan import ScanParams  # noqa: E402
-from app.ml.simulator import CONFIG_A, CONFIG_B, null_config, simulate  # noqa: E402
+from app.ml.simulator import CONFIG_A, CONFIG_B, CONFOUNDED_EVENTS, null_config, simulate  # noqa: E402
 
 NOISE_LEVELS = (0.5, 0.6, 0.7, 0.8, 0.9, 1.0)
 _SCHOOLS: dict = {}
@@ -70,6 +74,20 @@ def run_jobs(jobs, n_jobs):
         return [_job(j) for j in jobs]
     with ProcessPoolExecutor(n_jobs) as ex:
         return list(ex.map(_job, jobs))
+
+
+def _ears_by_kind(runs, days_per_run):
+    from app.ml.evaluate import ears_outcomes as _eo
+    out = {}
+    for run, days in zip(runs, days_per_run):
+        kind = {e.id: e.kind for e in run.events}
+        for eid, d in _eo(run, days).items():
+            k = out.setdefault(kind[eid], {"n": 0, "detected": 0})
+            k["n"] += 1
+            k["detected"] += int(d is not None)
+    for v in out.values():
+        v["detection_recall"] = v["detected"] / v["n"]
+    return out
 
 
 def _fa20(fa, days):
@@ -154,10 +172,14 @@ def main(argv=None):
         fa_t, nd_t = false_alarm_rate([r[d] for r in tune_res], tune_runs, q=0.10)
         fa_n, nd_n = false_alarm_rate([r[d] for r in tnull_res], tnull_runs, q=0.10)
         bh[d] = {"recall": rep["recall"], "fa_per_20_days": rep["fa_per_20_days"],
+                 "detection_recall": rep["detection_recall"], "actionable_recall": rep["actionable_recall"],
                  "pct_detected_by_onset_plus_2": rep["pct_detected_by_onset_plus_2"],
                  "tune_null_fa_per_20_days": _fa20(fa_t, nd_t), "test_null_fa_per_20_days": _fa20(fa_n, nd_n)}
 
     ears_summary = summarize_ears(test_runs, scan_days)
+    ears_summary["detection_recall"] = ears_summary["recall"]
+    ears_summary["actionable_recall"] = None          # EARS-C1 names no cause and no place
+    ears_summary["by_event_type"] = _ears_by_kind(test_runs, scan_days)
     ears_summary["test_null_fa_per_20_days"] = summarize_ears(
         tnull_runs, [[r.day for r in res["combined"]] for res in tnull_res])["fa_per_20_days"]
 
@@ -175,7 +197,8 @@ def main(argv=None):
                       for res, run in zip(test_res, test_runs)]
             s = summarize(scores)
             curve[d].append({"threshold": thr, "calibrated": is_cal, "tune_null_fa_per_20_days": _fa20(fa, nd),
-                             "test_fa_per_20_days": s["fa_per_20_days"], "recall": s["recall"]})
+                             "test_fa_per_20_days": s["fa_per_20_days"], "recall": s["recall"],
+                             "detection_recall": s["detection_recall"], "actionable_recall": s["actionable_recall"]})
 
     # label-noise sweep (paired: same runs, only the observed labels change)
     sweep = []
@@ -187,6 +210,9 @@ def main(argv=None):
                                 [x.day for x in res[d]]) for run, res, _, _ in chunk]
             s = summarize(scores)
             row[d] = {"recall": s["recall"], "fa_per_20_days": s["fa_per_20_days"],
+                      "detection_recall": s["detection_recall"], "actionable_recall": s["actionable_recall"],
+                      "attribution_accuracy_among_detected": s["attribution_accuracy_among_detected"],
+                      "time_to_correct_attribution": s["time_to_correct_attribution"],
                       "pct_detected_by_onset_plus_2": s["pct_detected_by_onset_plus_2"],
                       "attribution_confusion": s["attribution_confusion"]}
         sweep.append(row)
@@ -210,6 +236,14 @@ def main(argv=None):
                           "evaluate": round(t_eval, 2), "n_runs_scanned": len(out),
                           "scan_ms_per_run_day": round(1000 * scan_s / max(n_days, 1), 2), "jobs": args.jobs},
             "n_events_test": report["combined"]["n_events"],
+            "detectors": list(DETECTORS) + ["ears_c1"],
+            "pre_registered_events": CONFOUNDED_EVENTS.strip(),
+            "matching": "graph_only/two_stage: TP = purity >= 0.5 and day in [onset, onset+D+2] (cause "
+                        "ignored); content_only/combined: TP also needs the right barrier (PRD). Actionable = "
+                        "some matched alarm carries the right cause by onset+D+2 (two_stage: as re-attributed "
+                        "from replies received by then). See app/ml/evaluate.py.",
+            "graph_only_two_stage_same_threshold": thresholds["graph_only"]["threshold"]
+                                                   == thresholds["two_stage"]["threshold"],
         },
         "thresholds": thresholds,
         "test": report,
@@ -238,6 +272,12 @@ def _iqr(q):
     return f"{q['median']:+.1f} [{q['q1']:+.1f},{q['q3']:+.1f}]"
 
 
+def _med(q):
+    if not q or q.get("median") is None:
+        return "-"
+    return f"{q['median']:.1f} [{q['q1']:.0f},{q['q3']:.0f}]"
+
+
 def print_table(r):
     m = r["meta"]
     print(f"\nAblation: test {m['school']} (config {m['configs']['test']['name']}, {m['runs']} runs, {m['n_events_test']} events), "
@@ -252,25 +292,51 @@ def print_table(r):
     e = r["ears_c1"]
     print(f"{'ears_c1':<13}{'-':>10}{'-':>12}{e['test_null_fa_per_20_days']:>13.2f}{e['fa_per_20_days']:>12.2f}"
           f"{_f(e['recall']):>8}{_f(e['pct_detected_by_onset_plus_2']):>7}{_f(e['delay']['median'], 1):>10}")
-    print("\nrecall by event kind:")
+
+    print(f"\n{'detector':<13}{'detect':>8}{'action':>8}{'attr|det':>9}{'attr 1st':>9}{'act<=t+2':>9}"
+          f"{'provis.':>8}  time to correct cause (med [IQR])  detection->correct")
     for d in DETECTORS:
-        kinds = r["test"][d]["recall_by_kind"]
-        print(f"  {d:<13}" + "  ".join(f"{k} {v['detected']}/{v['n']}" for k, v in sorted(kinds.items())))
+        s = r["test"][d]
+        print(f"{d:<13}{_f(s['detection_recall']):>8}{_f(s['actionable_recall']):>8}"
+              f"{_f(s['attribution_accuracy_among_detected']):>9}{_f(s['attribution_accuracy_first_alarm']):>9}"
+              f"{_f(s['pct_actionable_by_onset_plus_2']):>9}{_f(s['provisional_at_first_alarm']):>8}  "
+              f"{_med(s['time_to_correct_attribution']):<34} {_med(s['detection_to_correct_attribution'])}")
+    print(f"{'ears_c1':<13}{_f(e['detection_recall']):>8}{'  -  ':>8}  (no cause, no zone)")
+
+    kinds = sorted({k for d in DETECTORS for k in r["test"][d]["by_event_type"]})
+    print("\nby event type: detection / actionable recall (n events)")
+    print(f"{'kind':<20}" + "".join(f"{d:>18}" for d in DETECTORS) + f"{'ears_c1':>10}")
+    for k in kinds:
+        n = r["test"][DETECTORS[0]]["by_event_type"].get(k, {}).get("n", 0)
+        cells = []
+        for d in DETECTORS:
+            v = r["test"][d]["by_event_type"].get(k)
+            cells.append(f"{_f(v['detection_recall'])}/{_f(v['actionable_recall'])}" if v else "-")
+        ev = e["by_event_type"].get(k)
+        print(f"{k + f' ({n})':<20}" + "".join(f"{c:>18}" for c in cells)
+              + f"{_f(ev['detection_recall']) if ev else '-':>10}")
+    print("\ntime to correct cause by event type (median days after onset):")
+    for k in kinds:
+        print(f"  {k:<20}" + "  ".join(
+            f"{d} {_med(r['test'][d]['by_event_type'].get(k, {}).get('time_to_correct_attribution'))}"
+            for d in DETECTORS))
+
     print("\nBH q=0.10 (production): " + "; ".join(
-        f"{d} recall {_f(v['recall'])}, FA/20d test {_f(v['fa_per_20_days'])} tnull {_f(v['test_null_fa_per_20_days'])}"
+        f"{d} detect {_f(v['detection_recall'])} action {_f(v['actionable_recall'])}, FA/20d test "
+        f"{_f(v['fa_per_20_days'])} tnull {_f(v['test_null_fa_per_20_days'])}"
         for d, v in r["bh_q_0.10"].items()))
-    print("\nattribution (rows: true; cols: illness/transportation/other/missed):")
+    print("\nattribution of the first matched alarm (rows: true; cols: illness/transportation/other/missed):")
     for d in DETECTORS:
         cm = r["test"][d]["attribution_confusion"]
         print(f"  {d:<13}" + "  ".join(f"{k[:5]}:{[v[c] for c in ('illness', 'transportation', 'other', 'missed')]}"
                                        for k, v in cm.items()))
     print(f"  contagion TPs via (combined): {r['test']['combined']['contagion_tp_via']}")
     if r["label_noise"]:
-        print("\nlabel noise (recall / FA per 20 d):")
+        print("\nlabel noise (actionable recall / FA per 20 d):")
         for row in r["label_noise"]:
             tag = " (oracle)" if row["oracle"] else ""
             print(f"  acc {row['label_accuracy']:.1f}{tag:<9} " + "  ".join(
-                f"{d} {_f(row[d]['recall'])} / {_f(row[d]['fa_per_20_days'])}" for d in LABEL_DETECTORS))
+                f"{d} {_f(row[d]['actionable_recall'])} / {_f(row[d]['fa_per_20_days'])}" for d in LABEL_DETECTORS))
     print(f"\ntimings: {m['timings_s']}")
 
 

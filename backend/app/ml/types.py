@@ -12,7 +12,7 @@ Conventions
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, FrozenSet, List, Optional
+from typing import Dict, FrozenSet, List, Optional, Tuple
 
 import networkx as nx
 
@@ -40,6 +40,7 @@ class SchoolGraph:
 class PlantedEvent:
     id: str                                # "E000", ...
     kind: str                              # "contagion" | "route_failure" | "caregiving_spike" | "flu_wave"
+                                           # | "bus_illness" | "road_closure" | "section_caregiving"
     barrier: str                           # Barrier value carried by its absences
     members: FrozenSet[str]                # students absent because of this event
     onset: int                             # first day of the event
@@ -83,6 +84,10 @@ class SimConfig:
     reply_rate: tuple = (0.4, 0.9)
     reply_delay_max: int = 3
     label_accuracy: float = 0.85           # used when no classifier is plugged in: P(observed == true)
+    # Pre-registered confounded events (zone type points at the wrong cause; see simulator.CONFOUNDED_EVENTS)
+    n_bus_illness: int = 0                 # illness spreading along bus co-ridership (zone: route)
+    n_road_closures: int = 0               # transportation, 2 routes + car trips of one neighborhood
+    n_section_caregiving: int = 0          # family observance concentrated in one class section
 
 
 @dataclass
@@ -98,7 +103,7 @@ class SimRun:
 
 @dataclass
 class Alarm:
-    detector: str                          # "content_only" | "graph_only" | "combined"
+    detector: str                          # "content_only" | "graph_only" | "combined" | "two_stage"
     layer: str                             # "section" | "route" | "neighborhood" | "contact" | "school" | "grade"
     zone_id: str
     zone: FrozenSet[str]
@@ -111,3 +116,8 @@ class Alarm:
     p_value: float
     absent_members: FrozenSet[str] = frozenset()
     evidence_absence_ids: List[str] = field(default_factory=list)
+    # two_stage only: cause attributed from replies. provisional = no labeled reply yet on `day`
+    # (cause = zone-type guess). attribution_history = ((day, barrier, n_labeled_replies), ...) from
+    # `day` onward, one entry per change; each entry uses only replies received by its day.
+    provisional: bool = False
+    attribution_history: Tuple[Tuple[int, str, int], ...] = ()

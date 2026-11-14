@@ -17,7 +17,10 @@ from app.ml.types import SchoolGraph
 from app.models import Barrier
 
 BARRIER_OF = {"contagion": Barrier.ILLNESS.value, "route_failure": Barrier.TRANSPORTATION.value,
-              "caregiving_spike": Barrier.CAREGIVING.value, "flu_wave": Barrier.ILLNESS.value}
+              "caregiving_spike": Barrier.CAREGIVING.value, "flu_wave": Barrier.ILLNESS.value,
+              "bus_illness": Barrier.ILLNESS.value, "road_closure": Barrier.TRANSPORTATION.value,
+              "section_caregiving": Barrier.CAREGIVING.value}
+CONFOUNDED = ("bus_illness", "road_closure", "section_caregiving")
 
 
 def make_school(n_sections=3, per_section=20, n_days=3, seed=7, with_edges=True, name="fixture"):
@@ -168,11 +171,90 @@ def test_caregiving_spike_is_one_neighborhood(school, runs):
 def test_null_config_has_no_alarmable_events(school):
     cfg = null_config(CONFIG_A)
     assert (cfg.n_contagion, cfg.n_route_failures, cfg.n_caregiving_spikes) == (0, 0, 0)
+    assert (cfg.n_bus_illness, cfg.n_road_closures, cfg.n_section_caregiving) == (0, 0, 0)
     assert cfg.n_flu_waves == CONFIG_A.n_flu_waves and cfg.base_absence_rate == CONFIG_A.base_absence_rate
     for seed in range(3):
         run = simulate(school, dataclasses.replace(cfg, seed=seed))
         assert not [e for e in run.events if e.should_alarm]
         assert all(e.kind == "flu_wave" for e in run.events)
+
+
+# --------------------------------------------------------------------------------------------
+# pre-registered confounded events
+
+
+def test_confounded_events_in_both_configs(runs):
+    for cfg in (CONFIG_A, CONFIG_B):
+        assert (cfg.n_bus_illness, cfg.n_road_closures, cfg.n_section_caregiving) == (1, 1, 1)
+        assert cfg.n_contagion and cfg.n_route_failures and cfg.n_caregiving_spikes  # existing events kept
+    for kind in CONFOUNDED:
+        assert sum(any(e.kind == kind for e in run.events) for run in runs.values()) >= 3, kind
+    for run in runs.values():
+        assert all(e.should_alarm for e in run.events if e.kind in CONFOUNDED)
+
+
+def test_bus_illness_spreads_on_its_route(school, runs):
+    g = union_graph(school)
+    seen = 0
+    for run in runs.values():
+        for e in run.events:
+            if e.kind != "bus_illness":
+                continue
+            seen += 1
+            info = run.meta[e.id]["info"]
+            route = info["route"]
+            assert all(school.bus_route[s] == route for s in info["seeds"])
+            # connected through school contacts plus the bus (riders of the route form a clique)
+            h = g.subgraph(e.members).copy()
+            on_bus = [s for s in e.members if school.bus_route[s] == route]
+            h.add_edges_from((a, b) for a in on_bus for b in on_bus if a < b)
+            assert nx.number_connected_components(h) == 1, e
+    assert seen >= 3
+    # without school contacts the bus is the only path: every case rides the seeded route
+    bare = make_school(with_edges=False)
+    for seed in range(3):
+        run = simulate(bare, dataclasses.replace(CONFIG_A, seed=seed))
+        for e in run.events:
+            if e.kind == "bus_illness":
+                route = run.meta[e.id]["info"]["route"]
+                assert {bare.bus_route[s] for s in e.members} == {route}
+
+
+def test_road_closure_hits_routes_and_cars_of_one_neighborhood(school, runs):
+    seen = 0
+    for run in runs.values():
+        for e in run.events:
+            if e.kind != "road_closure":
+                continue
+            seen += 1
+            info = run.meta[e.id]["info"]
+            nb, routes = info["neighborhood"], set(info["routes"])
+            assert 1 <= len(routes) <= 2
+            assert e.duration <= 2 and e.barrier == Barrier.TRANSPORTATION.value
+            for s in e.members:
+                r = school.bus_route[s]
+                assert r in routes or (r is None and school.neighborhood[s] == nb), s
+            assert any(school.neighborhood[s] == nb for s in e.members)
+    assert seen >= 3
+
+
+def test_section_caregiving_concentrated_in_one_section(school, runs):
+    seen = 0
+    for run in runs.values():
+        for e in run.events:
+            if e.kind != "section_caregiving":
+                continue
+            seen += 1
+            sec = run.meta[e.id]["info"]["section"]
+            in_sec = [s for s in e.members if school.section[s] == sec]
+            assert len(in_sec) >= 3 and e.duration <= 2
+            assert e.barrier == Barrier.CAREGIVING.value
+            days = defaultdict(set)
+            for a in run.absences:
+                if a.event_id == e.id:
+                    days[a.student].add(a.day)
+            assert len({d for ds in days.values() for d in ds}) <= 2      # same observance day(s)
+    assert seen >= 3
 
 
 def test_config_b_differs_from_a():

@@ -8,7 +8,8 @@ import numpy as np
 import pytest
 
 from app.ml import detectors as D
-from app.ml.evaluate import (calibrate_threshold, merge_alarms, purity, score_run, truth_index)
+from app.ml.evaluate import (calibrate_threshold, false_alarm_rate, merge_alarms, purity, score_run, summarize,
+                             truth_index)
 from app.ml.scan import (Observations, ScanParams, bh_adjust, bh_reject, build_zones, llr, scan_day)
 from app.ml.types import AbsenceEvent, Alarm, PlantedEvent, Reply, SchoolGraph, SimConfig, SimRun
 
@@ -205,9 +206,11 @@ def test_graph_only_cannot_distinguish_coincident_route_and_section():
     # the combined detector reads the labels and gets both right
     assert D.combined(run_route, 50, PARAMS)[0].barrier == "transportation"
     assert D.combined(run_ill, 50, PARAMS)[0].barrier == "illness"
-    # graph_labels: same all-cause scan as graph-only, cause read from the replies
-    assert D.graph_labels(run_route, 50, PARAMS)[0].barrier == "transportation"
-    assert D.graph_labels(run_ill, 50, PARAMS)[0].barrier == "illness"
+    # two_stage: same all-cause scan as graph-only (same alarms), cause read from the replies
+    t_route, t_ill = D.two_stage(run_route, 50, PARAMS), D.two_stage(run_ill, 50, PARAMS)
+    assert [a.zone_id for a in t_route] == [a.zone_id for a in g_route] == [a.zone_id for a in t_ill]
+    assert t_route[0].barrier == "transportation" and t_ill[0].barrier == "illness"
+    assert not t_route[0].provisional and not t_ill[0].provisional
 
 
 def test_replies_after_as_of_are_ignored():
@@ -340,3 +343,113 @@ def test_spells_count_once_and_pvalues_respect_permutation_resolution():
     p = gumbel_pvalues(np.array([5.0, 9.9, 50.0, 0.0]), null)
     assert p[0] == pytest.approx(51 / 100) and p[1] == pytest.approx(2 / 100)
     assert 0 < p[2] < 1 / 100 and p[3] == 1.0
+
+
+# ----------------------------------------------------------------------------------------------
+# two-stage attribution and the actionable metrics
+
+
+def test_attribute_dirichlet_prior():
+    code = {b: i for i, b in enumerate(D.BARRIERS)}
+    ill, tr = code["illness"], code["transportation"]
+    assert D.attribute(np.array([-1, -1]), "transportation") == ("transportation", 0)       # no replies: guess
+    assert D.attribute(np.array([ill]), "transportation") == ("transportation", 1)           # 1 vs 1 pseudo-count
+    assert D.attribute(np.array([ill, ill, -1]), "transportation") == ("illness", 2)
+    assert D.attribute(np.array([ill, ill, tr]), "transportation") == ("transportation", 3)  # 2 vs 1 + 1
+    assert D.attribute(np.array([ill, ill, ill, tr]), "transportation") == ("illness", 4)
+    assert D.attribute(np.array([ill, tr]), "transportation", prior=0.0) == ("transportation", 2)
+
+
+def test_two_stage_reattributes_bus_illness_as_replies_arrive():
+    """Illness among riders of one route: graph-only says transportation; two-stage starts with that
+    provisional guess and switches to illness once the (2-day late) replies arrive."""
+    school = make_school()
+    members = riders(school, "R1")[:7]
+    run = make_run(school, seed=2, planted=[("E0", "bus_illness", "illness", members, [50])], reply_delay=2)
+    g = D.graph_only(run, 50, PARAMS)
+    assert g[0].zone_id == "R1" and g[0].barrier == "transportation"
+    t = D.two_stage(run, 50, PARAMS)
+    top = t[0]
+    assert top.zone_id == "R1" and top.barrier == "transportation" and top.provisional
+    assert [h[1] for h in top.attribution_history][-1] == "illness"
+    assert D.attribution_at(top, 50) == D.attribution_at(top, 51) == "transportation"
+    assert D.attribution_at(top, 52) == "illness"
+    # the same detection, re-run on day 52, carries the replies from the start
+    assert D.two_stage(run, 52, PARAMS, q=None, p_max=1.0)
+
+    # scoring: both detect (cause ignored); only two_stage gets the cause right, on day 52
+    pipe = D.Pipeline(run, PARAMS)
+    days = range(45, 56)
+    res = pipe.prospective(days, ("graph_only", "two_stage"))
+    sg = score_run([a for r in res["graph_only"] for a in D.select(r)], run, days)
+    st = score_run([a for r in res["two_stage"] for a in D.select(r)], run, days)
+    eg, et = sg.events[0], st.events[0]
+    assert eg.detected and eg.detected_any and not eg.actionable and eg.attributed == "transportation"
+    assert et.detected and et.first_match_day == 50 and et.first_match_provisional
+    assert et.actionable and et.first_correct_day == 52 and et.time_to_correct == 2
+    assert et.attributed == "illness"
+    m = summarize([st])
+    assert m["detection_recall"] == m["actionable_recall"] == 1.0 and m["recall"] == 1.0
+    assert m["time_to_correct_attribution"]["median"] == 2.0
+    assert m["detection_to_correct_attribution"]["median"] == 2.0
+    assert m["by_event_type"]["bus_illness"]["actionable"] == 1
+    mg = summarize([sg])
+    assert mg["detection_recall"] == 1.0 and mg["actionable_recall"] == 0.0
+    assert mg["attribution_accuracy_among_detected"] == 0.0
+    assert mg["attribution_confusion"]["illness"]["transportation"] == 1
+
+
+def test_actionable_metrics_and_barrier_free_matching():
+    school = make_school()
+    ev = ["N001", "N002", "N004", "N005"]
+    run = make_run(school, seed=0, rate=0.0, planted=[("E0", "road_closure", "transportation", ev, [50, 51])])
+    truth = truth_index(run)
+    days = range(39, 60)
+
+    def al(det, barrier, day, hist=(), window=1):
+        return Alarm(det, "neighborhood", "Z", frozenset(ev), barrier, day, window, 4, 1.0, 5.0, 0.001,
+                     frozenset(ev), attribution_history=hist)
+
+    # label detector, wrong cause: matched but no TP (PRD), not actionable, and a false alarm
+    s = score_run([al("combined", "caregiving or family obligation", 50)], run, days, truth)
+    o = s.events[0]
+    assert o.detected_any and not o.detected and not o.actionable and s.n_false_alarms == 1
+    # all-cause detector, wrong cause: detected (cause ignored), not actionable, no false alarm
+    s = score_run([al("graph_only", "caregiving or family obligation", 50)], run, days, truth)
+    o = s.events[0]
+    assert o.detected and not o.actionable and s.n_false_alarms == 0
+    # re-attributed after the deadline (onset 50 + duration 2 + 2 = 54): detected, not actionable
+    late = al("two_stage", "caregiving or family obligation", 51,
+              ((51, "caregiving or family obligation", 0), (55, "transportation", 3)))
+    o = score_run([late], run, days, truth).events[0]
+    assert o.detected and o.first_correct_day == 55 and not o.actionable and o.time_to_correct is None
+    # re-attributed in time; a second alarm with the right cause from the start wins if earlier
+    ok = al("two_stage", "caregiving or family obligation", 50,
+            ((50, "caregiving or family obligation", 0), (53, "transportation", 2)))
+    right = al("two_stage", "transportation", 52, ((52, "transportation", 1),), window=3)
+    o = score_run([ok, right], run, days, truth).events[0]
+    assert o.actionable and o.first_correct_day == 52 and o.time_to_correct == 2
+    assert o.attributed == "transportation"                     # first alarm's cause as of the deadline
+    # two_stage episodes merge across cause changes; graph_only and two_stage calibrate identically
+    a1 = al("two_stage", "illness", 30)
+    a2 = al("two_stage", "transportation", 31)
+    assert len(merge_alarms([a1, a2], same_barrier=False)) == 1 and len(merge_alarms([a1, a2])) == 2
+    assert score_run([a1, a2], run, days, truth).n_false_alarms == 1
+    m = summarize([score_run([ok], run, days, truth)])
+    for key in ("detection_recall", "actionable_recall", "attribution_accuracy_among_detected",
+                "attribution_accuracy_first_alarm", "time_to_correct_attribution", "by_event_type"):
+        assert key in m
+    assert m["by_event_type"]["road_closure"]["time_to_correct_attribution"]["median"] == 3.0
+
+
+def test_two_stage_and_graph_only_share_calibration():
+    school = make_school()
+    runs = [make_run(school, seed=s) for s in (11, 12)]
+    res = [D.Pipeline(r, PARAMS).prospective(range(39, 60), ("graph_only", "two_stage")) for r in runs]
+    cal = {d: calibrate_threshold([r[d] for r in res], runs, 1 / 20, cap=PARAMS.report_p)
+           for d in ("graph_only", "two_stage")}
+    assert cal["graph_only"]["threshold"] == cal["two_stage"]["threshold"]
+    assert cal["graph_only"]["null_false_alarms"] == cal["two_stage"]["null_false_alarms"]
+    thr = cal["graph_only"]["threshold"]
+    assert (false_alarm_rate([r["graph_only"] for r in res], runs, p_max=thr)
+            == false_alarm_rate([r["two_stage"] for r in res], runs, p_max=thr))

@@ -1,22 +1,30 @@
-"""The three PRD 2 cluster detectors (same scan, different inputs) and the EARS-C1 baseline.
+"""The PRD 2 cluster detectors (same scan, different inputs), the two-stage detector and EARS-C1.
 
     content_only(run, as_of)  labeled observations, zones = whole school (barrier-as-space) + grade
     graph_only(run, as_of)    all-cause absences (pseudo-barrier "any"), zones = section / route /
                               neighborhood / contact; cause guessed from the zone type
     combined(run, as_of)      labeled observations, all zones (section / route / neighborhood /
                               contact / grade); cause = the scanned barrier
-    graph_labels(run, as_of)  (beyond the PRD's three) graph-only's all-cause scan, but the cause is the
-                              majority label among the alarm's absences with a reply by as_of
-                              (zone-type guess when none has one): labels for attribution only
+    two_stage(run, as_of)     stage 1 = graph_only's all-cause scan (same zones, same calibration);
+                              stage 2 = cause from the replies of the alarm's absentees (see attribute()),
+                              re-attributed on later days as replies arrive
     run_prospective(run, detector, days)   the same, run every day (as replay would)
     ears_c1(run, days)        school-wide all-cause count > mean + 2 sd of the previous 7 days
+
+two_stage replaces the earlier graph_labels detector (majority reply label at the firing day, ties to
+the zone-type guess). two_stage's attribution on the firing day is nearly the same rule (a Dirichlet
+prior of ATTRIBUTION_PRIOR pseudo-counts on the zone-type guess instead of a pure tie-break), but
+graph_labels froze the cause on the firing day, when most replies have not arrived yet (40-90% reply,
+up to 3 days late). two_stage keeps updating it, which is the point of the comparison, so keeping
+both would only duplicate a frozen special case.
 
 By default each detector applies Benjamini-Hochberg (q = 0.10) across its (layer, barrier) families
 at that as_of and returns the significant candidates, deduplicated. Pass p_max instead to get every
 candidate with p <= p_max (what the evaluation does to calibrate thresholds).
 
 For batch work use Pipeline: it builds zones and observation indexes once per run and computes
-content-only and combined from one label scan (their families are identical where they overlap).
+content-only and combined from one label scan (their families are identical where they overlap), and
+graph-only and two-stage from one all-cause scan.
 """
 from __future__ import annotations
 
@@ -31,12 +39,13 @@ from .scan import (ALL_LAYERS, ANY, BARRIER_CODE, BARRIERS, LABELED, SPATIAL_LAY
 from .types import Alarm, SimRun
 
 DETECTORS: Tuple[str, ...] = ("content_only", "graph_only", "combined")
-ALL_DETECTORS: Tuple[str, ...] = DETECTORS + ("graph_labels",)
-LABEL_DETECTORS: Tuple[str, ...] = ("content_only", "combined", "graph_labels")
+ALL_DETECTORS: Tuple[str, ...] = DETECTORS + ("two_stage",)
+LABEL_DETECTORS: Tuple[str, ...] = ("content_only", "combined", "two_stage")
+ANY_DETECTORS: Tuple[str, ...] = ("graph_only", "two_stage")   # all-cause scan: detection ignores the cause
 DETECTOR_LAYERS: Dict[str, Tuple[str, ...]] = {
     "content_only": ("school", "grade"),
     "graph_only": SPATIAL_LAYERS,
-    "graph_labels": SPATIAL_LAYERS,
+    "two_stage": SPATIAL_LAYERS,
     # All zones. The whole-school zone is left out: under the space-time permutation statistic its
     # LLR is identically 0 (c == mu), and the barrier-as-space substitute content-only uses would
     # re-admit school-wide flu waves, which the spatial scan is designed to condition out.
@@ -50,6 +59,30 @@ ZONE_ATTRIBUTION: Dict[str, str] = {
     "neighborhood": "caregiving or family obligation",
 }
 _LAYER_RANK = {l: i for i, l in enumerate(("route", "contact", "section", "neighborhood", "grade", "school"))}
+ATTRIBUTION_PRIOR = 1.0        # Dirichlet pseudo-counts on the zone-type guess (two_stage)
+ATTRIBUTION_HORIZON = 7        # days after the alarm over which two_stage re-attributes (replies <= 3 d late)
+
+
+def attribute(codes: np.ndarray, guess: str, prior: float = ATTRIBUTION_PRIOR) -> Tuple[str, int]:
+    """two_stage stage 2: (cause, number of labeled replies) from the reply labels of an alarm's absences.
+
+    codes: BARRIER_CODE per absence, -1 = no reply yet / "unknown". The posterior over the cause is
+    Dirichlet(alpha + n) with n = label counts and alpha = `prior` pseudo-counts on the zone-type guess,
+    and the cause is its mode (argmax of alpha + n; ties go to the guess, then to BARRIERS order).
+    Label noise is handled without a confusion matrix: a single noisy label only overturns the guess
+    when it is not outweighed, and as replies accumulate the counts dominate the prior. With no
+    labeled reply the cause is the guess (the caller marks it provisional).
+    """
+    codes = np.asarray(codes, dtype=np.int64)
+    codes = codes[codes >= 0]
+    post = np.bincount(codes, minlength=len(BARRIERS)).astype(float)
+    g = BARRIER_CODE.get(guess)
+    if g is not None:
+        post[g] += prior
+    best = np.flatnonzero(post >= post.max() - 1e-12)
+    if g is not None and g in best:
+        return guess, int(codes.size)
+    return BARRIERS[int(best[0])], int(codes.size)
 
 
 @dataclass
@@ -63,7 +96,7 @@ class DayResult:
 def family_key(alarm: Alarm) -> Tuple[str, str]:
     if alarm.layer == "school":
         return ("school", LABELED)
-    if alarm.detector in ("graph_only", "graph_labels"):
+    if alarm.detector in ANY_DETECTORS:
         return (alarm.layer, ANY)
     return (alarm.layer, alarm.barrier)
 
@@ -139,6 +172,7 @@ class Pipeline:
         self.zones = zones if zones is not None else build_zones(run.school, ALL_LAYERS, self.params.ks)
         self.obs = Observations.from_run(run, self.zones)
         self._aidx = {a: i for i, a in enumerate(self.obs.a_ids)}
+        self._label_cache: Dict[int, np.ndarray] = {}
 
     def default_days(self) -> range:
         return range(min(self.params.first_day(), self.run.n_days - 1), self.run.n_days)
@@ -151,27 +185,34 @@ class Pipeline:
             fams = scan_day(self.obs, self.zones, as_of, "labels", layers, self.params)
             for d in label_dets:
                 out[d] = self._result(d, as_of, [f for f in fams if f.layer in DETECTOR_LAYERS[d]])
-        if "graph_only" in detectors or "graph_labels" in detectors:
+        if any(d in detectors for d in ANY_DETECTORS):
             fams = scan_day(self.obs, self.zones, as_of, "any", SPATIAL_LAYERS, self.params)
             if "graph_only" in detectors:
                 out["graph_only"] = self._result("graph_only", as_of, fams)
-            if "graph_labels" in detectors:
-                out["graph_labels"] = self._result("graph_labels", as_of, fams, self._label_vote(as_of))
+            if "two_stage" in detectors:
+                out["two_stage"] = self._result("two_stage", as_of, fams, self._two_stage)
         return out
 
-    def _label_vote(self, as_of: int):
-        lab = self.obs.labels_at(as_of)
+    def labels_at(self, as_of: int) -> np.ndarray:
+        """Observations.labels_at, cached per day."""
+        lab = self._label_cache.get(as_of)
+        if lab is None:
+            lab = self._label_cache[as_of] = self.obs.labels_at(as_of)
+        return lab
 
-        def vote(alarm: Alarm) -> str:
-            codes = lab[[self._aidx[a] for a in alarm.evidence_absence_ids]]
-            codes = codes[codes >= 0]
-            if codes.size == 0:
-                return ZONE_ATTRIBUTION[alarm.layer]
-            counts = np.bincount(codes, minlength=len(BARRIERS))
-            best = np.flatnonzero(counts == counts.max())
-            guess = BARRIER_CODE.get(ZONE_ATTRIBUTION[alarm.layer])
-            return BARRIERS[guess if guess in best else int(best[0])]   # ties -> zone-type guess
-        return vote
+    def _two_stage(self, alarm: Alarm) -> Alarm:
+        """Stage 2: cause from the replies of the alarm's absentees, on its day and each later day up to
+        ATTRIBUTION_HORIZON (every entry uses only the replies received by that entry's day)."""
+        idx = np.array([self._aidx[a] for a in alarm.evidence_absence_ids], dtype=np.int64)
+        guess = ZONE_ATTRIBUTION[alarm.layer]
+        hist: List[Tuple[int, str, int]] = []
+        last_day = min(self.run.n_days - 1, alarm.day + ATTRIBUTION_HORIZON)
+        for d in range(alarm.day, max(alarm.day, last_day) + 1):
+            b, n = attribute(self.labels_at(d)[idx], guess)
+            if not hist or hist[-1][1] != b or (hist[-1][2] == 0) != (n == 0):
+                hist.append((d, b, n))
+        return dataclasses.replace(alarm, detector="two_stage", barrier=hist[0][1], provisional=hist[0][2] == 0,
+                                   attribution_history=tuple(hist))
 
     def prospective(self, days: Optional[Iterable[int]] = None,
                     detectors: Sequence[str] = DETECTORS) -> Dict[str, List[DayResult]]:
@@ -183,16 +224,14 @@ class Pipeline:
         return out
 
     @staticmethod
-    def _result(detector: str, as_of: int, fams: List[FamilyResult], vote=None) -> DayResult:
+    def _result(detector: str, as_of: int, fams: List[FamilyResult], stage2=None) -> DayResult:
         cands: List[Alarm] = []
         for f in fams:
             for a in f.candidates:
-                if detector == "graph_only":
-                    b = ZONE_ATTRIBUTION[a.layer]
-                elif detector == "graph_labels":
-                    b = vote(a)
-                else:
-                    b = a.barrier
+                if detector == "two_stage":
+                    cands.append(stage2(a))
+                    continue
+                b = ZONE_ATTRIBUTION[a.layer] if detector == "graph_only" else a.barrier
                 cands.append(dataclasses.replace(a, detector=detector, barrier=b))
         return DayResult(detector, as_of, cands, [(f.layer, f.barrier, f.p_value) for f in fams])
 
@@ -218,9 +257,21 @@ def combined(run: SimRun, as_of: int, params: Optional[ScanParams] = None, q: Op
     return _detect("combined", run, as_of, params, q, p_max, pipeline)
 
 
-def graph_labels(run: SimRun, as_of: int, params: Optional[ScanParams] = None, q: Optional[float] = 0.10,
-                 p_max: Optional[float] = None, pipeline: Optional[Pipeline] = None) -> List[Alarm]:
-    return _detect("graph_labels", run, as_of, params, q, p_max, pipeline)
+def two_stage(run: SimRun, as_of: int, params: Optional[ScanParams] = None, q: Optional[float] = 0.10,
+              p_max: Optional[float] = None, pipeline: Optional[Pipeline] = None) -> List[Alarm]:
+    """graph_only's alarms; each carries its reply-based cause on `as_of` (barrier, provisional) and
+    its re-attribution over the following days (attribution_history; see attribution_at)."""
+    return _detect("two_stage", run, as_of, params, q, p_max, pipeline)
+
+
+def attribution_at(alarm: Alarm, day: int) -> str:
+    """Cause of `alarm` as known on `day` (two_stage re-attribution; other detectors: alarm.barrier)."""
+    b = alarm.barrier
+    for d, bb, _ in alarm.attribution_history:
+        if d > day:
+            break
+        b = bb
+    return b
 
 
 def run_prospective(run: SimRun, detector: str, days: Optional[Iterable[int]] = None,
