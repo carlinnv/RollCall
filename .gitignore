@@ -9,3 +9,4 @@ __pycache__/
 *.tsbuildinfo
 backend/data_raw/
 backend/eval/cache/
+CARLINNOTES.md

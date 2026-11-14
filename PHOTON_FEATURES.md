@@ -1,0 +1,222 @@
+# Features on `carlin/photon_setup`
+
+What this branch adds: the Photon 2.0 (Beta) iMessage channel for PRD feature F2. Each section lists the files a feature uses and the rules it follows. Last updated Nov 14, 2026.
+
+To set the channel up on your machine, see [PHOTON_SETUP.md](PHOTON_SETUP.md).
+
+All paths are relative to the repo root. Tests for every feature are in `backend/tests/test_api.py` and run with Photon off.
+
+---
+
+## 1. Photon connection
+
+Connects the backend to Photon 2.0 with its Python client.
+
+**Files**
+
+- `backend/requirements.txt`: adds `photonhq-api==0.5.0`; `pydantic` pin raised to `>=2.13.5,<2.15`
+- `.env.example`: the variables each developer needs
+- `backend/app/main.py`: loads `.env` and starts the channel on server startup
+- `backend/scripts/photon_echo.py`: one-shot check that waits for a text from your phone and echoes it back
+
+**Rules**
+
+- The channel starts only when `PHOTON_API_KEY`, `PHOTON_PROJECT_ID`, `PHOTON_AGENT_HANDLE` and `PHOTON_TEST_SENDER` are all set. Otherwise it stays off and the app works as before.
+- Tests never start the channel.
+- Requires Python 3.11 or later.
+
+---
+
+## 2. Inbound messages
+
+A text from a family is classified and stored through the same path as the "Simulate family reply" box.
+
+**Files**
+
+- `backend/app/services/photon_channel.py`: polling loop and `handle_inbound`
+- `backend/app/store.py`: `record_reply` (safety gate, classification, routing; unchanged)
+
+**Rules**
+
+- Photon is polled every 2 seconds.
+- A message is processed only if all of these hold:
+  - it is an iMessage with status `received`
+  - it is from a human to the agent line in `PHOTON_AGENT_HANDLE`
+  - it is a direct conversation, not a group chat
+  - its content is plain text (images and other content are skipped)
+- Each message is processed once, tracked by its Photon message ID.
+- Messages that arrived before the server started are not classified.
+- Message text is passed to the classifier as data only. It never triggers an action.
+- A failed poll is logged and retried on the next cycle; the loop does not stop.
+
+---
+
+## 3. Matching a phone number to a student
+
+Decides which student and which absence an inbound text belongs to.
+
+**Files**
+
+- `backend/app/services/photon_channel.py`: `_links`, `handle_inbound`
+- `backend/app/services/outreach.py`: `digits`, `phone_for`, `demo_student_id`
+
+**Rules**
+
+- Numbers are compared by their last 10 digits.
+- A number matches the student whose `guardian_phone` it equals.
+- The number in `PHOTON_TEST_SENDER` is treated as the guardian of `PHOTON_DEMO_STUDENT_ID` (default `S002`).
+- The reply is attached to the student's most recent absence that is awaiting a reply. If none is waiting, it goes to their most recent absence.
+- A number that matches no student is not classified. It gets a fixed "call the school office" reply.
+- The reply's language is taken from the student's `preferred_language`. It is not detected from the text.
+
+---
+
+## 4. Automatic acknowledgement
+
+A short fixed reply so the family knows the message arrived.
+
+**Files**
+
+- `backend/app/services/photon_channel.py`: `ACK`, `handle_inbound`, `_poll`
+
+**Rules**
+
+- The text is a fixed template in English or Spanish, chosen by the student's `preferred_language`. Other languages get English.
+- It is never model-generated and contains no links.
+- It must pass the outbound rules in section 6. In particular, no acknowledgement is sent when the household has an open safety escalation.
+- It is sent as a reply to the family's message, with idempotency key `rollcall-ack:<message id>`, so a retry cannot send it twice.
+
+---
+
+## 5. Opt-out (STOP)
+
+**Files**
+
+- `backend/app/services/photon_channel.py`: `STOP_WORDS`, `handle_inbound`
+- `backend/app/services/outreach.py`: `opted_out`
+
+**Rules**
+
+- Opt-out words: `stop`, `stopall`, `unsubscribe`, `cancel`, `end`, `quit`, `alto`, `parar`.
+- The whole message must be one of these words, ignoring case and surrounding spaces. Plain-language opt-outs ("no más mensajes") are not recognized yet.
+- An opted-out number receives no confirmation and no further messages.
+- Later texts from an opted-out number are logged but not classified.
+- Opt-outs are held in memory and are lost when the server restarts.
+
+---
+
+## 6. Outbound rules
+
+The checks every outbound message must pass before it is sent.
+
+**Files**
+
+- `backend/app/services/outreach.py`: `blocked_reason`, `has_link`
+- `backend/app/store.py`: `household_suppressed`, `send_to_family`
+
+**Rules**
+
+Checked in this order; the first one that applies blocks the message:
+
+1. **Safety suppression.** No automated message goes to a household while any student in it has an open safety escalation. Only the counselor contacts that family.
+2. **Opt-out.** No message goes to a number that has opted out.
+3. **No links.** A message is blocked if it contains `http://`, `https://`, `www.`, or a domain ending in `.com`, `.org`, `.net`, `.edu`, `.gov`, `.io`, `.co`, `.ly` or `.us`.
+4. **Not empty.** A blank message is blocked.
+
+A blocked message is recorded in the outbox with status `blocked` and the reason. It is not retried.
+
+---
+
+## 7. Outbound sending
+
+Delivers a message that passed the rules.
+
+**Files**
+
+- `backend/app/services/photon_channel.py`: `send_text`, `contacts`, startup catch-up in `_loop`
+- `backend/app/store.py`: `sender`, `send_to_family`
+- `backend/scripts/photon_send.py`: one-shot check that sends a test message to your phone
+- `frontend/src/pages/Plans.tsx`, `frontend/src/api.ts`: status column in the outbound messages table
+
+**Rules**
+
+- A family is reachable only after it has texted the agent line. Photon's shared line cannot send the first message.
+- On startup the channel reads the last 3 days of inbound messages to relearn who is reachable. Those messages are not re-classified.
+- Every attempt is recorded in the outbox with one status:
+
+  | Status | Meaning |
+  | :--- | :--- |
+  | `sent` | Photon accepted the message. Delivery is not confirmed. |
+  | `queued` | Allowed, but the channel is off or the family has not texted yet. |
+  | `blocked` | An outbound rule forbids it. |
+  | `failed` | Photon rejected the send. |
+
+- Queued messages are not sent automatically later. The send has to be requested again.
+- All messages go over iMessage. There is no SMS fallback.
+
+---
+
+## 8. First check-in message
+
+The supportive first message asking what got in the way.
+
+**Files**
+
+- `backend/app/services/outreach.py`: `CHECK_IN`, `check_in_text`
+- `backend/app/store.py`: `check_in_message`, `send_check_in`
+- `backend/app/main.py`: `POST /api/absences/{id}/check-in`
+
+**Rules**
+
+- Sent only when the absence has no reply on file. Otherwise the request returns `blocked`.
+- Asks one open question, names the attendance clerk as the reader of replies, and offers help.
+- States no absence count and does not invite voice notes.
+- Written in English or Spanish by the student's `preferred_language`; other languages get English.
+- Uses the guardian's name, the student's first name and the date of the absence.
+- Idempotency key `rollcall-checkin:<absence id>`: Photon delivers at most one check-in per absence.
+- Sent on request through the endpoint. Nothing sends it automatically when an absence is imported.
+
+---
+
+## 9. Approved plan messages
+
+Family messages from a school action plan go out over Photon.
+
+**Files**
+
+- `backend/app/store.py`: `approve_plan`
+- `backend/app/services/action_plan.py`: `personalize` (unchanged; `outbox_entry` removed)
+
+**Rules**
+
+- Nothing is sent until a staff member approves the plan.
+- One message per recipient family, each checked against the outbound rules on its own. One family being blocked does not stop the others.
+- Idempotency key `rollcall-plan:<plan id>:<student id>`.
+- The plan is marked `sent` once processed, even if some messages were blocked or queued. The outbox shows the outcome per family.
+- Known gap: a clerk's edit to the message reaches only families in the plan's language. Families in another language get the standard template.
+
+---
+
+## 10. Audit trail and status
+
+**Files**
+
+- `backend/app/services/photon_channel.py`: `audit`, `status`
+- `backend/app/main.py`: `GET /api/channel`
+
+**Rules**
+
+- Every inbound message is logged with its route (`cluster`, `case`, `unknown`, `escalated`, `opted_out`, `unlinked`, `no_absence`) and the absence it was attached to.
+- Every outbound message Photon accepted is logged.
+- `GET /api/channel` returns whether the channel is on and listening, the number of reachable families, the number of opt-outs, and the last 50 log entries.
+- The log is in memory and is cleared on restart. It is not the hash-chained audit log the PRD describes.
+
+---
+
+## Not on this branch
+
+- Closing a safety escalation (suppression lasts until the demo data is reset)
+- A check-in button in the UI
+- Quiet hours (8am–8pm)
+- Voice notes, SMS fallback, language detection (see `CARLINNOTES.md`)
+- Live dashboard refresh when a message arrives

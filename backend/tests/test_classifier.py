@@ -321,7 +321,10 @@ def test_escalation_after_drafting_blocks_send(fresh):
     assert "S002" in plan.recipient_student_ids
     _escalate(s, "A004")
     s.approve_plan(plan.id, "clerk")
-    assert s.outbox and all(m["student_id"] != "S002" for m in s.outbox)
+    # The Photon outbox records the attempt as blocked (audit trail); nothing is delivered or queued.
+    to_s002 = [m for m in s.outbox if m["student_id"] == "S002"]
+    assert to_s002 and all(m["status"] == "blocked" and "safety escalation" in m["reason"] for m in to_s002)
+    assert any(m["student_id"] != "S002" for m in s.outbox)
 
 
 def test_escalation_suppresses_household(fresh):
