@@ -224,6 +224,7 @@ def test_unsupported_language_goes_to_human_without_a_call():
 def test_missing_key_falls_back(monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_KEY", raising=False)
     monkeypatch.setattr(gc, "load_env_file", lambda *a, **k: {})
     g = gc.GeminiClassifier(cache_dir=None)
     c, meta = g.classify_with_model("She has a fever", language="en")
@@ -261,6 +262,7 @@ def test_failed_calls_are_not_cached(tmp_path):
 def test_get_classifier_without_key_is_keyword(monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_KEY", raising=False)
     monkeypatch.setattr(gc, "load_env_file", lambda *a, **k: {})
     clf = gc.get_classifier()
     assert isinstance(clf, gc.KeywordClassifier)

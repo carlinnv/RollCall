@@ -14,14 +14,14 @@ Rules this module enforces:
     instruction inside it. Output is a JSON schema; the label must be in the
     enum and `evidence_quote` must be an exact substring of the reply (after
     whitespace normalization) or it is dropped.
-  * Confidence is agreement across `n` samples (default 5, T = 0.7), not the
+  * Confidence is agreement across `n` samples (default 3, T = 0.7), not the
     model's self-reported number.
   * Known student/guardian names are replaced with placeholders before the call.
   * Responses are cached on disk (backend/eval/cache/, git-ignored), keyed by
     sha256 of model + prompt + reply, so demo mode and evaluation re-runs are
     free and deterministic.
 
-Environment: GEMINI_API_KEY (required for the model path), GEMINI_MODEL
+Environment: GEMINI_API_KEY or GEMINI_KEY (required for the model path), GEMINI_MODEL
 (default below), GEMINI_TEMPERATURE ("none" to omit), GEMINI_SAMPLES,
 GEMINI_TIMEOUT_S. backend/.env is read if present (KEY=VALUE lines).
 """
@@ -48,7 +48,8 @@ DEFAULT_CACHE_DIR = BACKEND_DIR / "eval" / "cache"
 # Stable, fastest/cheapest current text model on https://aistudio.google.com/docs/models
 # (ai.google.dev/gemini-api/docs/models redirects there), checked 2026-11-14.
 DEFAULT_MODEL = "gemini-3.5-flash-lite"
-DEFAULT_SAMPLES = 5
+MIN_HTTP_DEADLINE_S = 10.0  # server-side minimum for a manually set request deadline
+DEFAULT_SAMPLES = 3  # free tier rate limits; raise with GEMINI_SAMPLES on a paid key
 DEFAULT_TEMPERATURE = 0.7
 DEFAULT_TIMEOUT_S = 6.0
 DEFAULT_TAU = 0.8  # auto-accept threshold; re-choose on the dev split with eval_classifier
@@ -224,7 +225,7 @@ class GeminiClassifier:
                  tau: float = DEFAULT_TAU, cache_dir: Optional[Path] = DEFAULT_CACHE_DIR, client: Any = None,
                  use_cache: bool = True) -> None:
         load_env_file()
-        self.api_key = api_key or os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        self.api_key = api_key or os.environ.get("GEMINI_API_KEY") or os.environ.get("GEMINI_KEY") or os.environ.get("GOOGLE_API_KEY")
         self.model = model or os.environ.get("GEMINI_MODEL") or DEFAULT_MODEL
         self.n_samples = max(1, int(n_samples or os.environ.get("GEMINI_SAMPLES") or DEFAULT_SAMPLES))
         self.temperature = _env_float("GEMINI_TEMPERATURE", temperature)
@@ -242,8 +243,11 @@ class GeminiClassifier:
             from google import genai
             from google.genai import types
 
+            # The API rejects request deadlines under 10 s, so the HTTP deadline is at least that.
+            # Our own (shorter) budget is enforced by wait(timeout=self.timeout_s) in _samples().
+            http_timeout_ms = int(max(self.timeout_s, MIN_HTTP_DEADLINE_S) * 1000)
             self._client = genai.Client(api_key=self.api_key,
-                                        http_options=types.HttpOptions(timeout=int(self.timeout_s * 1000)))
+                                        http_options=types.HttpOptions(timeout=http_timeout_ms))
         return self._client
 
     def _config(self) -> Dict[str, Any]:
@@ -358,13 +362,18 @@ class GeminiClassifier:
             meta.needs_review = True  # every safety flag goes to a counselor
             model_quote = next((q for b, q in parsed if b == Barrier.SAFETY and q), None)
             evidence = kw.evidence if kw_safety else (model_quote or text.strip())
-            confidence = kw.confidence if kw_safety else votes[Barrier.SAFETY] / self.n_samples
+            confidence = kw.confidence if kw_safety else votes[Barrier.SAFETY] / len(parsed)
             return Classification(barrier=Barrier.SAFETY, confidence=round(confidence, 2), evidence=evidence,
                                   safety_critical=True), meta
 
-        confidence = votes[label] / self.n_samples  # failed samples count as disagreement
+        # Agreement among the samples that came back. Failed samples (e.g. 429 rate limits) are not
+        # disagreement; too few valid samples is its own review reason instead.
+        confidence = votes[label] / len(parsed)
         quote = next((q for b, q in parsed if b == label and q), None)
         reasons = []
+        min_valid = min(2, self.n_samples)
+        if len(parsed) < min_valid and kw.barrier != label:
+            reasons.append(f"only {len(parsed)} of {self.n_samples} samples returned")
         if confidence < self.tau:
             reasons.append(f"agreement {confidence:.2f} below tau {self.tau}")
         if label == Barrier.UNKNOWN:
@@ -379,7 +388,7 @@ class GeminiClassifier:
 
 def has_api_key() -> bool:
     load_env_file()
-    return bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
+    return bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GEMINI_KEY") or os.environ.get("GOOGLE_API_KEY"))
 
 
 def get_classifier(prefer: Optional[str] = None, **kwargs: Any):
