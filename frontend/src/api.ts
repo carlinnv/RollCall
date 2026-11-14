@@ -28,7 +28,7 @@ export interface Student {
 }
 
 export interface FamilyReply {
-  channel: "text" | "voice";
+  channel: "text";
   text: string;
   language: string;
   received_at: string;
@@ -228,7 +228,7 @@ export const api = {
   absence: (id: string) => req<AbsenceDetail>(`/absences/${id}`),
   students: () => req<Student[]>("/students"),
   importCsv: (csv: string) => post<{ added: number; errors: string[] }>("/absences/import", { csv }),
-  reply: (id: string, text: string, channel: "text" | "voice", language: string) =>
+  reply: (id: string, text: string, channel: "text", language: string) =>
     post<{ route: "escalated" | "cluster" | "case" | "unknown"; absence: Absence }>(`/absences/${id}/reply`, {
       text,
       channel,
@@ -253,22 +253,11 @@ export const api = {
   revenue: () => req<RevenueSummary>("/revenue"),
   saveSettings: (s: RevenueSettings) => req<RevenueSummary>("/revenue/settings", { method: "PUT", body: JSON.stringify(s) }),
   reset: () => post<{ ok: boolean }>("/reset"),
-  voice: (id: string, audio_b64: string, mime_type: string) =>
-    post<{ route: string; voice: VoiceInfo; absence: Absence }>(`/absences/${id}/voice`, { audio_b64, mime_type }),
   ablation: () => req<Record<string, any>>("/eval/ablation"),
   retrieval: () => req<Record<string, any>>("/eval/retrieval"),
   scaling: () => req<Record<string, any>>("/eval/scaling"),
   ask: (question: string) => post<AssistantAnswer>("/assistant/ask", { question }),
 };
-
-export interface VoiceInfo {
-  route: "auto" | "clerk_review" | "interpreter" | "counselor";
-  transcript: string | null;
-  transcript_source: string | null;
-  language: string | null;
-  reason: string | null;
-  latency_ms: number;
-}
 
 export interface AssistantAnswer {
   question: string;
@@ -279,14 +268,6 @@ export interface AssistantAnswer {
   error: string | null;
   dataset: string;
 }
-
-export const fileToBase64 = (file: Blob) =>
-  new Promise<string>((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result).split(",")[1] ?? "");
-    r.onerror = () => reject(r.error);
-    r.readAsDataURL(file);
-  });
 
 export const money = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });

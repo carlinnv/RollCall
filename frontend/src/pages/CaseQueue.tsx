@@ -81,7 +81,7 @@ export default function CaseQueue() {
               <td className="quote">
                 {r.reply ? (
                   <>
-                    {r.reply.channel === "voice" && <span className="voice">voice</span>} {r.reply.text}
+                    {r.reply.text}
                   </>
                 ) : (
                   <span className="muted">—</span>

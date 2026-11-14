@@ -44,7 +44,7 @@
 
 ### Core Data Entities (ML & Graph Scope)
 * **Student:** `anonymous_id`, `grade`, `class_sections`, `bus_route`, `household_id`, `neighborhood`
-* **Message:** `message_id`, `absence_id`, `direction`, `language`, `text_or_transcript`, `received_at`
+* **Message:** `message_id`, `absence_id`, `direction`, `language`, `text`, `received_at`
 * **Reason:** `absence_id`, `barrier_label`, `confidence_score`, `evidence_quote`, `source_message_id`
 * **Cluster:** `id` (deterministic), `layers_involved`, `zone`, `member_ids`, `likely_cause`, `observed`, `expected`, `p_value`, `start_date`, `detected_on`, `weekly_revenue_at_risk`, `evidence_message_ids`
 * **Correction:** `absence_id`, `old_label`, `new_label`, `corrected_by`, `timestamp`
@@ -53,11 +53,12 @@
 
 ## 3. AI & Graph Pipeline Specifications
 
-### 3.1 Multilingual Voice & Reason Classification (F1 / F2)
-* **Speech-to-Text:** send voice notes to **Gemini's native audio input**, which transcribes and classifies in one call. Whisper is a fallback only. Low-confidence or unsupported languages (e.g., Mixteco, Triqui) go to a human interpreter.
-* **Barrier Classification:** **Gemini** maps the text/transcript to one label from the taxonomy in PRD 1 F1.
+### 3.1 Multilingual Reason Classification (F1 / F2)
+* **Text only:** Voice notes are out of scope this weekend: the Photon 2.0 beta iMessage channel carries text and images only. Revisit when the channel supports audio (a tested Gemini-audio + Whisper pipeline exists in git history, commit 52a9e7c).
+* **Language access:** low-confidence or unsupported languages (e.g., Mixteco, Triqui) go to a human interpreter.
+* **Barrier Classification:** **Gemini** maps the reply text to one label from the taxonomy in PRD 1 F1.
 * **Structured Output:** constrained JSON `{ "label": enum, "confidence": float, "evidence_quote": string }`. The label must match the enum; `evidence_quote` must be an exact substring of the input or it is dropped.
-* **Confidence:** self-reported confidence is poorly calibrated, so use agreement across 5 samples at T = 0.7. Choose the auto-accept threshold τ on a dev split so auto-accepted labels reach ≥ 0.95 precision; everything else goes to the clerk queue. Report the share sent to clerks, a risk–coverage curve, and ECE.
+* **Confidence:** self-reported confidence is poorly calibrated, so use agreement across 3 samples at T = 0.7 (5 on a paid key). Choose the auto-accept threshold τ on a dev split so auto-accepted labels reach ≥ 0.95 precision; everything else goes to the clerk queue. Report the share sent to clerks, a risk–coverage curve, and ECE.
 * **Latency:** 6 s timeout, keyword fallback, disk cache of responses (also used by demo mode).
 * **Learning From Corrections (F8):** staff-confirmed corrections are stored per school; the most similar past corrections are added to the prompt as examples. Corrections used as examples must come from a split that does not overlap the test set.
 

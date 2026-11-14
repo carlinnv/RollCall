@@ -45,8 +45,8 @@ class Student(BaseModel):
 
 
 class FamilyReply(BaseModel):
-    channel: str = "text"  # "text" | "voice"
-    text: str  # original text, or the voice transcript
+    channel: str = "text"  # "text" (iMessage / SMS)
+    text: str  # original reply text
     language: str = "en"
     received_at: str
     message_id: Optional[str] = None  # PRD 2 Message.message_id; set by the store ("M-<absence id>")

@@ -6,14 +6,14 @@
 ---
 
 ## 1. System Architecture & Tech Stack
-A single **FastAPI** backend orchestrates messaging, voice, LLM classification, graph clustering, agent actions, and retrieval, serving a **React (Vite)** staff dashboard.
+A single **FastAPI** backend orchestrates messaging, LLM classification, graph clustering, agent actions, and retrieval, serving a **React (Vite)** staff dashboard.
 
 * **Backend Service:** Python 3.11/3.12 + FastAPI, single uvicorn worker (the in-memory store has no locking). Python 3.14 is not supported by the pinned pydantic.
 * **Frontend Dashboard:** React 18 + TypeScript + Vite. Role-based views: Clerk Morning Briefing & Case Queue, Counselor Escalation Inbox, Liaison Inbox, Business Manager Revenue Dashboard. Polls (or uses SSE) so a live reply appears without reloading.
 * **Source of truth:** the in-memory store, loaded from a precomputed snapshot (labels included) so `reset()` makes no LLM calls. Clusters are cached behind a version counter that bumps on every change.
 * **TigerData (sidecar):** one hypertable `absence_events` plus one continuous aggregate `weekly_dollars_by_cause` driving the revenue/early-warning timeline chart. Optional pgvector for F7. Not a full migration; the app keeps working if TigerData is down.
 * **Messaging Channel:** Photon 2.0 (iMessage primary) with SMS fallback; a phone-number index maps inbound messages to the student and open absence.
-* **AI & Speech:** Gemini API (classification, native audio for voice notes, plan generation, assistant answers). Whisper only as a fallback. Synthetic replies are generated with a different model family than the classifier (PRD 2 §2).
+* **AI:** Gemini API (classification, plan generation, assistant answers). Voice notes are out of scope this weekend: the Photon 2.0 beta iMessage channel carries text and images only. Revisit when the channel supports audio (a tested Gemini-audio + Whisper pipeline exists in git history, commit 52a9e7c). Synthetic replies are generated with a different model family than the classifier (PRD 2 §2).
 * **Graph Engine:** `networkx` + NumPy (SocioPatterns contact graphs + synthetic logistics layers).
 * **Hosting:** Vultr with HTTPS from hour zero (the Photon webhook needs a public URL).
 * **Optional Add-ons:** LangChain Deep Agents (F7 counselor assistant); Amazon Bedrock for one component (e.g., the safety classifier).
@@ -21,7 +21,7 @@ A single **FastAPI** backend orchestrates messaging, voice, LLM classification, 
 
 ### Core Transactional Data Model
 * **Absence:** `absence_id`, `student_id`, `date`, `status` (`reason_captured` | `awaiting_reply` | `unknown`), `suggested_sis_code`
-* **Message:** `message_id`, `absence_id`, `direction`, `channel` (`imessage` | `sms` | `voice`), `language`, `raw_text_or_transcript`, `timestamp` (real `now()`), `latency_ms`. An absence can have many messages.
+* **Message:** `message_id`, `absence_id`, `direction`, `channel` (`imessage` | `sms`), `language`, `raw_text_or_transcript`, `timestamp` (real `now()`), `latency_ms`. An absence can have many messages.
 * **Action Plan:** `plan_id`, `cluster_or_case_id`, `school_action`, `owner`, `approver_role`, `due_date`, `family_message_draft`, `approval_status`
 * **Agent Action:** `action_id`, `cluster_or_case_id`, `type` (`recode_flag` | `transport_notice` | `nurse_notice` | `family_followup` | `counselor_task`), `recipient`, `draft`, `approval_status`
 * **Learning Plan:** `plan_id`, `student_id`, `missed_topics`, `steps`, `time_estimates`, `verification_status`
@@ -33,7 +33,7 @@ A single **FastAPI** backend orchestrates messaging, voice, LLM classification, 
 
 ## 2. Messaging Agent & Channel Requirements (F2 — P0)
 * **Trigger:** if no reason is on file, send one supportive check-in after an absence asking what got in the way, and saying who reads replies. No absence counts in the first message (count-based messages follow PRD 1 Outreach Rules).
-* **Multimodal & Multilingual:** accepts text and voice notes in any language; processes end-to-end within **10 seconds** (measured with real timestamps). Messages go out in the family's language (Ed Code 48985); machine-translated templates are reviewed by a human before use.
+* **Multilingual:** accepts text replies in any language; processes end-to-end within **10 seconds** (measured with real timestamps). Messages go out in the family's language (Ed Code 48985); machine-translated templates are reviewed by a human before use.
 * **Channel Resilience:** Photon 2.0 iMessage with automatic SMS fallback so Android households are never excluded.
 * **Acceptance:** a live Spanish reply produces a structured barrier label within 10 seconds, and a seeded safety message routes immediately to the counselor inbox. Both also work with Photon off (demo mode).
 
@@ -56,7 +56,7 @@ A single **FastAPI** backend orchestrates messaging, voice, LLM classification, 
 
 ### Data Privacy & Ethical Guardrails
 * **Zero Real Student PII:** public anonymized contact graphs (SocioPatterns) plus synthetic student/family records. The UI shows a "Synthetic data — fictional school" banner; seed names should be obviously fictional.
-* **Model calls:** replace names with placeholders before any LLM call; show a "sent to model" panel in the demo. Production: Vertex AI or Bedrock under a DPA (no training, zero retention, US region); contracts meet SOPIPA and AB 1584 (district owns the data, no ads or profiling, deletion on request, breach notice). Whisper, if used, is self-hosted.
+* **Model calls:** replace names with placeholders before any LLM call; show a "sent to model" panel in the demo. Production: Vertex AI or Bedrock under a DPA (no training, zero retention, US region); contracts meet SOPIPA and AB 1584 (district owns the data, no ads or profiling, deletion on request, breach notice).
 * **Role-Based Access:** auth with roles (demo login or role switcher). Clerks see "Safety: with counselor", never the disclosure text. Housing details go to the McKinney-Vento liaison only. Business-manager views are aggregates with cells of n < 11 suppressed. `/api/reset` is disabled in the public build.
 * **Minimum necessary in agent actions:** transport notice = route, dates, rider count (no names, replies or barriers; the transport office may be a contractor). Nurse notice = class section, dates, count, symptom category; names are opened in the dashboard. Counselor tasks stay inside the app.
 * **Contact graph:** used only for illness-spread scoring, shown collapsed to class-section level with no student-to-student edges. Node IDs re-keyed; original class names dropped. Respect CC BY-NC-SA (non-commercial). In production we would not collect proximity data; class schedules serve the same purpose.
@@ -72,7 +72,7 @@ A single **FastAPI** backend orchestrates messaging, voice, LLM classification, 
 | **Main judging** | Social need (chronic absence), creative cross-family root cause, working loop. | Reply $\rightarrow$ cluster $\rightarrow$ approved fix in 3 minutes; close on kids, not dollars. |
 | **Amazon Practical AI** | An agent that reasons (root cause), plans, acts (drafted recode flags, notices, messages), and adapts (learns from corrections), used daily by a clerk. | Briefing $\rightarrow$ drafted actions $\rightarrow$ one-click approve $\rightarrow$ a correction changes the next result. |
 | **Arlequin Track 2** *(Content + Connectivity)* | Message semantics + school contact/transit graph; both layers measured. | Held-out ablation (recall at equal false-alarm rate, lead time), interactive aggregate graph view, Recall@5. Confirm data rules with Arlequin early. |
-| **Gemini API (MLH)** | Core LLM: native audio + structured JSON + assistant answers. | Voice note $\rightarrow$ label in one Gemini call; per-language F1. |
+| **Gemini API (MLH)** | Core LLM: structured JSON classification + assistant answers. | Reply $\rightarrow$ label + evidence quote in about 1 s; per-language F1. |
 | **TigerData (MLH)** | Hypertable + continuous aggregate for absence events. | The "flagged N days earlier" timeline driven by the continuous aggregate. |
 | **LangChain Deep Agents** | F7 counselor assistant with sub-agents and a file system. | Counselor asks a question; agent returns a cited case report. |
 | **Photon Messaging Agent** | Two-way family communication is the core ingestion loop. | Live Photon 2.0 conversation + SMS fallback; simulated channel as backup. |
@@ -98,7 +98,7 @@ Owners: **A** = Messaging & Photon, **B** = ML & Graph, **C** = Product & Fronte
 3. **Phase 2 (T10–16):**
    * **B:** permutation scan statistic, three detectors, held-out ablation (`eval/ablation.json`).
    * **C:** aggregate graph view and ablation table.
-   * **A:** voice notes through Gemini audio.
+   * **A:** Photon hardening: opt-outs, delivery status, demo replay fixture.
    * **GATE 2 (T16):** the combined detector beats both baselines on held-out runs; otherwise report honestly and stop tuning at T18.
 4. **Phase 3 (T16–22):**
    * **B:** F8 learning from corrections; then F7 Deep Agents assistant (own time box, ≤ 3 h).
@@ -111,10 +111,9 @@ Owners: **A** = Messaging & Photon, **B** = ML & Graph, **C** = Product & Fronte
 Cut from the top:
 1. F5 claim verification (P1)
 2. pgvector (F7 keeps keyword/SQL retrieval)
-3. Whisper fallback
-4. Scaling benchmark chart
-5. Live SMS fallback polish (keep architectural support)
-6. p-values (fall back to rule-based clusters, labeled as such)
+3. Scaling benchmark chart
+4. Live SMS fallback polish (keep architectural support)
+5. p-values (fall back to rule-based clusters, labeled as such)
 * **Track work is time-boxed, not cut:** F7 Deep Agents (≤ 3 h, after Gate 2) and the TigerData sidecar (≤ 3 h, after Gate 1) each have an owner and must not block the core demo.
 * **Never Cut:** F1, F2 text loop, safety gate, basic F3, F6, F8 drafted actions and corrections, F9, `DEMO_MODE`.
 
@@ -136,5 +135,5 @@ Cut from the top:
 * **Team:** rename to "Here"? (See PRD 1.)
 * **Arlequin (high priority):** Track 2 says "public data only" (Track 1 allows synthetic). Confirm that a real public contact graph with synthetic replies and logistics layers is acceptable, and that school–family messages count as "social" data for this track.
 * **Peri:** is a clearly defined persona + CSV workflow sufficient, or do judges expect a named pilot district?
-* **Photon:** does 2.0 support inbound voice attachments, and does it need a macOS host with Messages?
+* **Photon:** when will 2.0 support inbound audio attachments (would enable voice notes later)?
 * **Facts to verify before the pitch:** CA 2024–25 chronic absence rate; Attendance Recovery rules (start year, 10-day cap, supervision ratio); Utah dataset license.

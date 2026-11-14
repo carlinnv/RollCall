@@ -111,24 +111,16 @@ class Store:
         return [s.first_name, s.last_name, s.guardian_name] if s else []
 
     def record_reply(self, absence_id: str, reply: FamilyReply, route: bool = True,
-                     classification: Optional[Classification] = None, allow_model: bool = True) -> str:
+                     allow_model: bool = True) -> str:
         """Run the safety gate, classify (with this school's past corrections, F8), and return the
-        route: escalated | cluster | case | unknown. route=False skips the cluster lookup (seed load).
-        `classification` is passed by the voice pipeline, which has already classified the transcript;
-        the keyword safety check still runs on the text and can only add a safety flag."""
+        route: escalated | cluster | case | unknown. route=False skips the cluster lookup (seed load)."""
         absence = self.absences[absence_id]
         if not reply.message_id:
             reply = reply.model_copy(update={"message_id": f"M-{absence_id}"})
         absence.reply = reply
         self.touch()
-        if classification is not None:
-            result = classification
-            kw = corrections.keyword.classify(reply.text, language=reply.language)
-            if kw.safety_critical and not result.safety_critical:
-                result = kw  # safety only ever escalates
-        else:
-            result, _info = corrections.classify(reply.text, reply.language, self.corrections, SCHOOL_ID,
-                                                 names=self._names(absence.student_id), allow_model=allow_model)
+        result, _info = corrections.classify(reply.text, reply.language, self.corrections, SCHOOL_ID,
+                                             names=self._names(absence.student_id), allow_model=allow_model)
         absence.classification = result
 
         if result.safety_critical:

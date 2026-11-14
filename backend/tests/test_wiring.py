@@ -1,13 +1,10 @@
-"""PRD 1 <-> PRD 2 wiring: live demo story, voice endpoint, assistant endpoint, eval files.
-No network: the voice pipeline is replaced with a fake and the assistant runs without a key."""
-import base64
-
+"""PRD 1 <-> PRD 2 wiring: live demo story, assistant endpoint, eval files.
+No network: the assistant runs without a key."""
 import pytest
 from fastapi.testclient import TestClient
 
 from app import main
-from app.models import Barrier, Classification, FamilyReply
-from app.services import voice
+from app.models import Barrier, FamilyReply
 from app.store import Store
 
 
@@ -39,46 +36,6 @@ def test_seed_reset_never_calls_a_model(monkeypatch):
     monkeypatch.setattr(corrections, "gemini_classifier", boom)
     monkeypatch.setattr(corrections, "use_gemini", lambda: True)
     Store()  # would raise if any seed reply went to the model
-
-
-def _fake_voice(route="auto", transcript="El autobús no pasó.", barrier=Barrier.TRANSPORTATION, visibility="staff"):
-    def fake(audio, mime, language_hint=None, names=None):
-        meta = voice.VoiceMeta(route=route, needs_review=route != "auto")
-        meta.transcript = transcript
-        meta.transcript_source = "gemini_audio"
-        meta.language = "es"
-        meta.transcript_visibility = visibility
-        return Classification(barrier=barrier, confidence=0.9, evidence=transcript or ""), meta
-    return fake
-
-
-def test_voice_endpoint_records_transcript_reply(client, monkeypatch):
-    monkeypatch.setattr(voice, "process_voice_note", _fake_voice())
-    r = client.post("/api/absences/A004/voice", json={"audio_b64": base64.b64encode(b"fake").decode(), "mime_type": "audio/mpeg"})
-    assert r.status_code == 200, r.text
-    body = r.json()
-    assert body["absence"]["reply"]["channel"] == "voice"
-    assert body["absence"]["classification"]["barrier"] == "transportation"
-
-
-def test_voice_keyword_safety_overrides_model_label(client, monkeypatch):
-    monkeypatch.setattr(voice, "process_voice_note",
-                        _fake_voice(transcript="Le pegan en el recreo y tiene miedo.", barrier=Barrier.ILLNESS))
-    r = client.post("/api/absences/A004/voice", json={"audio_b64": base64.b64encode(b"x").decode()})
-    body = r.json()
-    assert body["route"] == "escalated"
-    assert body["absence"]["classification"]["safety_critical"] is True
-
-
-def test_voice_safety_transcript_hidden_from_clerk(client, monkeypatch):
-    monkeypatch.setattr(voice, "process_voice_note", _fake_voice(
-        route="counselor", transcript="Le pegan en el recreo.", barrier=Barrier.SAFETY, visibility="counselor_only"))
-    body = client.post("/api/absences/A004/voice", json={"audio_b64": base64.b64encode(b"x").decode()}).json()
-    assert body["voice"]["transcript"] is None
-
-
-def test_voice_rejects_bad_audio(client):
-    assert client.post("/api/absences/A004/voice", json={"audio_b64": "not base64!!"}).status_code == 400
 
 
 def test_assistant_needs_a_key(client, monkeypatch):

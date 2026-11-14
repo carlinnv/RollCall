@@ -1,9 +1,0 @@
-# Runtime dependencies for the self-hosted Whisper fallback (tested with Python 3.11, 2026-11-14).
-faster-whisper==1.2.1
-ctranslate2==4.9.0
-av==18.1.0
-onnxruntime==1.32.0
-fastapi==0.163.0
-starlette==1.10.0
-python-multipart==0.0.33
-uvicorn==0.54.0
