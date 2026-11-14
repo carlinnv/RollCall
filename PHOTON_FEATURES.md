@@ -255,4 +255,3 @@ A record of every text between the school and a family, with how long each took.
 - A check-in button in the UI
 - Quiet hours (8am–8pm)
 - Voice notes, SMS fallback, language detection (see `CARLINNOTES.md`)
-- Live dashboard refresh when a message arrives

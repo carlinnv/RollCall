@@ -65,6 +65,7 @@ When the `PHOTON_*` values are set in `.env`, the API polls Photon every 2 secon
 - `backend/app/services/outreach.py` — the rules every outbound message must pass: no automated message to a household with an open safety escalation, none to a number that opted out, and no links. Also builds the first check-in text (no absence count; says who reads replies).
 - `POST /api/absences/{id}/check-in` — sends the check-in for an absence with no reason on file. Approving a plan sends its family messages the same way. Each attempt is recorded in the outbox with a status: `sent`, `queued` (allowed but the family is not reachable yet), `blocked` (a rule forbids it) or `failed`.
 - `GET /api/messages` — the message log: every inbound and outbound text, many per absence, with real timestamps and `latency_ms`. `GET /api/messages/latency` summarises reply latency against the 10-second target. The case page shows the full conversation.
+- The UI refetches its data every 2 seconds (`frontend/src/hooks.ts`), so an incoming text appears on the case queue, case page, clusters and revenue without a reload.
 - `GET /api/channel` — listener status, reachable families, iMessage latency, and recent iMessage log entries.
 - `backend/scripts/photon_echo.py` — one-shot round-trip check for a new line or key.
 - `backend/scripts/photon_send.py` — sends one test message to your own phone to check outbound.

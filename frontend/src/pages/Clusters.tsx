@@ -1,12 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import { api, fmtDate, money } from "../api";
-import { useLoad } from "../hooks";
+import { useChanged, useLoad } from "../hooks";
 import { BarrierTag, ErrorNote, Page } from "../components/ui";
 
 const LINK = { bus_route: "Shared bus route", classroom: "Shared classroom", household: "Same household" };
 
 export default function Clusters() {
   const { data, error } = useLoad(api.clusters);
+  // A cluster that just formed or gained a student is highlighted briefly.
+  const changed = useChanged(data, (c) => c.id, (c) => `${c.student_ids.length}|${c.absence_ids.length}`);
   const nav = useNavigate();
 
   const draft = async (cluster_id: string) => {
@@ -20,7 +22,7 @@ export default function Clusters() {
       {data?.length === 0 && <p className="muted">No clusters detected yet.</p>}
       <div className="cards">
         {data?.map((c) => (
-          <div key={c.id} className="card cluster">
+          <div key={c.id} className={changed.has(c.id) ? "card cluster flash" : "card cluster"}>
             <div className="row between">
               <BarrierTag barrier={c.barrier} />
               <span className="money">{money(c.dollars_at_risk_week)} at risk this week</span>

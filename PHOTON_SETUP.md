@@ -97,14 +97,14 @@ Your phone plays the parent of one demo student: Sofia (S002), a Spanish-speakin
 
 1. Text the agent number: `El autobús no llegó a la parada`
 2. You get a short thank-you reply in Spanish.
-3. Refresh the case queue. Sofia's absence now shows "transportation" with your text as the evidence.
+3. Watch the case queue. Within a few seconds Sofia's absence shows "transportation" with your text as the evidence.
 
 To play a different student, add `PHOTON_DEMO_STUDENT_ID=S014` (or any student ID) to `.env` and restart the API.
 
 ## Things that will surprise you
 
 - **You must text first.** The agent cannot message a number that has not texted it. Send one message before testing anything outbound.
-- **The page does not update by itself.** Refresh the browser after you send a text.
+- **The page updates by itself.** A new text appears within a few seconds; no need to refresh.
 - **Text only.** Photos and voice notes are ignored.
 - **Opt-outs work.** If you text `STOP`, or something like "no more messages" or "no más mensajes", the agent goes silent for your number. Text `START` to undo it.
 - **A safety message silences the agent.** After a text about bullying or feeling unsafe, you get no more automatic replies until you click **Reset demo data**.

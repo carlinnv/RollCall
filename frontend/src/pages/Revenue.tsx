@@ -11,7 +11,8 @@ export default function Revenue() {
   useEffect(() => {
     if (loaded) {
       setData(loaded);
-      setSettings(loaded.settings);
+      // Live updates refresh the figures, but never overwrite a rate the user is editing.
+      setSettings((current) => current ?? loaded.settings);
     }
   }, [loaded]);
 
