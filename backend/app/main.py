@@ -1,14 +1,28 @@
 """Why Absent API."""
+from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Optional
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from .models import Barrier, FamilyReply, RevenueSettings
+from .services import photon_channel
 from .store import TODAY, store
 
-app = FastAPI(title="Why Absent API", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    # Lifespan only runs under a real server (or `with TestClient`), so plain tests never start Photon.
+    load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+    photon_channel.start()
+    yield
+    photon_channel.stop()
+
+
+app = FastAPI(title="Why Absent API", version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -93,9 +107,23 @@ def reply(absence_id: str, body: ReplyIn):
     return {"route": route, "absence": store.absences[absence_id]}
 
 
+@app.post("/api/absences/{absence_id}/check-in")
+def check_in(absence_id: str):
+    """Send the first check-in. Returns status sent | queued | blocked | failed, with the reason."""
+    _get(store.absences, absence_id, "absence")
+    return store.send_check_in(absence_id)
+
+
 @app.get("/api/escalations")
 def escalations():
     return [{**e.model_dump(), "student": store.students[e.student_id]} for e in store.escalations.values()]
+
+
+# ---------- F2: messaging channel ----------
+@app.get("/api/channel")
+def channel():
+    """Photon channel status and the recent message audit trail."""
+    return photon_channel.status()
 
 
 # ---------- clusters ----------

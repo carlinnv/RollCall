@@ -126,6 +126,3 @@ def personalize(plan: ActionPlan, student: Student) -> str:
         return plan.message.replace("{guardian}", student.guardian_name).replace("{student}", student.first_name)
     return _message(lang, plan.barrier, student.guardian_name, student.first_name, plan.family_request)[1]
 
-
-def outbox_entry(plan: ActionPlan, student: Student) -> Dict[str, Optional[str]]:
-    return {"plan_id": plan.id, "to": student.guardian_phone, "student_id": student.id, "text": personalize(plan, student)}

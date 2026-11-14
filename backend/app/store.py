@@ -8,21 +8,29 @@ State lives in memory for the hackathon demo; `reset()` reloads the seed.
 import csv
 import io
 from datetime import date, datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 from .data import seed
 from .models import (
     Absence, AbsenceStatus, ActionPlan, Barrier, Classification, Cluster, Escalation, FamilyReply,
     LearningPlan, PlanStatus, RevenueSettings, RevenueSummary, Student,
 )
-from .services import action_plan, classifier, clustering, learning_plan, revenue
+from .services import action_plan, classifier, clustering, learning_plan, outreach, revenue
 
 TODAY = date(2026, 11, 14)
 PRIOR_DAYS_RECOVERED = 14  # recovered through Attendance Recovery before this week (synthetic)
 
 
+def _no_channel(student: Student, phone: str, text: str, key: str) -> dict:
+    """Default delivery when no messaging channel is running: the message waits in the outbox."""
+    return {"status": "queued", "reason": "messaging channel is off", "channel": None}
+
+
 class Store:
     def __init__(self) -> None:
+        # Delivery function, set by the Photon channel when it starts. Survives reset().
+        # (student, phone, text, idempotency_key) -> {"status": sent | queued | failed, "reason", "channel"}
+        self.sender: Callable[[Student, str, str, str], dict] = _no_channel
         self.reset()
 
     # ---------- setup ----------
@@ -96,13 +104,41 @@ class Store:
         return sum(1 for a in self.absences.values() if a.student_id == student_id)
 
     def check_in_message(self, absence: Absence) -> str:
-        s = self.students[absence.student_id]
-        n = self.absence_count(s.id)
-        if s.preferred_language == "es":
-            return (f"Hola {s.guardian_name}, extrañamos a {s.first_name} hoy ({n} ausencia(s) este año). "
-                    f"¿Hay algo que lo esté dificultando? Puede responder por texto o nota de voz.")
-        return (f"Hi {s.guardian_name}, we missed {s.first_name} today ({n} absence(s) this year). "
-                f"Is anything getting in the way? You can reply by text or voice note.")
+        return outreach.check_in_text(self.students[absence.student_id], absence.date)
+
+    # ---------- F2: outbound messages ----------
+    def household_suppressed(self, student_id: str) -> bool:
+        """True while any student in this household has an open safety escalation."""
+        household = self.students[student_id].household_id
+        return any(e.status == "open" and self.students[e.student_id].household_id == household
+                   for e in self.escalations.values())
+
+    def send_to_family(self, student_id: str, text: str, kind: str, key: str, **meta) -> dict:
+        """Apply the outreach rules, deliver if allowed, and record the outcome in the outbox.
+
+        status: sent (accepted by the channel) | queued (allowed, not deliverable yet) |
+                blocked (a rule forbids it) | failed (the channel rejected it).
+        """
+        student = self.students[student_id]
+        phone = outreach.phone_for(student)
+        reason = outreach.blocked_reason(phone, text, self.household_suppressed(student_id))
+        if reason:
+            outcome = {"status": "blocked", "reason": reason, "channel": None}
+        else:
+            outcome = self.sender(student, phone, text, key)
+        entry = {**meta, "kind": kind, "to": phone, "student_id": student_id, "text": text,
+                 "sent_at": datetime.now().isoformat(timespec="seconds"), **outcome}
+        self.outbox.append(entry)
+        return entry
+
+    def send_check_in(self, absence_id: str) -> dict:
+        """Send the supportive first check-in for an absence that has no reason on file."""
+        absence = self.absences[absence_id]
+        if absence.reply is not None:
+            return {"status": "blocked", "reason": "a reason is already on file for this absence",
+                    "absence_id": absence_id}
+        return self.send_to_family(absence.student_id, self.check_in_message(absence), "check_in",
+                                   key=f"rollcall-checkin:{absence_id}", absence_id=absence_id)
 
     def queue(self) -> List[dict]:
         """Case queue. Ordered by risk of harm, never by dollar value."""
@@ -160,9 +196,9 @@ class Store:
             plan.status = PlanStatus.APPROVED
             plan.approved_by = approved_by
         if send and plan.status == PlanStatus.APPROVED:
-            sent_at = datetime.now().isoformat(timespec="seconds")
             for sid in plan.recipient_student_ids:
-                self.outbox.append({**action_plan.outbox_entry(plan, self.students[sid]), "sent_at": sent_at})
+                self.send_to_family(sid, action_plan.personalize(plan, self.students[sid]), "plan",
+                                    key=f"rollcall-plan:{plan.id}:{sid}", plan_id=plan.id)
             plan.status = PlanStatus.SENT
         return plan
 

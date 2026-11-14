@@ -95,11 +95,16 @@ export interface ActionPlan {
 }
 
 export interface OutboxMessage {
-  plan_id: string;
+  kind: "plan" | "check_in";
+  plan_id?: string;
+  absence_id?: string;
   to: string;
   student_id: string;
   text: string;
   sent_at: string;
+  status: "sent" | "queued" | "blocked" | "failed";
+  reason: string | null;
+  channel: string | null;
 }
 
 export interface LearningPlan {

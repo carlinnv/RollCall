@@ -4,15 +4,20 @@ from fastapi.testclient import TestClient
 
 from app.data.seed import PACING_GUIDE
 from app.main import app
+from app.services import outreach, photon_channel
 from app.services.classifier import classify
-from app.store import store
+from app.store import _no_channel, store
 
 client = TestClient(app)
 
 
 @pytest.fixture(autouse=True)
-def fresh():
+def fresh(monkeypatch):
     store.reset()
+    photon_channel.audit.clear()
+    photon_channel.contacts.clear()
+    outreach.opted_out.clear()
+    monkeypatch.setattr(store, "sender", _no_channel)
 
 
 # F1: every absence has a status and inspectable source message
@@ -108,3 +113,127 @@ def test_completing_learning_plan_recovers_dollars():
     before = client.get("/api/revenue").json()["days_recovered_to_date"]
     client.post("/api/learning-plans/S010/complete")
     assert client.get("/api/revenue").json()["days_recovered_to_date"] == before + 2
+
+
+# F2: inbound iMessage runs through the same classify path as a simulated reply
+@pytest.fixture
+def parent(monkeypatch):
+    monkeypatch.setenv("PHOTON_TEST_SENDER", "+15550001111")
+    monkeypatch.setenv("PHOTON_DEMO_STUDENT_ID", "S002")
+    return "+15550001111"
+
+
+def test_inbound_text_classifies_awaiting_absence(parent):
+    out = photon_channel.handle_inbound(parent, "El autobus no llego a la parada.", "2026-11-14T09:00:00Z", "m1")
+    assert out["absence_id"] == "A004" and out["route"] in {"cluster", "case"}
+    assert out["reply"] == photon_channel.ACK["es"] and "http" not in out["reply"]
+    absence = client.get("/api/absences/A004").json()
+    assert absence["status"] == "reason captured"
+    assert absence["classification"]["barrier"] == "transportation"
+    assert client.get("/api/channel").json()["messages"][-1]["route"] == out["route"]
+
+
+def test_inbound_safety_message_gets_no_automated_reply(parent):
+    out = photon_channel.handle_inbound(parent, "She is scared, kids are bullying her on the bus.", "2026-11-14T09:00:00Z")
+    assert out["route"] == "escalated" and out["reply"] is None
+    assert any(e["absence_id"] == "A004" for e in client.get("/api/escalations").json())
+
+
+def test_stop_opts_out_and_silences_later_messages(parent):
+    assert photon_channel.handle_inbound(parent, " STOP ", "2026-11-14T09:00:00Z") == {
+        "route": "opted_out", "absence_id": None, "reply": None}
+    later = photon_channel.handle_inbound(parent, "The bus never came.", "2026-11-14T09:05:00Z")
+    assert later["route"] == "opted_out" and later["reply"] is None
+    assert client.get("/api/absences/A004").json()["status"] == "awaiting reply"
+
+
+def test_unlinked_number_is_not_classified():
+    out = photon_channel.handle_inbound("+19995550000", "The bus never came.", "2026-11-14T09:00:00Z")
+    assert out["route"] == "unlinked" and out["absence_id"] is None
+
+
+# F2 outbound: rules are checked with a stand-in for the Photon delivery function
+@pytest.fixture
+def delivered(monkeypatch):
+    """Replace delivery with a recorder, as if every family were reachable over iMessage."""
+    calls = []
+
+    def fake(student, phone, text, key):
+        calls.append({"student_id": student.id, "phone": phone, "text": text, "key": key})
+        return {"status": "sent", "reason": None, "channel": "imessage"}
+
+    monkeypatch.setattr(store, "sender", fake)
+    return calls
+
+
+def test_check_in_wording_follows_outreach_rules():
+    for absence_id, lang_word in (("A016", "attendance clerk"), ("A004", "asistencia")):
+        text = client.get(f"/api/absences/{absence_id}").json()["check_in_message"]
+        assert lang_word in text  # says who reads replies, in the family's language
+        assert "absence(s)" not in text and "ausencia" not in text  # no absence count
+        assert "voice" not in text and "voz" not in text
+        assert not outreach.has_link(text)
+
+
+def test_check_in_is_delivered_once_rules_pass(delivered):
+    out = client.post("/api/absences/A004/check-in").json()
+    assert out["status"] == "sent" and out["kind"] == "check_in" and out["channel"] == "imessage"
+    assert [c["student_id"] for c in delivered] == ["S002"]
+    assert delivered[0]["key"] == "rollcall-checkin:A004"  # stable key, so a retry cannot double-send
+    assert client.get("/api/outbox").json()[-1]["status"] == "sent"
+
+
+def test_check_in_waits_in_outbox_when_channel_is_off():
+    out = client.post("/api/absences/A004/check-in").json()
+    assert out["status"] == "queued" and "off" in out["reason"]
+
+
+def test_check_in_skipped_when_reason_already_on_file(delivered):
+    client.post("/api/absences/A004/reply", json={"text": "El autobus no llego.", "language": "es"})
+    out = client.post("/api/absences/A004/check-in").json()
+    assert out["status"] == "blocked" and not delivered
+
+
+def test_open_safety_escalation_suppresses_all_outbound_to_household(parent, delivered):
+    # S030's household has a seeded open escalation: nothing automated may go to it.
+    assert store.household_suppressed("S030")
+    out = client.post("/api/absences/A021/check-in").json()
+    assert out["status"] == "blocked" and "escalation" in out["reason"] and not delivered
+
+    # After a safety message, a later ordinary text from the same family gets no automatic reply either.
+    photon_channel.handle_inbound(parent, "She is scared, kids are bullying her.", "2026-11-14T09:00:00Z")
+    later = photon_channel.handle_inbound(parent, "Also the bus was late.", "2026-11-14T09:05:00Z")
+    assert later["reply"] is None
+    assert client.post("/api/absences/A004/check-in").json()["status"] == "blocked"
+
+
+def test_opted_out_family_is_not_messaged(parent, delivered):
+    photon_channel.handle_inbound(parent, "STOP", "2026-11-14T09:00:00Z")
+    out = client.post("/api/absences/A004/check-in").json()
+    assert out["status"] == "blocked" and "opted out" in out["reason"] and not delivered
+
+
+def test_plan_with_a_link_is_blocked(delivered):
+    bus = next(c for c in client.get("/api/clusters").json() if c["link_value"] == "Route 7")
+    plan = client.post("/api/plans/draft", json={"cluster_id": bus["id"]}).json()
+    client.patch(f"/api/plans/{plan['id']}", json={"message": "Hola {guardian}, vea https://example.com/ruta7"})
+    client.post(f"/api/plans/{plan['id']}/approve", json={"approved_by": "clerk"})
+    outbox = client.get("/api/outbox").json()
+    linked = [m for m in outbox if outreach.has_link(m["text"])]
+    assert linked and all(m["status"] == "blocked" and "link" in m["reason"] for m in linked)
+    # Families in another language get the standard template instead of the edited text, so those still go.
+    assert not any(outreach.has_link(c["text"]) for c in delivered)
+
+
+def test_approved_plan_is_delivered_to_each_family(delivered):
+    bus = next(c for c in client.get("/api/clusters").json() if c["link_value"] == "Route 7")
+    plan = client.post("/api/plans/draft", json={"cluster_id": bus["id"]}).json()
+    client.post(f"/api/plans/{plan['id']}/approve", json={"approved_by": "clerk"})
+    assert sorted(c["student_id"] for c in delivered) == sorted(bus["student_ids"])
+    assert all(m["status"] == "sent" and m["plan_id"] == plan["id"] for m in client.get("/api/outbox").json())
+
+
+def test_photon_send_needs_the_family_to_text_first():
+    student = store.students["S002"]
+    out = photon_channel.send_text(student, student.guardian_phone, "hello", "k1")
+    assert out["status"] == "queued"
