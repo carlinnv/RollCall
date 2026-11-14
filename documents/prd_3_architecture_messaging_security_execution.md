@@ -6,21 +6,24 @@
 ---
 
 ## 1. System Architecture & Tech Stack
-A single **FastAPI** backend orchestrates messaging, voice transcription, LLM classification, graph clustering, and retrieval, serving a **Next.js / React** staff dashboard.
+A single **FastAPI** backend orchestrates messaging, voice transcription, LLM classification, graph clustering, agent actions, and retrieval, serving a **React (Vite)** staff dashboard.
 
 * **Backend Service:** Python / FastAPI
-* **Frontend Dashboard:** Next.js + React (Role-based views: Clerk Case Queue, Counselor Escalation Inbox, Business Manager Revenue Dashboard)
-* **Database & Time Series:** TigerData Postgres (stores absences, messages, reason labels, and time-series cluster timelines)
+* **Frontend Dashboard:** React 18 + TypeScript + Vite (Role-based views: Clerk Morning Briefing & Case Queue, Counselor Escalation Inbox, Business Manager Revenue Dashboard)
+* **Database & Time Series:** TigerData Postgres (stores absences, messages, reason labels, clerk corrections, and time-series cluster timelines; continuous aggregates for weekly dollars; pgvector for F7 retrieval). Replaces the current in-memory store.
 * **Messaging Channel:** Photon 2.0 (iMessage primary) with SMS fallback
 * **AI & Speech:** Gemini API (classification, plan generation, RAG answers, synthetic data) + Whisper (multilingual voice note transcription)
 * **Graph Engine:** `networkx` (SocioPatterns contact graph + synthetic logistics layers)
-* **Optional Add-ons:** MongoDB Atlas Vector Search (for F7 retrieval if needed), Vultr (cloud hosting)
+* **Hosting:** Vultr (backend + dashboard, public demo URL)
+* **Optional Add-ons:** LangChain Deep Agents (F7 counselor assistant), Amazon Bedrock (one component, e.g. safety classifier or RAG answers)
 
 ### Core Transactional Data Model
 * **Absence:** `absence_id`, `student_id`, `date`, `status` (`reason_captured` | `awaiting_reply` | `unknown`)
 * **Message:** `message_id`, `absence_id`, `direction`, `channel` (`imessage` | `sms`), `language`, `raw_text_or_transcript`, `timestamp`
 * **Action Plan:** `plan_id`, `cluster_or_case_id`, `school_action`, `owner`, `due_date`, `family_message_draft`, `approval_status`
 * **Learning Plan:** `plan_id`, `student_id`, `missed_topics`, `steps`, `time_estimates`, `verification_status`
+* **Agent Action:** `action_id`, `cluster_or_case_id`, `type` (`transport_alert` | `nurse_notice` | `family_followup` | `counselor_task`), `recipient`, `draft`, `approval_status`
+* **Label Correction:** `absence_id`, `old_label`, `new_label`, `corrected_by`, `timestamp`
 
 ---
 
@@ -56,12 +59,13 @@ A single **FastAPI** backend orchestrates messaging, voice transcription, LLM cl
 | **Peri Forward-Deployed** | Solves 1 concrete issue (unknown absence reasons) for 1 persona with clear dollar ROI. | Named clerk/CFO workflow, dollar metric, deployable CSV-import setup. |
 | **Photon Messaging Agent** | Two-way family communication is the core ingestion loop. | Live Photon 2.0 iMessage conversation + SMS fallback architecture. |
 | **Arlequin Track 2** *(Content + Connectivity)* | Combines message semantics with a school proximity/transit contact graph. | Ablation table, interactive graph visualization, Recall@k metric. |
-| **Amazon Practical AI** | Unique operational application of AI with measurable financial return. | Root-cause clusters priced in weekly dollars at risk/recovered. |
+| **Amazon Practical AI** | An agent that reasons (root cause), plans (action plan), acts (drafted alerts and messages), and adapts (learns from clerk corrections), used daily by a clerk. | Morning briefing $\rightarrow$ cluster $\rightarrow$ one-click approved actions; show a label correction changing the next classification. |
+| **LangChain Deep Agents** *(optional)* | F7 counselor assistant built on Deep Agents with sub-agents and a file system. | Counselor asks a question; agent returns a cited case report. |
 | **ChatOverflow Leaderboard** | Zero-overhead background integration for coding agents. | Connect coding agent at hour zero (ensure no secrets/PII are shared). |
-| **Gemini API & TigerData** | Core LLM engine + time-series absence/cluster datastore. | Integrated into core pipeline and cluster timeline views. |
-| **GoDaddy & DEV Challenge** | Quick post-build visibility add-ons. | Live domain pointing to demo + concise technical write-up. |
+| **Gemini API & TigerData** | Core LLM engine + time-series absence/cluster datastore with pgvector. | Integrated into core pipeline and cluster timeline views. |
+| **Vultr, GoDaddy & DEV Challenge** | Quick hosting and visibility add-ons. | Demo hosted on Vultr behind a live domain + concise technical write-up. |
 
-* **Explicitly Skipped:** Capital One Nessie (no banking data), Arlequin Track 1 (forensics), Solana, and SpaceXSI.
+* **Explicitly Skipped:** Capital One Nessie (no banking data), Arlequin Track 1 (forensics), CoStar (real-estate data), Best Physical AI Hack (needs hardware), MongoDB Atlas (TigerData chosen instead), Solana, and SpaceXSI (requires Cursor + Grok Bot).
 
 ---
 
@@ -73,22 +77,23 @@ A single **FastAPI** backend orchestrates messaging, voice transcription, LLM cl
    * **GATE 1:** *Live text-to-dollars loop must work end-to-end before starting Phase 3.*
 3. **Phase 3 — Differentiator (F3):** Multi-layer graph assembly, cluster detection, ablation benchmark against baselines.
    * **GATE 2:** *Combined detector must beat content-only and graph-only baselines before starting Phase 4.*
-4. **Phase 4 — Action & Learning Plans (F4, F5):** Clerk-approved school action plans, outbound family messages, cause-adapted learning plans.
-5. **Phase 5 — Polish (F7 & Extras):** Counselor RAG assistant, graph visualization polish, timed 3-minute demo rehearsal, README, DEV post, domain setup.
+4. **Phase 4 — Actions & Learning Plans (F4, F5, F8, F9):** Clerk-approved school action plans and agent actions, outbound family messages, morning briefing, label-correction feedback loop, cause-adapted learning plans.
+5. **Phase 5 — Polish (F7 & Extras):** Counselor RAG assistant, graph visualization polish, Vultr deploy, timed 3-minute demo rehearsal with pre-generated fallback data, README, DEV post, domain setup.
 
 ### Scope Cut Priority (If Behind Schedule)
 Cut strictly from bottom to top:
-1. F7 Counselor RAG assistant
+1. F7 Counselor RAG assistant (and the optional Deep Agents version)
 2. F5 Learning-plan claim verification (P1)
-3. Learning-plan adaptation to specific absence cause
-4. Live SMS fallback polish (keep architectural support)
-5. Live voice note transcription (use pre-recorded/simulated audio)
-* **Never Cut:** F1 (tracking), F2 (core messaging), F6 (revenue dashboard), or basic F3 (cluster view).
+3. F8 learning from corrections (P1; keep the drafted actions)
+4. Learning-plan adaptation to specific absence cause
+5. Live SMS fallback polish (keep architectural support)
+6. Live voice note transcription (use pre-recorded/simulated audio)
+* **Never Cut:** F1 (tracking), F2 (core messaging), F6 (revenue dashboard), basic F3 (cluster view), or F9 (morning briefing).
 
 ### Team Role Allocation
 * **Messaging & Photon Lead:** F2 Photon 2.0 integration, Whisper audio pipeline, safety routing, anti-phishing/prompt-injection guardrails.
-* **ML & Graph Lead:** Gemini barrier classifier, multi-layer graph clustering (F3), ablation script, F7 RAG assistant.
-* **Product & Frontend Lead:** Next.js dashboard, clerk case queue, F4 action-plan approval flow, F5 learning plan UI, F6 revenue dashboard.
+* **ML & Graph Lead:** Gemini barrier classifier, correction feedback loop (F8), multi-layer graph clustering (F3), ablation script, F7 RAG assistant.
+* **Product & Frontend Lead:** React dashboard, morning briefing (F9), clerk case queue, F4 action-plan and F8 action approval flow, F5 learning plan UI, F6 revenue dashboard.
 * **Data & Simulator Lead:** SocioPatterns ingestion, synthetic bus/household layers, multilingual reply generator, ground-truth evaluation labels.
 
 ---
@@ -101,8 +106,10 @@ Cut strictly from bottom to top:
 | **Messaging alone looks like incumbents** | Open and anchor the demo on root-cause clusters and weekly dollars at risk, not just the chat UI. |
 | **Scope creep across multiple tracks** | Enforce Gate 1 and Gate 2; cut F7 and P1 verification first if behind schedule. |
 | **Revenue framing looks punitive** | Explicitly state in UI and pitch that risk of harm sets triage priority; dollars justify district budget. |
+| **Live API failure during demo** | Keep pre-generated simulated data and a scripted demo path that works without live Gemini or Photon calls. |
 
 ### Open Questions to Confirm Early
+* **Devpost:** How many sponsor tracks can one team enter? Do MLH prizes stack with sponsor tracks?
 * **Peri:** Is a clearly defined persona + CSV workflow sufficient, or do judges expect a named pilot district?
-* **Arlequin:** Confirm on Discord that pairing a real public contact graph (SocioPatterns) with synthetic text/logistics overlays satisfies Track 2 data rules.
+* **Arlequin (high priority):** Track 2 says "public data only" (Track 1 allows synthetic). Confirm on Discord that a real public contact graph (SocioPatterns) with synthetic replies and logistics layers is acceptable before building on it.
 * **Photon:** Verify 2.0 beta support for inbound voice attachments vs. text-only webhooks.

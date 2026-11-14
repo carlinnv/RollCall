@@ -85,6 +85,21 @@
 * Provide editable assumptions for daily funding rate and state rules (defaulting to California).
 * **Acceptance:** Updating the daily rate dynamically recalculates all dollar figures across the dashboard.
 
+### F8. Agent Actions & Feedback Loop (P0 Actions / P1 Learning)
+* When a cluster or case is detected, the agent drafts the follow-up actions itself, not only a plan:
+  * **Route cluster** $\rightarrow$ alert to the transportation office with affected route, dates, and rider count.
+  * **Illness cluster** $\rightarrow$ notice to the school nurse with affected class sections and dates.
+  * **Unclear reply** $\rightarrow$ one short follow-up question to the family in their language.
+  * **Individual case** $\rightarrow$ counselor or family-resource task with the evidence messages attached.
+* Every action is a one-click **Approve / Edit / Dismiss** for the clerk. Safety cases never get an automated action; they go to a counselor.
+* *(P1)* When the clerk corrects a barrier label, the correction is stored and used as an example for future classifications at that school, and repeated corrections adjust that school's review threshold.
+* **Acceptance:** From one detected route cluster, the agent drafts the transport alert and the family messages, and the clerk sends both in under 1 minute. After one label correction, a similar reply is classified correctly.
+
+### F9. Morning Briefing (P0)
+* The clerk's home screen each morning: new clusters since yesterday, replies needing review, drafted actions waiting for approval, and safety cases still open.
+* Example: *"3 new clusters · 12 replies need review · Route 7 likely broken down (5 riders, 2 days) · transport alert drafted."*
+* **Acceptance:** Every item on the briefing links to the case, cluster, or drafted action behind it.
+
 ---
 
 ## 5. End-to-End User Flow & 3-Minute Demo Script
@@ -95,12 +110,14 @@
 3. **Safety Gate:** If safety-critical $\rightarrow$ **Counselor takes over immediately** (no automated reply).
 4. **Classification & Pricing:** If non-safety $\rightarrow$ Barrier labeled $\rightarrow$ Revenue dashboard updates dollars at risk.
 5. **Routing:** If part of a cluster $\rightarrow$ Cluster-level action plan drafted; otherwise $\rightarrow$ Individual case-level plan drafted.
-6. **Human Approval & Recovery:** Clerk approves and sends family action plan $\rightarrow$ System generates personalized student learning plan.
+6. **Agent Actions:** Agent drafts the follow-up actions for the cluster or case (transport alert, nurse notice, family follow-up, counselor task).
+7. **Human Approval & Recovery:** Clerk approves and sends the actions and family action plan $\rightarrow$ System generates personalized student learning plan.
+8. **Feedback:** Clerk corrections to labels feed back into future classifications.
 
 ### 3-Minute Demo Script
-* **0:00** — Clerk opens queue showing dozens of absences with no recorded reasons.
+* **0:00** — Clerk opens the morning briefing, then the queue showing dozens of absences with no recorded reasons.
 * **0:20** — Live iMessage demo: family replies with a Spanish voice note; within 10 seconds, transcript, barrier label, and evidence quote appear.
 * **1:00** — Cluster view highlights one bus-route cluster and one illness cluster, showing ablation results and weekly dollars at risk.
-* **1:50** — Clerk approves a school action plan; plain-language Spanish response is dispatched to affected families.
+* **1:50** — Clerk approves the agent's drafted transport alert and school action plan; plain-language Spanish response is dispatched to affected families.
 * **2:30** — Personalized catch-up learning plan appears for an absent student, adapted to their absence cause.
 * **2:50** — Close on total dollars recovered and target district pilot metrics.
