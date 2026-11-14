@@ -55,7 +55,16 @@ The logic behind each feature is a deliberately simple stub with a stable interf
 - `backend/app/services/learning_plan.py` — `build(...) -> LearningPlan`. Never emits a topic that is not in the pacing guide.
 - `backend/app/data/seed.py` — synthetic students, absences, replies and pacing guides for the week of Nov 9–13, 2026.
 
-Not built yet: real SMS / iMessage / voice channel (the case page has a "Simulate family reply" box instead), speech-to-text, language detection, persistence.
+### iMessage channel (Photon 2.0 Beta)
+
+Copy `.env.example` to `.env` and fill in the `PHOTON_*` values. When they are set, the API polls Photon every 2 seconds on startup; without them the channel stays off and the "Simulate family reply" box still works.
+
+- `backend/app/services/photon_channel.py` — an inbound text from `PHOTON_TEST_SENDER` is treated as a reply from the guardian of `PHOTON_DEMO_STUDENT_ID` (default `S002`) and goes through the same `store.record_reply` path as a simulated reply. The family gets a short acknowledgement, except on safety-flagged messages (counselor only) and after `STOP`.
+- `GET /api/channel` — listener status and the message audit trail.
+- `backend/scripts/photon_echo.py` — one-shot round-trip check for a new line or key.
+- Shared lines cannot send the first message: the family phone must text the agent number once before anything can be sent to it.
+
+Not built yet: outbound check-in and approved-plan messages over Photon, SMS fallback, voice notes (Photon Beta iMessage carries text and images only), speech-to-text, language detection, persistence.
 
 ## Design rules (from the PRD)
 
