@@ -134,7 +134,6 @@ Cut from the top:
 
 ### Open Questions to Confirm Early
 * **Team:** rename to "Here"? (See PRD 1.)
-* **Devpost:** how many sponsor tracks can one team enter? Do MLH prizes stack with sponsor tracks?
 * **Arlequin (high priority):** Track 2 says "public data only" (Track 1 allows synthetic). Confirm that a real public contact graph with synthetic replies and logistics layers is acceptable, and that school–family messages count as "social" data for this track.
 * **Peri:** is a clearly defined persona + CSV workflow sufficient, or do judges expect a named pilot district?
 * **Photon:** does 2.0 support inbound voice attachments, and does it need a macOS host with Messages?
