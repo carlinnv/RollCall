@@ -7,6 +7,7 @@ State lives in memory for the hackathon demo; `reset()` reloads the seed.
 """
 import csv
 import io
+import os
 from datetime import date, datetime
 from typing import Callable, Dict, List, Optional, Set, Tuple
 
@@ -24,6 +25,15 @@ COUNSELOR_ONLY_NOTE = ("Safety: with counselor. Automated messages to this house
                        "only the counselor contacts the family.")
 SCHOOL_ID = "demo"
 RECOVERY_SESSION = "attendance_recovery"  # the only session type that recovers funding (PRD 1 F5)
+
+# DEMO_STORY=live holds back three Route 7 replies so the cluster is not there yet at 9am: the
+# demo family's live reply (Photon demo student S002, Nov 11) is the third household that tips it.
+LIVE_STORY_PENDING = {("S002", date(2026, 11, 10)), ("S004", date(2026, 11, 11)),
+                      ("S005", date(2026, 11, 10)), ("S005", date(2026, 11, 11))}
+
+
+def demo_story() -> str:
+    return "live" if os.environ.get("DEMO_STORY", "full").strip().lower() == "live" else "full"
 
 
 def _no_channel(student: Student, phone: str, text: str, key: str) -> dict:
@@ -56,11 +66,15 @@ class Store:
         self.outbox: List[dict] = []
         self.completed_learning: Dict[str, int] = {}  # student_id -> days recovered
         self.settings: RevenueSettings = revenue.STATE_DEFAULTS["CA"].model_copy()
+        live_story = demo_story() == "live"
         for rec in seed.absences():
             reply = rec.pop("reply")
+            if live_story and (rec["student_id"], rec["date"]) in LIVE_STORY_PENDING:
+                reply = None
             self.absences[rec["id"]] = Absence(**rec)
             if reply:
-                self.record_reply(rec["id"], FamilyReply(**reply), route=False)
+                # Seed replies never call a model: reset stays fast, offline and within free-tier limits.
+                self.record_reply(rec["id"], FamilyReply(**reply), route=False, allow_model=False)
 
     # ---------- F1: absence tracking & cause capture ----------
     def import_csv(self, text: str) -> Tuple[int, List[str]]:
@@ -96,16 +110,25 @@ class Store:
         s = self.students.get(student_id)
         return [s.first_name, s.last_name, s.guardian_name] if s else []
 
-    def record_reply(self, absence_id: str, reply: FamilyReply, route: bool = True) -> str:
+    def record_reply(self, absence_id: str, reply: FamilyReply, route: bool = True,
+                     classification: Optional[Classification] = None, allow_model: bool = True) -> str:
         """Run the safety gate, classify (with this school's past corrections, F8), and return the
-        route: escalated | cluster | case | unknown. route=False skips the cluster lookup (seed load)."""
+        route: escalated | cluster | case | unknown. route=False skips the cluster lookup (seed load).
+        `classification` is passed by the voice pipeline, which has already classified the transcript;
+        the keyword safety check still runs on the text and can only add a safety flag."""
         absence = self.absences[absence_id]
         if not reply.message_id:
             reply = reply.model_copy(update={"message_id": f"M-{absence_id}"})
         absence.reply = reply
         self.touch()
-        result, _info = corrections.classify(reply.text, reply.language, self.corrections, SCHOOL_ID,
-                                             names=self._names(absence.student_id))
+        if classification is not None:
+            result = classification
+            kw = corrections.keyword.classify(reply.text, language=reply.language)
+            if kw.safety_critical and not result.safety_critical:
+                result = kw  # safety only ever escalates
+        else:
+            result, _info = corrections.classify(reply.text, reply.language, self.corrections, SCHOOL_ID,
+                                                 names=self._names(absence.student_id), allow_model=allow_model)
         absence.classification = result
 
         if result.safety_critical:

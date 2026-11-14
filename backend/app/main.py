@@ -9,9 +9,15 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from .models import Barrier, FamilyReply, RevenueSettings
-from .services import photon_channel
-from .store import RECOVERY_SESSION, TODAY, store
+# Settings must be in the environment before the store loads the seed (DEMO_STORY, CLASSIFIER, ...).
+# Existing environment variables win, so tests and shells can override either file.
+_ROOT = Path(__file__).resolve().parents[2]
+load_dotenv(_ROOT / ".env")
+load_dotenv(_ROOT / "backend" / ".env")
+
+from .models import Barrier, FamilyReply, RevenueSettings  # noqa: E402
+from .services import photon_channel  # noqa: E402
+from .store import RECOVERY_SESSION, TODAY, store  # noqa: E402
 
 EVAL_DIR = Path(__file__).resolve().parents[1] / "eval"
 
@@ -120,6 +126,47 @@ def reply(absence_id: str, body: ReplyIn):
     return {"route": route, "absence": store.absences[absence_id]}
 
 
+class VoiceIn(BaseModel):
+    audio_b64: str  # base64 audio bytes (the browser records or uploads a file)
+    mime_type: str = "audio/webm"
+    language: Optional[str] = None  # hint; defaults to the family's preferred language
+
+
+MAX_VOICE_BYTES = 10 * 1024 * 1024
+
+
+@app.post("/api/absences/{absence_id}/voice")
+def voice_reply(absence_id: str, body: VoiceIn):
+    """Voice note: Gemini audio first, self-hosted Whisper fallback, interpreter when both are unsure.
+    The transcript then goes through the same safety gate and routing as a text reply."""
+    import base64
+    import binascii
+
+    from .services import voice
+
+    absence = _get(store.absences, absence_id, "absence")
+    try:
+        audio = base64.b64decode(body.audio_b64, validate=True)
+    except (binascii.Error, ValueError):
+        raise HTTPException(400, "audio_b64 is not valid base64")
+    if not audio or len(audio) > MAX_VOICE_BYTES:
+        raise HTTPException(413, "voice note must be between 1 byte and 10 MB")
+    student = store.students[absence.student_id]
+    language = body.language or student.preferred_language
+    classification, meta = voice.process_voice_note(audio, body.mime_type, language_hint=language,
+                                                    names=store._names(student.id))
+    route = "interpreter" if meta.route == "interpreter" else None
+    if meta.transcript:
+        route = store.record_reply(absence_id, FamilyReply(
+            text=meta.transcript, channel="voice", language=meta.language or language,
+            received_at=TODAY.isoformat() + "T12:00:00",
+        ), classification=None if meta.route == "interpreter" else classification)
+    info = meta.to_dict()
+    if meta.transcript_visibility == "counselor_only":
+        info["transcript"] = None  # clerks never see a safety disclosure; the counselor inbox has it
+    return {"route": route or meta.route, "voice": info, "absence": store.absences[absence_id]}
+
+
 @app.post("/api/absences/{absence_id}/correct")
 def correct_label(absence_id: str, body: CorrectIn):
     """F8: staff correct a barrier label. Stored per school and used for future classifications."""
@@ -188,6 +235,37 @@ def eval_ablation():
 @app.get("/api/eval/retrieval")
 def eval_retrieval():
     return _eval_file("retrieval.json")
+
+
+@app.get("/api/eval/scaling")
+def eval_scaling():
+    return _eval_file("scaling.json")
+
+
+# ---------- F7 counselor assistant (read-only; runs over the simulated Lyon school) ----------
+class AskIn(BaseModel):
+    question: str
+
+
+@app.post("/api/assistant/ask")
+def assistant_ask(body: AskIn):
+    """Answer a counselor's question from family messages with citations. Read-only: no tool can send.
+    Needs a Gemini key; without one the endpoint returns 503 rather than guessing."""
+    from .ml import live
+    from .ml.assistant.agent import CounselorAssistant
+    from .ml.assistant.corpus import AssistantData
+    from .services.gemini_classifier import has_api_key
+
+    question = body.question.strip()
+    if not question or len(question) > 500:
+        raise HTTPException(400, "question must be 1-500 characters")
+    if not has_api_key():
+        raise HTTPException(503, "the counselor assistant needs a Gemini key in backend/.env")
+    run, alarms, _cal = live._sim_alarms(live.detector_name(), TODAY)
+    answer = CounselorAssistant(AssistantData.from_sim_run(run, alarms=alarms)).ask(question, backoff_s=10.0)
+    return {"question": answer.question, "answer": answer.answer, "citations": answer.citations,
+            "dropped_citations": answer.dropped_citations, "report": answer.report,
+            "safety_flags": answer.safety_flags, "error": answer.error, "dataset": "sim (Lyon primary, simulated)"}
 
 
 # ---------- F4 ----------

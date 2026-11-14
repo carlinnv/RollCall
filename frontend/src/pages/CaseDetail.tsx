@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { api, fmtDate } from "../api";
+import { api, fileToBase64, fmtDate } from "../api";
 import type { Barrier } from "../api";
 import { useLoad } from "../hooks";
 import { BarrierTag, ErrorNote, Page, StatusTag } from "../components/ui";
@@ -31,6 +31,8 @@ export default function CaseDetail() {
   const [label, setLabel] = useState<Barrier | "">("");
   const [by, setBy] = useState("clerk");
   const [corrected, setCorrected] = useState<string | null>(null);
+  const [voiceNote, setVoiceNote] = useState<string | null>(null);
+  const [voiceBusy, setVoiceBusy] = useState(false);
 
   if (!a) return <Page title="Case"><ErrorNote error={error} /></Page>;
   const s = a.student;
@@ -40,6 +42,27 @@ export default function CaseDetail() {
     setRoute(res.route);
     setText("");
     reload();
+  };
+
+  const submitVoice = async (file: File | undefined) => {
+    if (!file) return;
+    setVoiceBusy(true);
+    setVoiceNote(null);
+    try {
+      const res = await api.voice(id, await fileToBase64(file), file.type || "audio/mpeg");
+      const v = res.voice;
+      const where = { auto: "classified", clerk_review: "needs clerk review", interpreter: "sent to an interpreter", counselor: "sent to the counselor" }[v.route];
+      setVoiceNote(
+        `Voice note ${where} (${v.transcript_source ?? "no transcript"}, ${(v.latency_ms / 1000).toFixed(1)} s)` +
+          (v.transcript ? `: “${v.transcript}”` : "") + (v.reason ? ` — ${v.reason}` : ""),
+      );
+      if (["escalated", "cluster", "case", "unknown"].includes(res.route)) setRoute(res.route as keyof typeof ROUTE_TEXT);
+      reload();
+    } catch (e) {
+      setVoiceNote((e as Error).message);
+    } finally {
+      setVoiceBusy(false);
+    }
   };
 
   const correct = async () => {
@@ -162,6 +185,12 @@ export default function CaseDetail() {
             Receive reply
           </button>
         </div>
+        <div className="row" style={{ marginTop: 8 }}>
+          <label className="muted small">Or upload a voice note (Gemini audio, Whisper fallback):</label>
+          <input type="file" accept="audio/*" disabled={voiceBusy} onChange={(e) => submitVoice(e.target.files?.[0])} />
+          {voiceBusy && <span className="muted small">Transcribing…</span>}
+        </div>
+        {voiceNote && <p className="note">{voiceNote}</p>}
       </div>
     </Page>
   );

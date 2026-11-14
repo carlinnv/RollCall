@@ -210,12 +210,13 @@ def gemini_classifier(**kwargs):
 
 
 def classify(text: str, language: Optional[str], store: CorrectionStore, school_id: str = "demo",
-             names: Optional[Iterable[str]] = None, k: int = DEFAULT_K, model=None) -> Tuple[Classification, dict]:
+             names: Optional[Iterable[str]] = None, k: int = DEFAULT_K, model=None,
+             allow_model: bool = True) -> Tuple[Classification, dict]:
     """Classify a reply using this school's past corrections. Returns (classification, info)."""
     matches = store.similar(text, school_id, k)
     info = {"examples": [{"absence_id": m.correction.absence_id, "label": m.correction.new_label.value,
                           "similarity": m.similarity} for m in matches], "path": "keyword"}
-    if model is not None or use_gemini():
+    if model is not None or (allow_model and use_gemini()):
         clf = model or gemini_classifier()
         try:
             result, meta = clf.classify_with_model(text, language=language, names=names, examples=matches)
