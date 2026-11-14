@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 from app.data.seed import PACING_GUIDE
 from app.main import app
+from app.services import photon_channel
 from app.services.classifier import classify
 from app.store import store
 
@@ -13,6 +14,8 @@ client = TestClient(app)
 @pytest.fixture(autouse=True)
 def fresh():
     store.reset()
+    photon_channel.audit.clear()
+    photon_channel.opted_out.clear()
 
 
 # F1: every absence has a status and inspectable source message
@@ -108,3 +111,40 @@ def test_completing_learning_plan_recovers_dollars():
     before = client.get("/api/revenue").json()["days_recovered_to_date"]
     client.post("/api/learning-plans/S010/complete")
     assert client.get("/api/revenue").json()["days_recovered_to_date"] == before + 2
+
+
+# F2: inbound iMessage runs through the same classify path as a simulated reply
+@pytest.fixture
+def parent(monkeypatch):
+    monkeypatch.setenv("PHOTON_TEST_SENDER", "+15550001111")
+    monkeypatch.setenv("PHOTON_DEMO_STUDENT_ID", "S002")
+    return "+15550001111"
+
+
+def test_inbound_text_classifies_awaiting_absence(parent):
+    out = photon_channel.handle_inbound(parent, "El autobus no llego a la parada.", "2026-11-14T09:00:00Z", "m1")
+    assert out["absence_id"] == "A004" and out["route"] in {"cluster", "case"}
+    assert out["reply"] == photon_channel.ACK["es"] and "http" not in out["reply"]
+    absence = client.get("/api/absences/A004").json()
+    assert absence["status"] == "reason captured"
+    assert absence["classification"]["barrier"] == "transportation"
+    assert client.get("/api/channel").json()["messages"][-1]["route"] == out["route"]
+
+
+def test_inbound_safety_message_gets_no_automated_reply(parent):
+    out = photon_channel.handle_inbound(parent, "She is scared, kids are bullying her on the bus.", "2026-11-14T09:00:00Z")
+    assert out["route"] == "escalated" and out["reply"] is None
+    assert any(e["absence_id"] == "A004" for e in client.get("/api/escalations").json())
+
+
+def test_stop_opts_out_and_silences_later_messages(parent):
+    assert photon_channel.handle_inbound(parent, " STOP ", "2026-11-14T09:00:00Z") == {
+        "route": "opted_out", "absence_id": None, "reply": None}
+    later = photon_channel.handle_inbound(parent, "The bus never came.", "2026-11-14T09:05:00Z")
+    assert later["route"] == "opted_out" and later["reply"] is None
+    assert client.get("/api/absences/A004").json()["status"] == "awaiting reply"
+
+
+def test_unlinked_number_is_not_classified():
+    out = photon_channel.handle_inbound("+19995550000", "The bus never came.", "2026-11-14T09:00:00Z")
+    assert out["route"] == "unlinked" and out["absence_id"] is None
