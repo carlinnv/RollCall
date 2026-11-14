@@ -106,7 +106,7 @@ To play a different student, add `PHOTON_DEMO_STUDENT_ID=S014` (or any student I
 - **You must text first.** The agent cannot message a number that has not texted it. Send one message before testing anything outbound.
 - **The page does not update by itself.** Refresh the browser after you send a text.
 - **Text only.** Photos and voice notes are ignored.
-- **`STOP` works.** If you text `STOP`, the agent goes silent for your number until you restart the API.
+- **Opt-outs work.** If you text `STOP`, or something like "no more messages" or "no más mensajes", the agent goes silent for your number. Text `START` to undo it.
 - **A safety message silences the agent.** After a text about bullying or feeling unsafe, you get no more automatic replies until you click **Reset demo data**.
 - **Restarting the API resets the data.** Everything is in memory. Saving a backend file triggers a restart.
 

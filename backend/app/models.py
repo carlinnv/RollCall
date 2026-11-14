@@ -74,8 +74,9 @@ class Message(BaseModel):
     latency_ms: Optional[int] = None
     kind: str = "reply"  # inbound: reply. outbound: check_in | plan | ack
     status: str = "received"  # inbound: received. outbound: sent | queued | blocked | failed
-    reason: Optional[str] = None  # why an outbound message was queued, blocked or failed
-    route: Optional[str] = None  # inbound: cluster | case | unknown | escalated | opted_out | unlinked | no_absence
+    reason: Optional[str] = None  # outbound: why it was queued, blocked or failed. inbound: opt-out or opt-in note
+    # inbound: cluster | case | unknown | escalated | opted_out | opted_in | unlinked | no_absence
+    route: Optional[str] = None
     classification: Optional[Classification] = None  # the label this inbound message received
     phone: Optional[str] = None  # the family's number
     plan_id: Optional[str] = None

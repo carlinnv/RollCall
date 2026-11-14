@@ -95,7 +95,7 @@ class Store:
 
     def record_reply(self, absence_id: str, reply: FamilyReply, *, channel: str = "simulated",
                      received: Optional[datetime] = None, external_id: Optional[str] = None,
-                     phone: Optional[str] = None, measure: bool = True) -> str:
+                     phone: Optional[str] = None, reason: Optional[str] = None, measure: bool = True) -> str:
         """Classify a family reply, log it, and return the route: escalated | cluster | case | unknown.
 
         `received` is when the family's message arrived (defaults to now). Latency is measured
@@ -111,6 +111,7 @@ class Store:
             timestamp=iso(start) if measure else reply.received_at,
             latency_ms=elapsed_ms(start) if measure else None,
             route=route, classification=absence.classification, phone=phone, external_id=external_id,
+            reason=reason,
         )
         return route
 

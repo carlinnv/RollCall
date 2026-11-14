@@ -88,20 +88,34 @@ A short fixed reply so the family knows the message arrived.
 
 ---
 
-## 5. Opt-out (STOP)
+## 5. Opt-out and opt-in
+
+A family can ask us to stop messaging, with a keyword or in their own words.
 
 **Files**
 
-- `backend/app/services/photon_channel.py`: `STOP_WORDS`, `handle_inbound`
-- `backend/app/services/outreach.py`: `opted_out`
+- `backend/app/services/outreach.py`: `OPT_OUT_WORDS`, `OPT_IN_WORDS`, `_OPT_OUT_PHRASES`, `is_opt_out`, `is_opt_in`, `opted_out`
+- `backend/app/services/photon_channel.py`: `handle_inbound`
 
 **Rules**
 
-- Opt-out words: `stop`, `stopall`, `unsubscribe`, `cancel`, `end`, `quit`, `alto`, `parar`.
-- The whole message must be one of these words, ignoring case and surrounding spaces. Plain-language opt-outs ("no más mensajes") are not recognized yet.
-- An opted-out number receives no confirmation and no further messages.
-- Later texts from an opted-out number are logged but not classified.
+- Before matching, text is lowercased and stripped of accents and punctuation, so "No más mensajes." and "no mas mensajes" are the same.
+- **Keywords.** The whole message is one of:
+  - English: `stop`, `stopall`, `unsubscribe`, `cancel`, `end`, `quit`
+  - Spanish: `alto`, `parar`, `pare`, `basta`, `baja`
+  - Vietnamese: `dừng`, `ngừng`, `hủy`
+- **Plain language.** The message contains a request that names messaging, anywhere in the text. Examples that match:
+  - English: "please stop texting me", "no more messages", "don't text me", "do not contact us", "take me off this list", "unsubscribe", "leave us alone"
+  - Spanish: "no más mensajes", "ya no me escriban", "dejen de mandarme mensajes", "no quiero recibir más mensajes", "quiero darme de baja"
+  - Vietnamese: "đừng nhắn tin nữa", "ngừng gửi tin nhắn", "không muốn nhận tin nhắn", "hủy đăng ký"
+- Phrases must mention messaging or contact, so ordinary replies do not match: "the bus didn't stop", "she wants to quit school", "we had to cancel the appointment".
+- An opt-out takes effect immediately. The number receives no confirmation and no further messages of any kind.
+- A message that is only an opt-out is logged but not attached to an absence, so it cannot overwrite a reason already captured.
+- A message that opts out and also gives a reason ("no more texts, she has a fever") is honored and classified.
+- Texts from an opted-out family are still classified, so a reason or a safety disclosure is never dropped. They get no reply.
+- **Opting back in.** A message that is exactly `start` or `unstop` removes the opt-out. No confirmation is sent.
 - Opt-outs are held in memory and are lost when the server restarts.
+- The Vietnamese phrases have not been reviewed by a Vietnamese speaker.
 
 ---
 

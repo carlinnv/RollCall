@@ -141,12 +141,65 @@ def test_inbound_safety_message_gets_no_automated_reply(parent):
     assert any(e["absence_id"] == "A004" for e in client.get("/api/escalations").json())
 
 
-def test_stop_opts_out_and_silences_later_messages(parent):
+def test_stop_opts_out_without_touching_the_absence(parent):
     first = photon_channel.handle_inbound(parent, " STOP ", "2026-11-14T09:00:00Z")
     assert (first["route"], first["absence_id"], first["reply"]) == ("opted_out", None, None)
-    later = photon_channel.handle_inbound(parent, "The bus never came.", "2026-11-14T09:05:00Z")
-    assert later["route"] == "opted_out" and later["reply"] is None
     assert client.get("/api/absences/A004").json()["status"] == "awaiting reply"
+    assert client.get("/api/messages").json()[-1]["reason"] == "family opted out of messages"
+
+
+def test_opted_out_family_is_still_heard_but_never_answered(parent):
+    photon_channel.handle_inbound(parent, "STOP", "2026-11-14T09:00:00Z")
+    later = photon_channel.handle_inbound(parent, "The bus never came.", "2026-11-14T09:05:00Z")
+    assert later["reply"] is None and later["absence_id"] == "A004"
+    assert client.get("/api/absences/A004").json()["classification"]["barrier"] == "transportation"
+    # A safety disclosure after an opt-out must still reach the counselor.
+    photon_channel.handle_inbound(parent, "She is scared, kids are bullying her.", "2026-11-14T09:10:00Z")
+    assert any(e["student_id"] == "S002" for e in client.get("/api/escalations").json())
+
+
+@pytest.mark.parametrize("text", [
+    "Please stop texting me", "No more messages please", "don't text me again", "Do not contact us",
+    "take me off this list",
+    "No más mensajes", "Ya no me escriban", "Dejen de mandarme mensajes", "No quiero recibir más mensajes",
+    "Quiero darme de baja", "ALTO",
+    "Đừng nhắn tin nữa", "Ngừng gửi tin nhắn", "Tôi không muốn nhận tin nhắn nữa", "Hủy đăng ký",
+])
+def test_plain_language_opt_outs(parent, delivered, text):
+    out = photon_channel.handle_inbound(parent, text, "2026-11-14T09:00:00Z")
+    assert out["route"] == "opted_out" and out["reply"] is None
+    assert client.post("/api/absences/A004/check-in").json()["status"] == "blocked" and not delivered
+
+
+@pytest.mark.parametrize("text", [
+    "The bus didn't stop at our street", "El autobús no paró en la parada", "She wants to quit school",
+    "Please stop sending the bus late", "He told the kids to leave him alone", "We had to cancel the appointment",
+    "Tôi không nhận được tin nhắn", "Xe buýt không dừng lại",
+])
+def test_ordinary_replies_are_not_mistaken_for_opt_outs(text):
+    assert not outreach.is_opt_out(text)
+
+
+def test_opt_out_with_a_reason_is_honored_and_classified(parent):
+    out = photon_channel.handle_inbound(parent, "No more texts, she has a fever.", "2026-11-14T09:00:00Z")
+    assert out["route"] in {"cluster", "case"} and out["reply"] is None
+    assert client.get("/api/absences/A004").json()["classification"]["barrier"] == "illness"
+    assert client.post("/api/absences/A016/check-in").json()["status"] != "blocked"  # other families unaffected
+    assert outreach.digits(parent) in outreach.opted_out
+
+
+def test_opt_out_does_not_overwrite_a_reason_already_captured(parent):
+    photon_channel.handle_inbound(parent, "El autobus no llego.", "2026-11-14T09:00:00Z")
+    photon_channel.handle_inbound(parent, "No más mensajes", "2026-11-14T09:05:00Z")
+    absence = client.get("/api/absences/A004").json()
+    assert absence["status"] == "reason captured" and absence["classification"]["barrier"] == "transportation"
+
+
+def test_start_opts_back_in(parent, delivered):
+    photon_channel.handle_inbound(parent, "no more messages", "2026-11-14T09:00:00Z")
+    out = photon_channel.handle_inbound(parent, "START", "2026-11-14T09:05:00Z")
+    assert out["route"] == "opted_in"
+    assert client.post("/api/absences/A004/check-in").json()["status"] == "sent"
 
 
 def test_unlinked_number_is_not_classified():

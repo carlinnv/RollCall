@@ -9,7 +9,9 @@ API contract: https://photon.codes/docs/beta/get-started/imessage
 Guardrails (PRD 3 section 3):
 - Inbound text is data only. It goes to the classifier and is never executed.
 - Safety-critical replies get no automated answer; the counselor takes over.
-- STOP is honored immediately: the sender is opted out and nothing is sent.
+- Opt-outs are honored immediately, as a keyword (STOP) or in plain language
+  ("no más mensajes"): nothing more is sent to that number. Texts from an
+  opted-out family are still classified, so a safety disclosure is never dropped.
 - Every outbound message passes `outreach.blocked_reason` first (household
   safety suppression, opt-out, no links).
 - A shared line cannot send first: a family is reachable only after it has
@@ -25,16 +27,15 @@ import threading
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional
 
-from ..models import AbsenceStatus, FamilyReply, Student
+from ..models import AbsenceStatus, Barrier, FamilyReply, Student
 from ..store import elapsed_ms, iso, store, utc_now
-from . import outreach
+from . import classifier, outreach
 
 log = logging.getLogger("uvicorn.error")
 
 REQUIRED = ("PHOTON_API_KEY", "PHOTON_PROJECT_ID", "PHOTON_AGENT_HANDLE", "PHOTON_TEST_SENDER")
 POLL_SECONDS = 2.0
 CONTACT_LOOKBACK_DAYS = 3  # on startup, relearn which families have already texted the agent line
-STOP_WORDS = {"stop", "stopall", "unsubscribe", "cancel", "end", "quit", "alto", "parar"}
 
 ACK = {
     "en": "Thank you for letting us know. The school office has your message and will follow up.",
@@ -71,26 +72,38 @@ def handle_inbound(sender: str, text: str, received_at: str, message_id: str = "
     """Process one inbound text and log it.
 
     Returns {"route", "absence_id", "student_id", "reply"}; reply None means send nothing.
+    Every text from a known family is classified, including after an opt-out, so a reason or
+    a safety disclosure is never dropped. Opting out only stops what we send.
     """
     result = {"route": "ignored", "absence_id": None, "student_id": None, "reply": None}
     key = _digits(sender)
     received = _parse(received_at)
     logged = False
+    note = None
 
-    if text.strip().lower() in STOP_WORDS:
-        opted_out.add(key)
-        result["route"] = "opted_out"
-    elif key in opted_out:
-        result["route"] = "opted_out"
+    student = store.students.get(_links().get(key, ""))
+    if student is not None:
+        result["student_id"] = student.id
+
+    if outreach.is_opt_in(text):
+        opted_out.discard(key)
+        result["route"], note = "opted_in", "family opted back in to messages"
     else:
-        student = store.students.get(_links().get(key, ""))
-        if student is None:
+        if outreach.is_opt_out(text):
+            opted_out.add(key)
+            note = "family opted out of messages"
+        # "STOP" or "no más mensajes" on its own says nothing about an absence, so it is not attached
+        # to one (it would overwrite a real reason with "unknown"). A longer message that also gives
+        # a reason, e.g. "no more texts, she has a fever", is still classified below.
+        only_a_request = note is not None and classifier.classify(text).barrier == Barrier.UNKNOWN
+        if only_a_request:
+            result["route"] = "opted_out"
+        elif student is None:
             result.update(route="unlinked", reply=NOT_LINKED)
         else:
             mine = sorted((a for a in store.absences.values() if a.student_id == student.id), key=lambda a: a.date)
             waiting = [a for a in mine if a.status == AbsenceStatus.AWAITING_REPLY]
             target = (waiting or mine or [None])[-1]
-            result["student_id"] = student.id
             if target is None:
                 result.update(route="no_absence", reply=ACK.get(student.preferred_language, ACK["en"]))
             else:
@@ -98,7 +111,8 @@ def handle_inbound(sender: str, text: str, received_at: str, message_id: str = "
                     target.id,
                     FamilyReply(text=text, channel="text", language=student.preferred_language,
                                 received_at=received_at),
-                    channel="imessage", received=received, external_id=message_id or None, phone=sender)
+                    channel="imessage", received=received, external_id=message_id or None, phone=sender,
+                    reason=note)
                 logged = True
                 # The acknowledgement obeys the same rules as any outbound message. In particular,
                 # an open safety escalation in the household means the counselor answers, never the bot.
@@ -107,10 +121,13 @@ def handle_inbound(sender: str, text: str, received_at: str, message_id: str = "
                     reply = None
                 result.update(route=route, absence_id=target.id, reply=reply)
 
-    if not logged:  # texts that never reach the classifier are still on the record
+    if key in opted_out:
+        result["reply"] = None  # an opted-out number gets nothing back, not even a confirmation
+
+    if not logged:  # texts that are not attached to an absence are still on the record
         store.log_message(direction="inbound", channel="imessage", student_id=result["student_id"],
                           raw_text_or_transcript=text, timestamp=iso(received), route=result["route"],
-                          phone=sender, external_id=message_id or None)
+                          phone=sender, external_id=message_id or None, reason=note)
     return result
 
 
