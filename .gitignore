@@ -9,3 +9,4 @@ __pycache__/
 *.tsbuildinfo
 CARLINNOTES.md
 TODO.md
+.cache/

@@ -56,6 +56,10 @@ class Classification(BaseModel):
     confidence: float
     evidence: str  # quote from the reply supporting the label
     safety_critical: bool = False
+    # gemini | keywords (Gemini not configured, or seed data) | keywords_fallback (Gemini failed or timed out)
+    # | safety_keywords (the keyword safety check fired; it always wins over the model)
+    source: str = "keywords"
+    language: Optional[str] = None  # ISO 639-1, detected by Gemini; None from the keyword rules
 
 
 class Message(BaseModel):

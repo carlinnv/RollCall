@@ -62,8 +62,8 @@ class Store:
         for rec in seed.absences():
             reply = rec.pop("reply")
             self.absences[rec["id"]] = Absence(**rec)
-            if reply:  # precomputed history: logged, but with no latency measurement
-                self.record_reply(rec["id"], FamilyReply(**reply), channel="seed", measure=False)
+            if reply:  # precomputed history: logged with no latency, and labeled without model calls
+                self.record_reply(rec["id"], FamilyReply(**reply), channel="seed", measure=False, use_model=False)
 
     # ---------- F1: absence tracking & cause capture ----------
     def import_csv(self, text: str) -> Tuple[int, List[str]]:
@@ -95,7 +95,8 @@ class Store:
 
     def record_reply(self, absence_id: str, reply: FamilyReply, *, channel: str = "simulated",
                      received: Optional[datetime] = None, external_id: Optional[str] = None,
-                     phone: Optional[str] = None, reason: Optional[str] = None, measure: bool = True) -> str:
+                     phone: Optional[str] = None, reason: Optional[str] = None, measure: bool = True,
+                     use_model: bool = True) -> str:
         """Classify a family reply, log it, and return the route: escalated | cluster | case | unknown.
 
         `received` is when the family's message arrived (defaults to now). Latency is measured
@@ -103,11 +104,12 @@ class Store:
         log keeps every one.
         """
         start = received or utc_now()
-        route = self._route_reply(absence_id, reply)
+        route = self._route_reply(absence_id, reply, use_model)
         absence = self.absences[absence_id]
+        detected = absence.classification.language if absence.classification else None
         self.log_message(
             absence_id=absence_id, student_id=absence.student_id, direction="inbound", channel=channel,
-            language=reply.language, raw_text_or_transcript=reply.text,
+            language=detected or reply.language, raw_text_or_transcript=reply.text,
             timestamp=iso(start) if measure else reply.received_at,
             latency_ms=elapsed_ms(start) if measure else None,
             route=route, classification=absence.classification, phone=phone, external_id=external_id,
@@ -115,11 +117,12 @@ class Store:
         )
         return route
 
-    def _route_reply(self, absence_id: str, reply: FamilyReply) -> str:
+    def _route_reply(self, absence_id: str, reply: FamilyReply, use_model: bool = True) -> str:
         """Run the safety gate and classify."""
         absence = self.absences[absence_id]
         absence.reply = reply
-        result: Classification = classifier.classify(reply.text)
+        result: Classification = (classifier.classify(reply.text, self.names_for(absence.student_id)) if use_model
+                                  else classifier.keyword_classify(reply.text))
         absence.classification = result
 
         if result.safety_critical:
@@ -138,6 +141,11 @@ class Store:
         absence.status = AbsenceStatus.REASON_CAPTURED
         in_cluster = any(absence_id in c.absence_ids for c in self.clusters())
         return "cluster" if in_cluster else "case"
+
+    def names_for(self, student_id: str) -> List[str]:
+        """Names to hide from the model for this student's messages: student, guardian, teacher."""
+        s = self.students[student_id]
+        return [s.first_name, s.last_name, *s.guardian_name.split(), s.teacher.split()[-1]]
 
     def absence_count(self, student_id: str) -> int:
         return sum(1 for a in self.absences.values() if a.student_id == student_id)

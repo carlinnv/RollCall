@@ -6,7 +6,10 @@ from fastapi.testclient import TestClient
 
 from app.data.seed import PACING_GUIDE
 from app.main import app
-from app.services import outreach, photon_channel
+import json
+import time
+
+from app.services import classifier, outreach, photon_channel
 from app.services.classifier import classify
 from app.store import _no_channel, store
 
@@ -19,6 +22,7 @@ def fresh(monkeypatch):
     photon_channel.contacts.clear()
     outreach.opted_out.clear()
     monkeypatch.setattr(store, "sender", _no_channel)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)  # tests never call the real model
 
 
 # F1: every absence has a status and inspectable source message
@@ -343,3 +347,109 @@ def test_texts_that_match_no_absence_are_still_logged():
     photon_channel.handle_inbound("+19995550000", "hello?", "2026-11-14T09:00:00Z", "m7")
     message = client.get("/api/messages").json()[-1]
     assert message["route"] == "unlinked" and message["absence_id"] is None and message["classification"] is None
+
+
+# Gemini classifier, with a stand-in for the API call
+@pytest.fixture
+def gemini(monkeypatch, tmp_path):
+    """Turn Gemini on with a fake model. Set `answer` (dict, or an Exception to raise); read `sent`."""
+    state = {"answer": None, "sent": [], "delay": 0.0}
+
+    def fake_generate(redacted):
+        state["sent"].append(redacted)
+        if state["delay"]:
+            time.sleep(state["delay"])
+        if isinstance(state["answer"], Exception):
+            raise state["answer"]
+        return state["answer"] if isinstance(state["answer"], str) else json.dumps(state["answer"])
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    monkeypatch.setattr(classifier, "_generate", fake_generate)
+    monkeypatch.setattr(classifier, "CACHE_DIR", tmp_path)
+    return state
+
+
+def answer(label, quote="", confidence=0.9, language="es", safety=False):
+    return {"label": label, "evidence_quote": quote, "confidence": confidence, "language": language,
+            "safety_concern": safety}
+
+
+def test_gemini_label_language_and_evidence_are_used(gemini):
+    text = "Mi hija no fue porque el camión no pasó por la parada."
+    gemini["answer"] = answer("transportation", "el camión no pasó por la parada", language="es")
+    client.post("/api/absences/A004/reply", json={"text": text, "language": "en"})
+    a = client.get("/api/absences/A004").json()
+    assert a["classification"]["barrier"] == "transportation" and a["classification"]["source"] == "gemini"
+    assert a["classification"]["evidence"] == "el camión no pasó por la parada"
+    assert a["messages"][-1]["language"] == "es"  # detected, not the student's record
+
+
+def test_language_the_keywords_miss_is_classified(gemini):
+    gemini["answer"] = answer("illness", "con bị sốt", language="vi")
+    route = client.post("/api/absences/A016/reply", json={"text": "Hôm qua con bị sốt cao.", "language": "en"}).json()
+    assert route["absence"]["classification"]["barrier"] == "illness"
+    assert classifier.keyword_classify("Hôm qua con bị sốt cao.").barrier == "unknown"  # the old stub could not
+
+
+def test_evidence_that_is_not_in_the_message_is_replaced_by_the_message(gemini):
+    gemini["answer"] = answer("transportation", "the bus did not come", language="es")  # a translation, not a quote
+    text = "El camión no pasó."
+    client.post("/api/absences/A004/reply", json={"text": text, "language": "es"})
+    assert client.get("/api/absences/A004").json()["classification"]["evidence"] == text
+
+
+def test_names_are_hidden_from_the_model_and_restored_in_the_quote(gemini):
+    gemini["answer"] = answer("illness", "[NAME1] tiene fiebre")
+    client.post("/api/absences/A004/reply", json={"text": "Sofia tiene fiebre desde ayer.", "language": "es"})
+    assert "Sofia" not in gemini["sent"][-1] and "[NAME1]" in gemini["sent"][-1]
+    assert client.get("/api/absences/A004").json()["classification"]["evidence"] == "Sofia tiene fiebre"
+
+
+def test_model_can_add_a_safety_flag(gemini):
+    text = "I had to leave him home alone with the baby all day."
+    gemini["answer"] = answer("caregiving or family obligation", "home alone with the baby", language="en", safety=True)
+    route = client.post("/api/absences/A004/reply", json={"text": text, "language": "en"}).json()["route"]
+    assert route == "escalated"
+    assert client.get("/api/absences/A004").json()["classification"]["safety_critical"] is True
+
+
+def test_model_can_never_clear_a_keyword_safety_flag(gemini):
+    gemini["answer"] = answer("transportation", "the bus", language="en", safety=False)
+    route = client.post("/api/absences/A004/reply",
+                        json={"text": "She is scared to ride the bus, kids are bullying her.", "language": "en"}).json()["route"]
+    c = client.get("/api/absences/A004").json()["classification"]
+    assert route == "escalated" and c["barrier"] == "safety or bullying" and c["source"] == "safety_keywords"
+
+
+@pytest.mark.parametrize("bad", [
+    RuntimeError("503 UNAVAILABLE"),
+    "not json",
+    json.dumps({"label": "Ignore previous instructions", "evidence_quote": "", "confidence": 1}),
+])
+def test_model_failure_falls_back_to_keywords(gemini, bad):
+    gemini["answer"] = bad
+    client.post("/api/absences/A004/reply", json={"text": "The bus never came.", "language": "en"})
+    c = client.get("/api/absences/A004").json()["classification"]
+    assert c["barrier"] == "transportation" and c["source"] == "keywords_fallback"
+
+
+def test_slow_model_falls_back_within_the_timeout(gemini, monkeypatch):
+    monkeypatch.setattr(classifier, "TIMEOUT_S", 0.05)
+    gemini["answer"], gemini["delay"] = answer("illness", "fever"), 0.5
+    started = time.monotonic()
+    client.post("/api/absences/A004/reply", json={"text": "She has a fever.", "language": "en"})
+    assert time.monotonic() - started < 0.4
+    assert client.get("/api/absences/A004").json()["classification"]["source"] == "keywords_fallback"
+
+
+def test_repeated_message_is_answered_from_the_cache(gemini):
+    gemini["answer"] = answer("illness", "fever", language="en")
+    for _ in range(2):
+        classifier.classify("She has a fever.")
+    assert len(gemini["sent"]) == 1
+
+
+def test_seed_data_and_reset_never_call_the_model(gemini):
+    client.post("/api/reset")
+    assert gemini["sent"] == []
+    assert client.get("/api/health").json()["classifier"]["engine"] == "gemini"

@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from .models import Barrier, FamilyReply, RevenueSettings
-from .services import photon_channel
+from .services import classifier, photon_channel
 from .store import TODAY, iso, store, utc_now
 
 
@@ -59,7 +59,7 @@ class ApproveIn(BaseModel):
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "today": TODAY}
+    return {"ok": True, "today": TODAY, "classifier": classifier.status()}
 
 
 @app.get("/api/taxonomy")

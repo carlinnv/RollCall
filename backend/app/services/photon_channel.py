@@ -95,7 +95,8 @@ def handle_inbound(sender: str, text: str, received_at: str, message_id: str = "
         # "STOP" or "no más mensajes" on its own says nothing about an absence, so it is not attached
         # to one (it would overwrite a real reason with "unknown"). A longer message that also gives
         # a reason, e.g. "no more texts, she has a fever", is still classified below.
-        only_a_request = note is not None and classifier.classify(text).barrier == Barrier.UNKNOWN
+        only_a_request = note is not None and classifier.classify(
+            text, store.names_for(student.id) if student else ()).barrier == Barrier.UNKNOWN
         if only_a_request:
             result["route"] = "opted_out"
         elif student is None:
@@ -114,9 +115,12 @@ def handle_inbound(sender: str, text: str, received_at: str, message_id: str = "
                     channel="imessage", received=received, external_id=message_id or None, phone=sender,
                     reason=note)
                 logged = True
+                # Answer in the language the family wrote in when we have a template for it.
+                label = store.absences[target.id].classification
+                lang = label.language if label and label.language in ACK else student.preferred_language
                 # The acknowledgement obeys the same rules as any outbound message. In particular,
                 # an open safety escalation in the household means the counselor answers, never the bot.
-                reply = ACK.get(student.preferred_language, ACK["en"])
+                reply = ACK.get(lang, ACK["en"])
                 if outreach.blocked_reason(sender, reply, store.household_suppressed(student.id)):
                     reply = None
                 result.update(route=route, absence_id=target.id, reply=reply)
