@@ -6,6 +6,63 @@ import { ErrorNote, Page } from "../components/ui";
 
 const ROLES: StaffRole[] = ["counselor", "administrator", "principal"];
 
+/** The phone number cell: shows the number, or an editor after "Edit". */
+function PhoneCell({ s, onChange }: { s: StaffMember; onChange: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [phone, setPhone] = useState(s.phone);
+  const [err, setErr] = useState<string | null>(null);
+
+  const start = () => {
+    setPhone(s.phone);
+    setErr(null);
+    setEditing(true);
+  };
+
+  const save = async () => {
+    try {
+      await api.updateStaff(s.staff_id, { phone: phone.trim() });
+      setEditing(false);
+      onChange();
+    } catch (x) {
+      setErr((x as Error).message); // e.g. too few digits, or already on the roster
+    }
+  };
+
+  if (!editing) {
+    return (
+      <td>
+        <span className="muted">{s.phone}</span>{" "}
+        <button className="link small" onClick={start}>
+          Edit
+        </button>
+      </td>
+    );
+  }
+  return (
+    <td>
+      <div className="row">
+        <input
+          value={phone}
+          autoFocus
+          onChange={(x) => setPhone(x.target.value)}
+          onKeyDown={(x) => {
+            if (x.key === "Enter") save();
+            if (x.key === "Escape") setEditing(false);
+          }}
+          placeholder="+15551234567"
+        />
+        <button disabled={!phone.trim() || phone.trim() === s.phone} onClick={save}>
+          Save
+        </button>
+        <button className="ghost" onClick={() => setEditing(false)}>
+          Cancel
+        </button>
+      </div>
+      {err && <div className="error small">{err}</div>}
+    </td>
+  );
+}
+
 function StaffRow({ s, onChange }: { s: StaffMember; onChange: () => void }) {
   const [note, setNote] = useState<string | null>(null);
 
@@ -44,7 +101,7 @@ function StaffRow({ s, onChange }: { s: StaffMember; onChange: () => void }) {
           ))}
         </select>
       </td>
-      <td className="muted">{s.phone}</td>
+      <PhoneCell s={s} onChange={onChange} />
       <td>
         <label className="row">
           <input type="checkbox" checked={s.on_call} onChange={(x) => run(() => api.updateStaff(s.staff_id, { on_call: x.target.checked }))} />

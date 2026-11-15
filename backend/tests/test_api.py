@@ -855,3 +855,21 @@ def test_weekend_counts_as_school_days_when_configured(pages, monkeypatch):
     assert client.get("/api/oncall").json()["first_role_now"] == "administrator"
     monkeypatch.setenv("SCHOOL_DAYS", "all")
     assert client.get("/api/oncall").json()["first_role_now"] == "counselor"
+
+
+def test_staff_phone_can_be_edited():
+    add_staff("Ms. Rivera", "counselor", "+15550109999")
+    add_staff("Mr. Diaz", "administrator", "+15550108888")
+    r = client.patch("/api/oncall/staff/T01", json={"phone": "+1 555 010 7777"})
+    assert r.status_code == 200 and r.json()["phone"] == "+1 555 010 7777"
+    assert [s.phone for s in oncall.Roster(store.roster.path).staff.values()][0] == "+1 555 010 7777"  # saved
+    assert client.patch("/api/oncall/staff/T01", json={"phone": "+15550108888"}).status_code == 400  # Mr. Diaz's
+    assert client.patch("/api/oncall/staff/T01", json={"phone": "555"}).status_code == 400
+    assert client.patch("/api/oncall/staff/T99", json={"phone": "+15550106666"}).status_code == 404
+
+
+def test_fixing_a_phone_makes_it_reachable(monkeypatch):
+    monkeypatch.setitem(photon_channel.contacts, "5550109999", {"space_id": "sp", "agent_id": "ag"})
+    add_staff("Ms. Rivera", "counselor", "+15550109998")  # one digit off
+    assert client.get("/api/oncall").json()["staff"][0]["reachable"] is False
+    assert client.patch("/api/oncall/staff/T01", json={"phone": "+15550109999"}).json()["reachable"] is True
