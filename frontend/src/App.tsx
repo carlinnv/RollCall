@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { api } from "./api";
 import { canOpen, useAuth } from "./auth";
+import { useHealth } from "./hooks";
 import type { Role } from "./auth";
 import Login from "./pages/Login";
 import Overview from "./pages/Overview";
@@ -81,22 +81,6 @@ function Icon({ name }: { name: IconName }) {
   );
 }
 
-/** Which classifier the API is running, for the pill in the top bar. */
-function useEngine() {
-  const [engine, setEngine] = useState<{ label: string; live: boolean } | null>(null);
-  useEffect(() => {
-    fetch("/api/health")
-      .then((r) => r.json())
-      .then((h) => {
-        if (h.demo_mode) setEngine({ label: "Demo mode · recorded answers", live: false });
-        else if (h.classifier?.engine === "gemini") setEngine({ label: "Gemini live", live: true });
-        else setEngine({ label: "Keyword rules", live: false });
-      })
-      .catch(() => setEngine({ label: "API offline", live: false }));
-  }, []);
-  return engine;
-}
-
 export default function App() {
   const { role } = useAuth();
   const location = useLocation();
@@ -129,7 +113,9 @@ function NoAccess({ role }: { role: Role }) {
 }
 
 function Shell({ role }: { role: Role }) {
-  const engine = useEngine();
+  const health = useHealth();
+  const engine = health?.engine;
+  const demoData = health?.demoData ?? false;
   const { signOut, district } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -187,12 +173,12 @@ function Shell({ role }: { role: Role }) {
             Switch user
           </button>
         </div>
-        {role.id === "admin" && (
+        {role.id === "admin" && demoData && (
           <button className="ghost" onClick={reset} title="Reload the synthetic demo data">
             Reset demo data
           </button>
         )}
-        <p className="fine">Synthetic data only. No real student records.</p>
+        {demoData && <p className="fine">Synthetic data only. No real student records.</p>}
       </nav>
       <main>
         <div className="topbar">
@@ -207,7 +193,12 @@ function Shell({ role }: { role: Role }) {
                 {engine.label}
               </span>
             )}
-            <span className="pill">Synthetic data</span>
+            {demoData && <span className="pill">Synthetic data</span>}
+            {health && !health.demoData && !health.saving && (
+              <span className="pill" title="Set TIGER_DATABASE_URL so imported data survives a restart">
+                Not saved: no database
+              </span>
+            )}
           </div>
         </div>
         {!canOpen(role, pathname) ? (

@@ -34,6 +34,18 @@ LIVE_STORY_PENDING = {("S002", date(2026, 11, 10)), ("S004", date(2026, 11, 11))
                       ("S005", date(2026, 11, 10)), ("S005", date(2026, 11, 11))}
 
 
+def data_source() -> str:
+    """Where the school's data comes from.
+
+    demo: the hard-coded synthetic school in data/seed.py, in memory only (never saved).
+    live: starts empty; students and absences come from SIS CSV imports and are saved to
+          TigerData when TIGER_DATABASE_URL is set. Demo mode (DEMO_MODE=1) always uses demo.
+    """
+    if os.environ.get("DEMO_MODE", "0").strip().lower() in ("1", "true", "on", "yes"):
+        return "demo"
+    return "live" if os.environ.get("DATA_SOURCE", "demo").strip().lower() == "live" else "demo"
+
+
 def demo_story() -> str:
     return "live" if os.environ.get("DEMO_STORY", "full").strip().lower() == "live" else "full"
 
@@ -87,7 +99,8 @@ class Store:
         self.touch()
         self.corrections.reset()
         self.recovery_log: List[dict] = []
-        self.students: Dict[str, Student] = {s["id"]: Student(**s) for s in seed.students()}
+        live_data = data_source() == "live"
+        self.students: Dict[str, Student] = {} if live_data else {s["id"]: Student(**s) for s in seed.students()}
         self.absences: Dict[str, Absence] = {}
         self.escalations: Dict[str, Escalation] = {}
         self.case_reports: Dict[str, List[CaseReport]] = {}  # escalation_id -> saved versions, oldest first
@@ -97,6 +110,8 @@ class Store:
         self._held_keys: Dict[str, str] = {}  # message_id -> idempotency key, for messages held for quiet hours
         self.completed_learning: Dict[str, int] = {}  # student_id -> days recovered
         self.settings: RevenueSettings = revenue.STATE_DEFAULTS["CA"].model_copy()
+        if live_data:
+            return  # real data arrives through CSV imports (and is loaded from TigerData on startup)
         live_story = demo_story() == "live"
         for rec in seed.absences():
             reply = rec.pop("reply")
@@ -108,19 +123,61 @@ class Store:
                                   route=False)
 
     # ---------- F1: absence tracking & cause capture ----------
-    def import_csv(self, text: str) -> Tuple[int, List[str]]:
-        """Ingest a daily SIS export with columns: student_id,date,sis_code."""
-        added, errors = 0, []
-        reader = csv.DictReader(io.StringIO(text.strip()))
+    # Student columns an SIS export may carry. When present, unknown students are added and known ones updated.
+    STUDENT_COLUMNS = ("first_name", "last_name", "grade", "classroom", "teacher", "bus_route", "household_id",
+                       "preferred_language", "guardian_name", "guardian_phone")
+    STUDENT_REQUIRED = ("first_name", "last_name", "grade", "classroom", "teacher", "household_id",
+                        "guardian_name", "guardian_phone")
+
+    def _student_from_row(self, sid: str, row: Dict[str, str]) -> Optional[Student]:
+        """The student described by a CSV row, merged over what we already have. None if the row has no student details."""
+        given = {k: (row.get(k) or "").strip() for k in self.STUDENT_COLUMNS if (row.get(k) or "").strip()}
+        if not given:
+            return None
+        current = self.students[sid].model_dump() if sid in self.students else {}
+        merged = {**current, **given, "id": sid}
+        if "bus_route" in row and not (row.get("bus_route") or "").strip():
+            merged["bus_route"] = None  # an empty bus_route column means the student does not ride a bus
+        missing = [k for k in self.STUDENT_REQUIRED if not merged.get(k)]
+        if missing:
+            raise ValueError(f"new student needs {', '.join(missing)}")
+        return Student.model_validate(merged)
+
+    def import_csv(self, text: str) -> Tuple[int, List[str], int]:
+        """Ingest an SIS export: one absence per row.
+
+        Required columns: student_id, date. Optional: sis_code, and the student columns in
+        STUDENT_COLUMNS, which add a student we have not seen or update one we have. Without student
+        columns, every student_id must already be known. A row with student columns and an empty date is a roster row: it
+        adds or updates the student without logging an absence. Returns (absences added, errors, students added).
+        """
+        added, errors, new_students = 0, [], 0
+        reader = csv.DictReader(io.StringIO(text.strip().lstrip("﻿")))
         missing = {"student_id", "date"} - set(reader.fieldnames or [])
         if missing:
-            return 0, [f"missing column(s): {', '.join(sorted(missing))}"]
+            return 0, [f"missing column(s): {', '.join(sorted(missing))}"], 0
         existing = {(a.student_id, a.date) for a in self.absences.values()}
         for line, row in enumerate(reader, start=2):
             sid = (row.get("student_id") or "").strip()
-            if sid not in self.students:
-                errors.append(f"line {line}: unknown student_id '{sid}'")
+            if not sid:
+                errors.append(f"line {line}: empty student_id")
                 continue
+            try:
+                student = self._student_from_row(sid, row)
+            except ValueError as e:
+                errors.append(f"line {line}: student '{sid}': {str(e).splitlines()[0]}")
+                continue
+            if student is not None:
+                if sid not in self.students:
+                    new_students += 1
+                if self.students.get(sid) != student:
+                    self.students[sid] = student
+                    self.touch()
+            if sid not in self.students:
+                errors.append(f"line {line}: unknown student_id '{sid}' (add the student columns to create it)")
+                continue
+            if student is not None and not (row.get("date") or "").strip():
+                continue  # a roster row: adds or updates the student, logs no absence
             try:
                 d = date.fromisoformat((row.get("date") or "").strip())
             except ValueError:
@@ -135,7 +192,7 @@ class Store:
             added += 1
         if added:
             self.touch()
-        return added, errors
+        return added, errors, new_students
 
     def record_reply(self, absence_id: str, reply: FamilyReply, *, channel: str = "simulated",
                      received: Optional[datetime] = None, external_id: Optional[str] = None,

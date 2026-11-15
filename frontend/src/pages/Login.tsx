@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { DISTRICTS, ROLES, canOpen, useAuth } from "../auth";
+import { useHealth } from "../hooks";
 import type { RoleId } from "../auth";
 
 function Logo() {
@@ -11,6 +12,11 @@ function Logo() {
       <path d="M9 16.5l4.5 4.5L23 11" />
     </svg>
   );
+}
+
+function SignInNote() {
+  const health = useHealth();
+  return <p className="fine">Demo sign-in.{health?.demoData ? " Synthetic data only, no real student records." : ""}</p>;
 }
 
 /** Step 1: find your district. Only the demo district can be chosen. */
@@ -46,7 +52,7 @@ function DistrictStep() {
         ))}
         {matches.length === 0 && <li className="district-none">No district matches “{query.trim()}”.</li>}
       </ul>
-      <p className="fine">Demo sign-in. Synthetic data only, no real student records.</p>
+      <SignInNote />
     </div>
   );
 }
@@ -92,7 +98,7 @@ function RoleStep() {
       <button type="submit" className="login-submit" disabled={!choice}>
         Sign in
       </button>
-      <p className="fine">Demo sign-in. Synthetic data only, no real student records.</p>
+      <SignInNote />
     </form>
   );
 }

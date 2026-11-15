@@ -34,19 +34,39 @@ npm run dev
 cd backend && .venv/bin/pytest -q
 ```
 
-### Optional: TigerData timeline
+### Demo data vs. live data
 
-Mirrors absences into a TigerData (Timescale) hypertable. A continuous aggregate feeds the "Daily absences by bus route" heatmap on the Root causes page. Without it, that panel is hidden and nothing else changes.
+`DATA_SOURCE` in `.env` picks where the school's data comes from:
 
-1. Create a TigerData service and copy its Postgres connection string.
+| `DATA_SOURCE` | Data | Saved? | UI |
+| --- | --- | --- | --- |
+| `demo` (default) | The hard-coded synthetic school in `backend/app/data/seed.py` | No, in memory only | "Synthetic data" labels, "Reset demo data" button |
+| `live` | Starts empty. Import students and absences from an SIS CSV | In TigerData, if `TIGER_DATABASE_URL` is set | No synthetic labels; reset is disabled (the API refuses it) |
+
+`DEMO_MODE=1` (the scripted demo) always uses `demo`.
+
+**Importing a CSV** (Case queue → "Import SIS CSV"). One row per absence. Required columns: `student_id`, `date` (YYYY-MM-DD). Optional: `sis_code`, plus student columns `first_name, last_name, grade, classroom, teacher, bus_route, household_id, preferred_language, guardian_name, guardian_phone`, which add a new student or update a known one (an empty `bus_route` means no bus). A row with student columns and an empty `date` adds the student without an absence, for students who were not absent. Absences already logged are skipped, so the same file can be imported twice.
+
+A test file with a fictional roster of 24 students and 28 absences (Nov 9–13, 2026) is in [`backend/data/sample/sis_import.csv`](backend/data/sample/sis_import.csv). It has a Route 5 bus problem (Tue–Wed), an illness run in Room 3B (Thu–Fri) and two siblings out together; replies such as "The bus never came" on a few Route 5 absences make the cluster appear.
+
+### Optional: save data in TigerData
+
+Without a database, everything lives in memory and a restart reloads the demo data. With `TIGER_DATABASE_URL` set, the app keeps its data in TigerData (Timescale Postgres):
+
+- **App data** (students, absences, replies, escalations, plans, messages, corrections, on-call roster, opt-outs, settings) is stored in the `app_records` table, one JSON row per record. It is loaded on startup and changes are saved about once a second (`backend/app/services/persist.py`). On first start the table is empty, so the demo data is saved into it. "Reset demo data" puts the demo data back.
+- **Absences** are also kept in the `absence_events` hypertable, one row per absence, updated in place. A continuous aggregate (`absences_daily`) feeds the "Daily absences by bus route" heatmap on the Root causes page.
+
+Setup:
+
+1. Create a TigerData service and copy its Postgres connection string. Use `sslmode=require`.
 2. Add `TIGER_DATABASE_URL=postgres://...` to `.env` (project root) or `backend/.env`.
-3. Create the hypertable and continuous aggregate once (schema in `backend/db/schema.sql`):
+3. Create the tables once (schema in `backend/db/schema.sql`):
    ```bash
    cd backend && .venv/bin/python scripts/tiger_setup.py
    ```
-4. Restart the API.
+4. Restart the API. The log says `TigerData: loaded N records` (or `saved the seed data` the first time).
 
-If the database is unreachable, the app logs a warning and carries on. Tests never connect to it.
+Run only one backend against a database at a time: two copies would overwrite each other's changes. If the database cannot be reached at startup, the app runs in memory and saves nothing that run, so it never overwrites saved data with an empty copy. Tests never connect to it.
 
 ## What's built (PRD 1 features)
 

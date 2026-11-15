@@ -277,7 +277,6 @@ function SchoolNetwork({ students, rows, clusters }: { students: Student[]; rows
 export default function Overview() {
   const queue = useLoad(api.queue);
   const clusterLoad = useLoad(api.clusters);
-  const revenue = useLoad(api.revenue);
   const students = useLoad(api.students);
   const escalations = useLoad(api.escalations);
 
@@ -367,11 +366,6 @@ export default function Overview() {
           <span>Open safety cases</span>
           <b className={openSafety ? "bad" : ""}>{openSafety}</b>
           <em>{openSafety ? <Link to="/escalations">with a counselor →</Link> : "none open"}</em>
-        </div>
-        <div className="kpi">
-          <span>Funding at risk</span>
-          <b>{revenue.data ? money(revenue.data.dollars_at_risk_week) : "–"}</b>
-          <em>{revenue.data ? `${money(revenue.data.dollars_recovered_to_date)} recovered to date` : " "}</em>
         </div>
       </div>
 
