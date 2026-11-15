@@ -1,0 +1,13 @@
+.git
+**/.venv
+**/node_modules
+**/dist
+**/__pycache__
+**/.pytest_cache
+**/.cache
+backend/data_raw
+backend/eval/cache
+.env
+backend/.env
+documents
+*.pptx
