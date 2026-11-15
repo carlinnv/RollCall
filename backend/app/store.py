@@ -14,10 +14,10 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 from .data import seed
 from .models import (
-    Absence, AbsenceStatus, ActionPlan, Barrier, Classification, Cluster, Escalation, FamilyReply,
+    Absence, AbsenceStatus, ActionPlan, Barrier, CaseReport, Classification, Cluster, Escalation, FamilyReply,
     LearningPlan, Message, PlanStatus, RevenueSettings, RevenueSummary, Student,
 )
-from .services import action_plan, classifier, clustering, learning_plan, outreach, revenue
+from .services import action_plan, case_report, classifier, clustering, learning_plan, outreach, revenue
 
 TODAY = date(2026, 11, 14)
 PRIOR_DAYS_RECOVERED = 14  # recovered through Attendance Recovery before this week (synthetic)
@@ -55,6 +55,7 @@ class Store:
         self.students: Dict[str, Student] = {s["id"]: Student(**s) for s in seed.students()}
         self.absences: Dict[str, Absence] = {}
         self.escalations: Dict[str, Escalation] = {}
+        self.case_reports: Dict[str, List[CaseReport]] = {}  # escalation_id -> saved versions, oldest first
         self.plans: Dict[str, ActionPlan] = {}
         self.messages: List[Message] = []  # every inbound and outbound text, oldest first
         self.completed_learning: Dict[str, int] = {}  # student_id -> days recovered
@@ -104,43 +105,148 @@ class Store:
         log keeps every one.
         """
         start = received or utc_now()
-        route = self._route_reply(absence_id, reply, use_model)
+        at = iso(start) if measure else reply.received_at
+        route, result = self._route_reply(absence_id, reply, at, use_model)
         absence = self.absences[absence_id]
-        detected = absence.classification.language if absence.classification else None
         self.log_message(
             absence_id=absence_id, student_id=absence.student_id, direction="inbound", channel=channel,
-            language=detected or reply.language, raw_text_or_transcript=reply.text,
-            timestamp=iso(start) if measure else reply.received_at,
-            latency_ms=elapsed_ms(start) if measure else None,
-            route=route, classification=absence.classification, phone=phone, external_id=external_id,
-            reason=reason,
+            language=result.language or reply.language, raw_text_or_transcript=reply.text,
+            timestamp=at, latency_ms=elapsed_ms(start) if measure else None,
+            # The message keeps its own label, even when an open escalation holds the absence's label.
+            route=route, classification=result, phone=phone, external_id=external_id, reason=reason,
         )
         return route
 
-    def _route_reply(self, absence_id: str, reply: FamilyReply, use_model: bool = True) -> str:
-        """Run the safety gate and classify."""
+    def _route_reply(self, absence_id: str, reply: FamilyReply, at: str,
+                     use_model: bool = True) -> Tuple[str, Classification]:
+        """Run the safety gate and classify. Returns the route and this message's own label."""
         absence = self.absences[absence_id]
         absence.reply = reply
         result: Classification = (classifier.classify(reply.text, self.names_for(absence.student_id)) if use_model
                                   else classifier.keyword_classify(reply.text))
-        absence.classification = result
+        already_open = self.open_escalation(absence_id)
 
         if result.safety_critical:
             # Counselor takes over immediately; no automated reply is ever sent.
+            absence.classification = result
             absence.status = AbsenceStatus.REASON_CAPTURED
-            self.escalations[absence_id] = Escalation(
-                absence_id=absence_id, student_id=absence.student_id,
-                reason=result.barrier.value, evidence=result.evidence,
-            )
-            return "escalated"
+            if already_open is None:
+                eid = f"E{len(self.escalations) + 1:03d}"
+                self.escalations[eid] = Escalation(
+                    escalation_id=eid, absence_id=absence_id, student_id=absence.student_id,
+                    household_id=self.students[absence.student_id].household_id,
+                    reason=result.barrier.value, evidence=result.evidence, opened_at=at,
+                )
+            return "escalated", result
 
+        if already_open is not None:
+            # Only the counselor can downgrade a safety label. A calmer follow-up ("she twisted
+            # her ankle at soccer") is logged with its own label but does not replace this one.
+            return "escalated", result
+
+        absence.classification = result
         if result.barrier == Barrier.UNKNOWN:
             absence.status = AbsenceStatus.UNKNOWN
-            return "unknown"
+            return "unknown", result
 
         absence.status = AbsenceStatus.REASON_CAPTURED
         in_cluster = any(absence_id in c.absence_ids for c in self.clusters())
-        return "cluster" if in_cluster else "case"
+        return ("cluster" if in_cluster else "case"), result
+
+    # ---------- safety escalations ----------
+    ACK_WITHIN_MINUTES = 15  # PRD 3 section 3: acknowledge within 15 minutes during school hours
+
+    def open_escalation(self, absence_id: str) -> Optional[Escalation]:
+        """The escalation for this absence that the counselor has not closed yet, if any."""
+        return next((e for e in self.escalations.values()
+                     if e.absence_id == absence_id and e.status != "closed"), None)
+
+    def escalation_view(self, e: Escalation) -> dict:
+        """An escalation as the inbox shows it, with how long it has waited for acknowledgement."""
+        opened = datetime.fromisoformat(e.opened_at.replace("Z", "+00:00"))
+        if opened.tzinfo is None:
+            opened = opened.replace(tzinfo=timezone.utc)
+        waited = (utc_now() - opened).total_seconds() / 60
+        saved = self.case_reports.get(e.escalation_id, [])
+        return {**e.model_dump(), "student": self.students[e.student_id],
+                "minutes_open": max(0, round(waited)),
+                "overdue": e.status == "open" and waited > self.ACK_WITHIN_MINUTES,
+                "case_report_versions": len(saved),
+                "case_report_saved_at": saved[-1].saved_at if saved else None}
+
+    def _escalation(self, escalation_id: str) -> Escalation:
+        e = self.escalations[escalation_id]  # KeyError -> 404 in the API
+        if e.status == "closed":
+            raise ValueError("this escalation is already closed")
+        return e
+
+    # ---------- internal case reports ----------
+    def draft_case_report(self, escalation_id: str, by: str) -> str:
+        """A fresh report from the current record. Not saved. Works on open and closed cases.
+
+        Keeps the counselor notes from the latest saved version, so regenerating after new
+        events does not lose what the counselor wrote.
+        """
+        e = self.escalations[escalation_id]  # KeyError -> 404
+        saved = self.case_reports.get(escalation_id, [])
+        notes = case_report.notes_from(saved[-1].text) if saved else None
+        return case_report.build(e, self.students[e.student_id], self.absences[e.absence_id],
+                                 self.thread(e.absence_id), by, iso(utc_now()), notes)
+
+    def save_case_report(self, escalation_id: str, by: str, text: str) -> CaseReport:
+        """Store a new version. Earlier versions are kept unchanged."""
+        if escalation_id not in self.escalations:
+            raise KeyError(escalation_id)
+        if not text.strip():
+            raise ValueError("the report is empty")
+        versions = self.case_reports.setdefault(escalation_id, [])
+        report = CaseReport(escalation_id=escalation_id, version=len(versions) + 1, text=text,
+                            saved_by=by, saved_at=iso(utc_now()))
+        versions.append(report)
+        return report
+
+    def acknowledge_escalation(self, escalation_id: str, by: str) -> Escalation:
+        e = self._escalation(escalation_id)
+        if e.acknowledged_at is None:
+            e.acknowledged_at, e.acknowledged_by, e.status = iso(utc_now()), by, "acknowledged"
+        return e
+
+    def record_report_decision(self, escalation_id: str, by: str, decision: str) -> Escalation:
+        """Record what staff did about mandated reporting. The system never files a report itself."""
+        if decision not in ("report_filed", "not_required"):
+            raise ValueError("decision must be report_filed or not_required")
+        e = self._escalation(escalation_id)
+        e.report_status, e.report_by, e.report_at = decision, by, iso(utc_now())
+        return e
+
+    def close_escalation(self, escalation_id: str, by: str, outcome: str,
+                         relabel_to: Optional[Barrier] = None, note: Optional[str] = None) -> Escalation:
+        """Close a safety case. Lifts the household's message suppression if nothing else is open.
+
+        outcome "resolved": a real concern the counselor handled; the absence keeps its safety label.
+        outcome "not_safety": a false alarm; the counselor relabels the absence (`relabel_to`).
+        """
+        e = self._escalation(escalation_id)
+        if e.report_status is None:
+            raise ValueError("record the mandated-reporting decision before closing")
+        if outcome not in ("resolved", "not_safety"):
+            raise ValueError("outcome must be resolved or not_safety")
+        if outcome == "not_safety":
+            if relabel_to is None or relabel_to == Barrier.SAFETY:
+                raise ValueError("a false alarm needs the correct, non-safety label")
+            absence = self.absences[e.absence_id]
+            previous = absence.classification
+            absence.classification = Classification(
+                barrier=relabel_to, confidence=1.0, evidence=previous.evidence if previous else e.evidence,
+                source="counselor", language=previous.language if previous else None,
+            )
+            absence.status = AbsenceStatus.UNKNOWN if relabel_to == Barrier.UNKNOWN else AbsenceStatus.REASON_CAPTURED
+            e.relabeled_to = relabel_to
+        now = iso(utc_now())
+        if e.acknowledged_at is None:
+            e.acknowledged_at, e.acknowledged_by = now, by
+        e.status, e.closed_at, e.closed_by, e.outcome, e.note = "closed", now, by, outcome, note
+        return e
 
     def names_for(self, student_id: str) -> List[str]:
         """Names to hide from the model for this student's messages: student, guardian, teacher."""
@@ -194,10 +300,9 @@ class Store:
 
     # ---------- F2: outbound messages ----------
     def household_suppressed(self, student_id: str) -> bool:
-        """True while any student in this household has an open safety escalation."""
+        """True while any student in this household has a safety escalation the counselor has not closed."""
         household = self.students[student_id].household_id
-        return any(e.status == "open" and self.students[e.student_id].household_id == household
-                   for e in self.escalations.values())
+        return any(e.status != "closed" and e.household_id == household for e in self.escalations.values())
 
     def send_to_family(self, student_id: str, text: str, kind: str, key: str,
                        absence_id: Optional[str] = None, plan_id: Optional[str] = None) -> dict:
@@ -233,18 +338,18 @@ class Store:
 
     def queue(self) -> List[dict]:
         """Case queue. Ordered by risk of harm, never by dollar value."""
-        rank = {Barrier.SAFETY: 0}
         status_rank = {AbsenceStatus.UNKNOWN: 1, AbsenceStatus.AWAITING_REPLY: 2, AbsenceStatus.REASON_CAPTURED: 3}
+        escalated = {e.absence_id for e in self.escalations.values() if e.status != "closed"}
 
         def key(a: Absence):
-            barrier = a.classification.barrier if a.classification else None
-            return (rank.get(barrier, 1), status_rank[a.status], -a.date.toordinal(), a.id)
+            # Open safety cases first. Once the counselor closes one, it is ordered like any other case.
+            return (0 if a.id in escalated else 1, status_rank[a.status], -a.date.toordinal(), a.id)
 
         out = []
         for a in sorted(self.absences.values(), key=key):
             s = self.students[a.student_id]
             out.append({**a.model_dump(), "student": s.model_dump(), "absence_count": self.absence_count(s.id),
-                        "escalated": a.id in self.escalations})
+                        "escalated": a.id in escalated})
         return out
 
     # ---------- clustering ----------
@@ -261,9 +366,9 @@ class Store:
             plan = action_plan.for_cluster(cluster, self.students, TODAY)
         elif absence_id:
             absence = self.absences[absence_id]
-            if absence_id in self.escalations:
-                raise ValueError("safety cases are handled by the counselor, not automated plans")
             barrier = absence.classification.barrier if absence.classification else Barrier.UNKNOWN
+            if self.open_escalation(absence_id) or barrier == Barrier.SAFETY:
+                raise ValueError("safety cases are handled by the counselor, not automated plans")
             plan = action_plan.for_case(absence_id, barrier, self.students[absence.student_id], TODAY)
         else:
             raise ValueError("cluster_id or absence_id is required")

@@ -39,6 +39,8 @@ export interface Classification {
   confidence: number;
   evidence: string;
   safety_critical: boolean;
+  source: "gemini" | "keywords" | "keywords_fallback" | "safety_keywords" | "counselor";
+  language: string | null;
 }
 
 export interface Absence {
@@ -137,13 +139,38 @@ export interface LearningPlan {
 }
 
 export interface Escalation {
+  escalation_id: string;
   absence_id: string;
   student_id: string;
+  household_id: string;
   reason: string;
   evidence: string;
   assigned_to: string;
-  status: string;
+  status: "open" | "acknowledged" | "closed";
+  opened_at: string;
+  acknowledged_at: string | null;
+  acknowledged_by: string | null;
+  report_status: "report_filed" | "not_required" | null;
+  report_by: string | null;
+  report_at: string | null;
+  closed_at: string | null;
+  closed_by: string | null;
+  outcome: "resolved" | "not_safety" | null;
+  relabeled_to: Barrier | null;
+  note: string | null;
+  minutes_open: number;
+  overdue: boolean;
+  case_report_versions: number;
+  case_report_saved_at: string | null;
   student: Student;
+}
+
+export interface CaseReport {
+  escalation_id: string;
+  version: number;
+  text: string;
+  saved_by: string;
+  saved_at: string;
 }
 
 export interface RevenueSettings {
@@ -190,6 +217,14 @@ export const api = {
       language,
     }),
   escalations: () => req<Escalation[]>("/escalations"),
+  acknowledgeEscalation: (id: string, by: string) => post<Escalation>(`/escalations/${id}/acknowledge`, { by }),
+  reportEscalation: (id: string, by: string, decision: "report_filed" | "not_required") =>
+    post<Escalation>(`/escalations/${id}/report`, { by, decision }),
+  draftCaseReport: (id: string, by: string) => post<{ text: string }>(`/escalations/${id}/case-report/draft`, { by }),
+  caseReports: (id: string) => req<CaseReport[]>(`/escalations/${id}/case-reports`),
+  saveCaseReport: (id: string, by: string, text: string) => post<CaseReport>(`/escalations/${id}/case-reports`, { by, text }),
+  closeEscalation: (id: string, by: string, outcome: "resolved" | "not_safety", relabel_to?: Barrier, note?: string) =>
+    post<Escalation>(`/escalations/${id}/close`, { by, outcome, relabel_to, note }),
   clusters: () => req<Cluster[]>("/clusters"),
   plans: () => req<ActionPlan[]>("/plans"),
   draftPlan: (target: { cluster_id?: string; absence_id?: string }) => post<ActionPlan>("/plans/draft", target),

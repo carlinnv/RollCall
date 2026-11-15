@@ -62,6 +62,16 @@ class Classification(BaseModel):
     language: Optional[str] = None  # ISO 639-1, detected by Gemini; None from the keyword rules
 
 
+class CaseReport(BaseModel):
+    """One saved version of a counselor's internal case report for an escalation."""
+
+    escalation_id: str
+    version: int
+    text: str
+    saved_by: str
+    saved_at: str
+
+
 class Message(BaseModel):
     """One text between the school and a family (PRD 3 section 1). An absence can have many."""
 
@@ -157,12 +167,32 @@ class LearningPlan(BaseModel):
 
 
 class Escalation(BaseModel):
+    """A safety case handed to the counselor (PRD 3 sections 1 and 3).
+
+    While it is not closed, nothing automated is sent to the student's household, and the
+    absence keeps its safety label: only the counselor can downgrade it.
+    """
+
+    escalation_id: str
     absence_id: str
     student_id: str
+    household_id: str
     reason: str
     evidence: str
     assigned_to: str = "Counselor"
-    status: str = "open"
+    status: str = "open"  # open -> acknowledged -> closed
+    opened_at: str
+    acknowledged_at: Optional[str] = None
+    acknowledged_by: Optional[str] = None
+    # Mandated-reporting decision (CANRA). The system is not the reporter; staff record what they did.
+    report_status: Optional[str] = None  # report_filed | not_required
+    report_by: Optional[str] = None
+    report_at: Optional[str] = None
+    closed_at: Optional[str] = None
+    closed_by: Optional[str] = None
+    outcome: Optional[str] = None  # resolved (real concern, handled) | not_safety (false alarm, relabeled)
+    relabeled_to: Optional[Barrier] = None
+    note: Optional[str] = None
 
 
 class RevenueSettings(BaseModel):

@@ -140,3 +140,14 @@ tr.flash td { animation: flash-row 6s ease-out; }
   tr.flash td, .card.flash { animation: none; background-color: #fff3bf; }
 }
 button.link { background: none; border: none; padding: 0; color: var(--brand); font: inherit; cursor: pointer; text-decoration: underline; }
+
+/* Escalation inbox: the three steps a counselor takes to close a safety case. */
+.steps { margin: 12px 0 0; padding-left: 20px; display: grid; gap: 8px; font-size: 14px; }
+.overdue { color: var(--alert); font-weight: 600; }
+
+/* Internal case report on an escalation */
+.report { margin-top: 12px; display: grid; gap: 8px; }
+.report > button { justify-self: start; }
+.report-text { width: 100%; min-height: 360px; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; padding: 10px; border: 1px solid var(--line); border-radius: 8px; box-sizing: border-box; }
+.report-text[readonly] { background: #f6f7f9; }
+.report-row td { padding-top: 0; }

@@ -57,6 +57,24 @@ class ApproveIn(BaseModel):
     send: bool = True
 
 
+class StaffIn(BaseModel):
+    by: str = "Counselor"
+
+
+class ReportIn(StaffIn):
+    decision: str  # report_filed | not_required
+
+
+class CaseReportIn(StaffIn):
+    text: str
+
+
+class CloseIn(StaffIn):
+    outcome: str  # resolved | not_safety
+    relabel_to: Optional[Barrier] = None
+    note: Optional[str] = None
+
+
 @app.get("/api/health")
 def health():
     return {"ok": True, "today": TODAY, "classifier": classifier.status()}
@@ -88,7 +106,7 @@ def absences():
 def absence(absence_id: str):
     a = _get(store.absences, absence_id, "absence")
     return {**a.model_dump(), "student": store.students[a.student_id], "check_in_message": store.check_in_message(a),
-            "escalated": absence_id in store.escalations, "messages": store.thread(absence_id)}
+            "escalated": store.open_escalation(absence_id) is not None, "messages": store.thread(absence_id)}
 
 
 @app.post("/api/absences/import")
@@ -116,7 +134,60 @@ def check_in(absence_id: str):
 
 @app.get("/api/escalations")
 def escalations():
-    return [{**e.model_dump(), "student": store.students[e.student_id]} for e in store.escalations.values()]
+    """Every escalation: open ones first (oldest first), then closed ones (most recent first)."""
+    items = list(store.escalations.values())
+    still_open = sorted((e for e in items if e.status != "closed"), key=lambda e: e.opened_at)
+    closed = sorted((e for e in items if e.status == "closed"), key=lambda e: e.closed_at or "", reverse=True)
+    return [store.escalation_view(e) for e in still_open + closed]
+
+
+def _act(action, escalation_id: str, *args):
+    _get(store.escalations, escalation_id, "escalation")
+    try:
+        return store.escalation_view(action(escalation_id, *args))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.post("/api/escalations/{escalation_id}/acknowledge")
+def acknowledge_escalation(escalation_id: str, body: StaffIn):
+    return _act(store.acknowledge_escalation, escalation_id, body.by)
+
+
+@app.post("/api/escalations/{escalation_id}/report")
+def report_escalation(escalation_id: str, body: ReportIn):
+    """Record the mandated-reporting decision: report_filed or not_required."""
+    return _act(store.record_report_decision, escalation_id, body.by, body.decision)
+
+
+@app.post("/api/escalations/{escalation_id}/case-report/draft")
+def draft_case_report(escalation_id: str, body: StaffIn):
+    """Generate an internal case report from the record. Not saved until the counselor saves it."""
+    _get(store.escalations, escalation_id, "escalation")
+    return {"text": store.draft_case_report(escalation_id, body.by)}
+
+
+@app.get("/api/escalations/{escalation_id}/case-reports")
+def case_reports(escalation_id: str):
+    """Saved versions of the case report, oldest first."""
+    _get(store.escalations, escalation_id, "escalation")
+    return store.case_reports.get(escalation_id, [])
+
+
+@app.post("/api/escalations/{escalation_id}/case-reports")
+def save_case_report(escalation_id: str, body: CaseReportIn):
+    """Save the counselor's edited report as a new version."""
+    _get(store.escalations, escalation_id, "escalation")
+    try:
+        return store.save_case_report(escalation_id, body.by, body.text)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.post("/api/escalations/{escalation_id}/close")
+def close_escalation(escalation_id: str, body: CloseIn):
+    """Close a case: resolved (real concern) or not_safety (false alarm, with relabel_to)."""
+    return _act(store.close_escalation, escalation_id, body.by, body.outcome, body.relabel_to, body.note)
 
 
 # ---------- F2: message log ----------

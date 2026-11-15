@@ -4,3 +4,4 @@ pydantic>=2.13.5,<2.15
 pytest==8.3.4
 httpx==0.28.1
 photonhq-api==0.5.0
+google-genai==3.3.0

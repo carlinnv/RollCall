@@ -9,7 +9,7 @@ from app.main import app
 import json
 import time
 
-from app.services import classifier, outreach, photon_channel
+from app.services import case_report, classifier, outreach, photon_channel
 from app.services.classifier import classify
 from app.store import _no_channel, store
 
@@ -349,6 +349,35 @@ def test_texts_that_match_no_absence_are_still_logged():
     assert message["route"] == "unlinked" and message["absence_id"] is None and message["classification"] is None
 
 
+# Keyword safety check: the fallback when Gemini is down must still catch indirect statements
+@pytest.mark.parametrize("text", [
+    "She says she doesn't want to live anymore.",
+    "She says she doesn’t want to live anymore.",
+    "He told his sister he wants to die",
+    "I think she might hurt herself",
+    "He said he wants to end his life",
+    "she is suicidal",
+    "Dice que ya no quiere vivir.",
+    "Dijo que quiere morirse",
+    "Cháu nói muốn chết",
+    "Con bị bắt nạt ở trường",
+    "Cháu không muốn sống nữa",
+])
+def test_keyword_safety_catches_indirect_statements(text):
+    c = classifier.keyword_classify(text)
+    assert c.safety_critical and c.barrier == "safety or bullying"
+
+
+@pytest.mark.parametrize("text", [
+    "Đi từ từ thôi, the bus was slow",  # "từ từ" (slowly) must not match "tự tử" (suicide)
+    "He doesn't want to go to school",
+    "No quiere ir a la escuela",
+    "She was sick with the flu",
+])
+def test_keyword_safety_ignores_ordinary_replies(text):
+    assert not classifier.keyword_classify(text).safety_critical
+
+
 # Gemini classifier, with a stand-in for the API call
 @pytest.fixture
 def gemini(monkeypatch, tmp_path):
@@ -453,3 +482,118 @@ def test_seed_data_and_reset_never_call_the_model(gemini):
     client.post("/api/reset")
     assert gemini["sent"] == []
     assert client.get("/api/health").json()["classifier"]["engine"] == "gemini"
+
+
+# Safety escalations: acknowledge, record the reporting decision, close
+def escalation_for(absence_id):
+    return next(e for e in client.get("/api/escalations").json() if e["absence_id"] == absence_id)
+
+
+def test_seeded_escalation_waits_for_acknowledgement():
+    e = escalation_for("A020")
+    assert e["status"] == "open" and e["household_id"] == "H30" and e["overdue"]  # opened days ago, never acknowledged
+    acked = client.post(f"/api/escalations/{e['escalation_id']}/acknowledge", json={"by": "Ms. Counselor"}).json()
+    assert acked["status"] == "acknowledged" and acked["acknowledged_by"] == "Ms. Counselor" and not acked["overdue"]
+    assert store.household_suppressed("S030")  # acknowledging does not lift suppression; only closing does
+
+
+def test_cannot_close_without_a_reporting_decision():
+    eid = escalation_for("A020")["escalation_id"]
+    r = client.post(f"/api/escalations/{eid}/close", json={"outcome": "resolved"})
+    assert r.status_code == 400 and "mandated-reporting" in r.json()["detail"]
+
+
+def test_closing_a_real_concern_lifts_suppression_and_keeps_the_label(delivered):
+    eid = escalation_for("A020")["escalation_id"]
+    client.post(f"/api/escalations/{eid}/report", json={"decision": "report_filed", "by": "Ms. Counselor"})
+    closed = client.post(f"/api/escalations/{eid}/close", json={"outcome": "resolved", "by": "Ms. Counselor"}).json()
+    assert closed["status"] == "closed" and closed["report_status"] == "report_filed" and closed["acknowledged_at"]
+    assert not store.household_suppressed("S030")
+    assert client.post("/api/absences/A021/check-in").json()["status"] == "sent"
+    a = client.get("/api/absences/A020").json()
+    assert not a["escalated"] and a["classification"]["barrier"] == "safety or bullying"
+    # A closed safety case still never gets an automated plan.
+    assert client.post("/api/plans/draft", json={"absence_id": "A020"}).status_code == 400
+
+
+def test_false_alarm_is_relabeled_by_the_counselor():
+    route = client.post("/api/absences/A004/reply", json={"text": "She hurt her ankle at practice.", "language": "en"}).json()["route"]
+    assert route == "escalated"
+    eid = escalation_for("A004")["escalation_id"]
+    client.post(f"/api/escalations/{eid}/report", json={"decision": "not_required"})
+    bad = client.post(f"/api/escalations/{eid}/close", json={"outcome": "not_safety"})
+    assert bad.status_code == 400  # a false alarm needs the correct label
+    client.post(f"/api/escalations/{eid}/close", json={"outcome": "not_safety", "relabel_to": "illness"})
+    c = client.get("/api/absences/A004").json()["classification"]
+    assert c["barrier"] == "illness" and c["source"] == "counselor" and not c["safety_critical"]
+    assert client.post("/api/plans/draft", json={"absence_id": "A004"}).status_code == 200
+
+
+def test_follow_up_cannot_downgrade_an_open_safety_label():
+    client.post("/api/absences/A004/reply", json={"text": "She hurt her ankle at practice.", "language": "en"})
+    route = client.post("/api/absences/A004/reply", json={"text": "Sorry, she just has a fever.", "language": "en"}).json()["route"]
+    a = client.get("/api/absences/A004").json()
+    assert route == "escalated" and a["escalated"] and a["classification"]["barrier"] == "safety or bullying"
+    assert a["messages"][-1]["classification"]["barrier"] == "illness"  # the message keeps its own label
+
+
+def test_new_safety_message_after_closing_opens_a_new_escalation():
+    eid = escalation_for("A020")["escalation_id"]
+    client.post(f"/api/escalations/{eid}/report", json={"decision": "not_required"})
+    client.post(f"/api/escalations/{eid}/close", json={"outcome": "resolved"})
+    client.post("/api/absences/A020/reply", json={"text": "They threatened her again today.", "language": "en"})
+    mine = [e for e in client.get("/api/escalations").json() if e["absence_id"] == "A020"]
+    assert [e["status"] for e in mine] == ["open", "closed"]  # open first; the closed one stays on record
+
+
+def test_another_open_case_in_the_household_keeps_it_silent():
+    for aid in ("A018", "A019"):  # siblings in household H20
+        client.post(f"/api/absences/{aid}/reply", json={"text": "Kids are bullying him at school.", "language": "en"})
+    first = escalation_for("A018")["escalation_id"]
+    client.post(f"/api/escalations/{first}/report", json={"decision": "not_required"})
+    client.post(f"/api/escalations/{first}/close", json={"outcome": "resolved"})
+    assert store.household_suppressed("S020")  # the sibling's case is still open
+
+
+def test_closed_escalation_cannot_be_changed():
+    eid = escalation_for("A020")["escalation_id"]
+    client.post(f"/api/escalations/{eid}/report", json={"decision": "not_required"})
+    client.post(f"/api/escalations/{eid}/close", json={"outcome": "resolved"})
+    assert client.post(f"/api/escalations/{eid}/acknowledge", json={}).status_code == 400
+    assert client.post("/api/escalations/E999/acknowledge", json={}).status_code == 404
+
+
+# Internal case reports on escalations
+def test_case_report_is_filled_from_the_record():
+    client.post("/api/absences/A004/reply", json={"text": "She hurt her ankle at practice.", "language": "en"})
+    eid = escalation_for("A004")["escalation_id"]
+    client.post(f"/api/escalations/{eid}/acknowledge", json={"by": "Ms. Counselor"})
+    client.post(f"/api/escalations/{eid}/report", json={"decision": "not_required", "by": "Ms. Counselor"})
+    client.post(f"/api/escalations/{eid}/close", json={"outcome": "not_safety", "relabel_to": "illness", "by": "Ms. Counselor"})
+    text = client.post(f"/api/escalations/{eid}/case-report/draft", json={"by": "Ms. Counselor"}).json()["text"]
+    for expected in ["CONFIDENTIAL", eid, "Sofia", "S002", '"She hurt her ankle at practice."', "Flagged by: keyword rules",
+                     "Acknowledged by Ms. Counselor", "No report required", "Not a safety concern; relabeled illness",
+                     "The system does not file mandated reports"]:
+        assert expected in text, expected
+    assert client.get(f"/api/escalations/{eid}/case-reports").json() == []  # a draft is not saved
+
+
+def test_case_report_versions_are_kept_and_notes_survive_regeneration():
+    eid = escalation_for("A020")["escalation_id"]
+    draft = client.post(f"/api/escalations/{eid}/case-report/draft", json={}).json()["text"]
+    first = draft.replace(case_report.NOTES_PLACEHOLDER, "Spoke with the guardian on the phone.")
+    v1 = client.post(f"/api/escalations/{eid}/case-reports", json={"text": first, "by": "Ms. Counselor"}).json()
+    assert v1["version"] == 1 and v1["saved_by"] == "Ms. Counselor"
+    client.post(f"/api/escalations/{eid}/acknowledge", json={})
+    regenerated = client.post(f"/api/escalations/{eid}/case-report/draft", json={}).json()["text"]
+    assert "Spoke with the guardian on the phone." in regenerated and "Acknowledged by" in regenerated
+    client.post(f"/api/escalations/{eid}/case-reports", json={"text": regenerated})
+    saved = client.get(f"/api/escalations/{eid}/case-reports").json()
+    assert [r["version"] for r in saved] == [1, 2] and saved[0]["text"] == first
+    assert escalation_for("A020")["case_report_versions"] == 2
+
+
+def test_empty_case_report_is_rejected():
+    eid = escalation_for("A020")["escalation_id"]
+    assert client.post(f"/api/escalations/{eid}/case-reports", json={"text": "   "}).status_code == 400
+    assert client.post("/api/escalations/E999/case-report/draft", json={}).status_code == 404

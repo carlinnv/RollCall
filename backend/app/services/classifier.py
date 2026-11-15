@@ -31,13 +31,34 @@ from ..models import Barrier, Classification
 log = logging.getLogger("uvicorn.error")
 
 DEFAULT_MODEL = "gemini-3.5-flash-lite"  # fastest reliable option on Nov 14, 2026; override with GEMINI_MODEL
-TIMEOUT_S = 6.0
+TIMEOUT_S = 6.0  # how long a reply waits for Gemini before the keyword fallback is used
+HTTP_TIMEOUT_MS = 10_000  # the API's minimum request deadline
 PROMPT_VERSION = "v1"  # bump when the prompt or schema changes, so old cache entries are not reused
 CACHE_DIR = Path(__file__).resolve().parents[2] / ".cache" / "gemini"
 
+# Safety terms match at the start of a word, so "suicid" catches "suicidal" and "amenaz" catches
+# "amenazaron", but a term does not fire inside an unrelated word. Matched on normalized text
+# (lowercase, no accents, no apostrophes), so "doesn't" and "doesn’t" both become "doesnt".
 SAFETY_TERMS = [
+    # English
     "bully", "bullied", "bullying", "scared", "afraid", "unsafe", "threat", "hurt", "hit him", "hit her",
-    "abuse", "suicid", "self harm", "acoso", "acosan", "miedo", "amenaz", "le pegan", "golpe",
+    "abuse", "suicid", "self harm", "self-harm",
+    # English, indirect statements of self-harm (PRD 2 section 3.5)
+    "doesnt want to live", "dont want to live", "does not want to live", "do not want to live",
+    "want to die", "wants to die", "wanted to die", "kill myself", "kill herself", "kill himself",
+    "end my life", "end her life", "end his life", "hurt herself", "hurt himself", "hurting herself",
+    "hurting himself", "cutting herself", "cutting himself", "better off dead", "no reason to live",
+    # Spanish
+    "acoso", "acosan", "miedo", "amenaz", "le pegan", "golpe",
+    "no quiere vivir", "no quiero vivir", "quiere morir", "quiero morir", "matarse", "matarme",
+    "quitarse la vida", "hacerse dano", "lastimarse", "se corta", "no vale la pena vivir",
+]
+# Vietnamese terms keep their accents: without them, distinct words collide ("tự tử", suicide,
+# and "từ từ", slowly, both become "tu tu"). Matched on lowercase text with accents intact.
+# Not yet reviewed by a Vietnamese speaker.
+SAFETY_TERMS_VI = [
+    "tự tử", "muốn chết", "không muốn sống", "tự làm hại", "tự làm đau", "bắt nạt", "bị đánh", "đe dọa",
+    "xâm hại",
 ]
 
 RULES: Dict[Barrier, List[str]] = {
@@ -58,7 +79,7 @@ RULES: Dict[Barrier, List[str]] = {
         "bebe", "had to work", "tuve que trabajar",
     ],
     Barrier.DISENGAGEMENT: [
-        "hates school", "doesn't want", "does not want", "refused", "falling behind", "too behind", "bored",
+        "hates school", "doesnt want", "does not want", "refused", "falling behind", "too behind", "bored",
         "no quiere", "atrasado",
     ],
     Barrier.APPOINTMENT: [
@@ -68,8 +89,18 @@ RULES: Dict[Barrier, List[str]] = {
 
 
 def _norm(text: str) -> str:
-    text = unicodedata.normalize("NFKD", text.lower())
+    """Lowercase, accents removed, apostrophes removed ("doesn’t" -> "doesnt")."""
+    text = re.sub(r"['’‘`]", "", text.lower()).replace("đ", "d")
+    text = unicodedata.normalize("NFKD", text)
     return "".join(c for c in text if not unicodedata.combining(c))
+
+
+def _starts_word(term: str) -> "re.Pattern[str]":
+    return re.compile(r"(?<!\w)" + re.escape(term))
+
+
+_SAFETY = [_starts_word(term) for term in SAFETY_TERMS]
+_SAFETY_VI = [_starts_word(term) for term in SAFETY_TERMS_VI]
 
 
 def _sentence_with(text: str, term: str) -> str:
@@ -82,9 +113,16 @@ def _sentence_with(text: str, term: str) -> str:
 def is_safety_critical(text: str) -> Optional[str]:
     """Return the matching evidence sentence if the reply needs a counselor, else None."""
     norm = _norm(text)
-    for term in SAFETY_TERMS:
-        if term in norm:
+    for term, pattern in zip(SAFETY_TERMS, _SAFETY):
+        if pattern.search(norm):
             return _sentence_with(text, term)
+    accented = unicodedata.normalize("NFC", text.lower())
+    for term, pattern in zip(SAFETY_TERMS_VI, _SAFETY_VI):
+        if pattern.search(accented):
+            for sentence in re.split(r"(?<=[.!?])\s+", text):
+                if term in unicodedata.normalize("NFC", sentence.lower()):
+                    return sentence.strip()
+            return text.strip()
     return None
 
 
@@ -178,8 +216,10 @@ def _get_client():
     with _client_lock:
         if _client is None or _client_key != key:
             # No SDK retries: a retry would blow the 6-second budget, and the keyword fallback covers failures.
+            # The API rejects request deadlines under 10 s, so the HTTP timeout is 10 s and the 6-second
+            # limit is enforced by `_ask` waiting on the call in a worker thread.
             _client = genai.Client(api_key=key, http_options=types.HttpOptions(
-                timeout=int(TIMEOUT_S * 1000), retry_options=types.HttpRetryOptions(attempts=1)))
+                timeout=HTTP_TIMEOUT_MS, retry_options=types.HttpRetryOptions(attempts=1)))
             _client_key = key
         return _client
 

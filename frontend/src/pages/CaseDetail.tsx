@@ -11,6 +11,15 @@ const ROUTE_TEXT = {
   unknown: "Barrier unclear. Follow up with the family by phone.",
 };
 
+/** Who produced the label, so staff can tell a model answer from the keyword fallback. */
+const SOURCE = {
+  gemini: "labeled by Gemini",
+  keywords: "labeled by keyword rules",
+  keywords_fallback: "keyword rules (Gemini unavailable)",
+  safety_keywords: "safety keyword check",
+  counselor: "relabeled by the counselor",
+};
+
 const KIND = { reply: "Family", check_in: "Check-in", plan: "Plan message", ack: "Automatic reply" };
 const CHANNEL = { imessage: "iMessage", sms: "SMS", simulated: "simulated", seed: "sample data" };
 
@@ -89,7 +98,10 @@ export default function CaseDetail() {
           </p>
           {a.classification && (
             <>
-              <p className="muted small">Evidence quote · confidence {Math.round(a.classification.confidence * 100)}%</p>
+              <p className="muted small">
+                Evidence quote · confidence {Math.round(a.classification.confidence * 100)}% · {SOURCE[a.classification.source]}
+                {a.classification.language && ` · language: ${a.classification.language}`}
+              </p>
               <blockquote>{a.classification.evidence}</blockquote>
             </>
           )}

@@ -132,7 +132,7 @@ The checks every outbound message must pass before it is sent.
 
 Checked in this order; the first one that applies blocks the message:
 
-1. **Safety suppression.** No automated message goes to a household while any student in it has an open safety escalation. Only the counselor contacts that family.
+1. **Safety suppression.** No automated message goes to a household while any student in it has a safety escalation the counselor has not closed. Only the counselor contacts that family. See section 11.
 2. **Opt-out.** No message goes to a number that has opted out.
 3. **No links.** A message is blocked if it contains `http://`, `https://`, `www.`, or a domain ending in `.com`, `.org`, `.net`, `.edu`, `.gov`, `.io`, `.co`, `.ly` or `.us`.
 4. **Not empty.** A blank message is blocked.
@@ -249,9 +249,48 @@ A record of every text between the school and a family, with how long each took.
 
 ---
 
+## 11. Safety escalations
+
+What happens after a message is flagged, and how the counselor closes it.
+
+**Files**
+
+- `backend/app/models.py`: `Escalation`
+- `backend/app/store.py`: `_route_reply`, `open_escalation`, `escalation_view`, `acknowledge_escalation`, `record_report_decision`, `close_escalation`, `household_suppressed`
+- `backend/app/main.py`: `GET /api/escalations`, `POST /api/escalations/{id}/acknowledge`, `/report`, `/close`
+- `frontend/src/pages/Escalations.tsx`: the counselor's inbox and case report panel
+- `backend/app/services/case_report.py`: builds the internal case report
+
+**Rules**
+
+- A safety-flagged message opens an escalation for that absence, unless one is already open for it.
+- While an escalation is not closed:
+  - nothing automated is sent to anyone in the student's household
+  - the absence keeps its safety label. A calmer follow-up ("she just has a fever") is logged with its own label but does not replace it. Only the counselor can downgrade a safety label.
+  - the case stays at the top of the queue and cannot get an automated plan.
+- The counselor takes three steps:
+  1. **Acknowledge.** The inbox marks a case overdue if it has waited more than 15 minutes without acknowledgement.
+  2. **Record the mandated-reporting decision:** report filed, or no report required. The system never files a report; staff record what they did. A case cannot be closed before this step.
+  3. **Close**, as either:
+     - **concern handled:** the absence keeps its safety label, and still never gets an automated plan
+     - **not a safety concern:** the counselor picks the correct label, which replaces the safety label (source "relabeled by the counselor")
+- Closing also acknowledges the case if that step was skipped.
+- Messages to the household resume when its last open escalation closes. An open case for a sibling keeps the household silent.
+- A closed escalation cannot be changed. A new safety message for the same absence opens a new escalation; the closed one stays on record.
+- Every action records who did it and when. There is no sign-in yet, so the inbox records every action as "Counselor".
+- The seeded escalation's timestamp is days old, so it shows as overdue in the demo.
+- **Internal case report.** On any escalation, open or closed, the counselor can generate a report, edit it, save it and download it as a .txt file.
+  - It is filled in from the record only, with no model call: student and guardian details, the concern and who flagged it, the family's exact words, a timeline of every step, all messages with the family, and how long the household's messages were paused.
+  - The counselor adds their own notes. Regenerating picks up new events and keeps the notes from the last saved version.
+  - Every save is a new version; earlier versions are kept and can be viewed read-only.
+  - It is a record for the school's files, not the mandated report.
+  - Reports are held in memory with the rest of the data, so they are lost on restart or reset.
+
+---
+
 ## Not on this branch
 
-- Closing a safety escalation (suppression lasts until the demo data is reset)
+- Paging the on-call counselor and the after-hours path
 - A check-in button in the UI
 - Quiet hours (8am–8pm)
 - Voice notes, SMS fallback, language detection (see `CARLINNOTES.md`)
