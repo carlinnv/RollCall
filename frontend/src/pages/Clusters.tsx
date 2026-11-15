@@ -3,6 +3,7 @@ import { api, fmtDate, money } from "../api";
 import type { Cluster } from "../api";
 import { useChanged, useLoad } from "../hooks";
 import { BarrierTag, ErrorNote, Page } from "../components/ui";
+import Timeline from "../components/Timeline";
 
 const LINK: Record<string, string> = {
   bus_route: "Shared bus route",
@@ -59,6 +60,7 @@ export default function Clusters() {
   return (
     <Page title="Root causes" subtitle="Absences grouped by shared reason and a shared school link (bus route, classroom, grade).">
       <ErrorNote error={error} />
+      <Timeline />
       {meta.data && (
         <p className="muted small">
           Dataset: {meta.data.dataset} · method: {meta.data.method} · detector: {meta.data.detector}

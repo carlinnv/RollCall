@@ -459,3 +459,21 @@ def get_revenue():
 def put_settings(settings: RevenueSettings):
     store.update_settings(settings)
     return store.revenue()
+
+
+# ---------- TigerData timeline (optional sidecar) ----------
+from .services import timeseries  # noqa: E402
+
+
+@app.middleware("http")
+async def _tiger_sync(request, call_next):
+    response = await call_next(request)
+    if request.method != "GET" and request.url.path.startswith("/api/"):
+        timeseries.sync_async(store)
+    return response
+
+
+@app.get("/api/timeline")
+def timeline(group: str = "bus_route"):
+    timeseries.sync(store)
+    return {"enabled": timeseries.enabled(), "group": group, "rows": timeseries.daily(group)}
