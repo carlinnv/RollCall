@@ -57,8 +57,11 @@ class Classification(BaseModel):
     confidence: float
     evidence: str  # quote from the reply supporting the label
     safety_critical: bool = False
-    # Where the label came from: keyword | gemini | correction_override | staff_correction
-    source: str = "keyword"
+    # Where the label came from: gemini | keywords (Gemini off, or seed data) | keywords_fallback (Gemini failed
+    # or timed out) | safety_keywords (the keyword safety check fired; it always wins) | correction_override
+    # (a similar past staff correction decided it, F8) | staff_correction (a person set it)
+    source: str = "keywords"
+    language: Optional[str] = None  # ISO 639-1, detected by Gemini; None from the keyword rules
     # F8: the past staff correction that decided (or was shown as an example for) this label
     correction_ref: Optional[str] = None
     correction_similarity: Optional[float] = None
@@ -75,6 +78,31 @@ class Correction(BaseModel):
     school_id: str = "demo"
     text: str = ""  # the reply the correction was made on (what later replies are compared with)
     language: str = "en"
+
+
+class Message(BaseModel):
+    """One text between the school and a family (PRD 3 section 1). An absence can have many."""
+
+    message_id: str
+    absence_id: Optional[str] = None  # None when the text could not be tied to an absence
+    student_id: Optional[str] = None
+    direction: str  # "inbound" | "outbound"
+    channel: Optional[str] = None  # imessage | sms | simulated | seed; None if an outbound message never left
+    language: str = "en"
+    raw_text_or_transcript: str
+    timestamp: str  # inbound: when the family's message arrived; outbound: when we tried to send (UTC)
+    # inbound: arrival -> classified and stored. outbound: time the send took, or for an
+    # acknowledgement, family's message arrival -> reply accepted. None when not measured (seed data).
+    latency_ms: Optional[int] = None
+    kind: str = "reply"  # inbound: reply. outbound: check_in | plan | ack
+    status: str = "received"  # inbound: received. outbound: sent | queued | blocked | failed
+    reason: Optional[str] = None  # outbound: why it was queued, blocked or failed. inbound: opt-out or opt-in note
+    # inbound: cluster | case | unknown | escalated | opted_out | opted_in | unlinked | no_absence
+    route: Optional[str] = None
+    classification: Optional[Classification] = None  # the label this inbound message received
+    phone: Optional[str] = None  # the family's number
+    plan_id: Optional[str] = None
+    external_id: Optional[str] = None  # the channel's own message id (Photon)
 
 
 class Absence(BaseModel):

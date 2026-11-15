@@ -218,7 +218,7 @@ def test_correction_then_similar_reply_is_classified_correctly():
     # a dissimilar reply is not affected
     r = client.post("/api/absences/A037/reply", json={"text": "Tiene fiebre y vómito.", "language": "es"}).json()
     assert r["absence"]["classification"]["barrier"] == "illness"
-    assert r["absence"]["classification"]["source"] == "keyword"
+    assert r["absence"]["classification"]["source"] == "keywords"
 
 
 def test_correction_never_removes_keyword_safety():

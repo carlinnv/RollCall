@@ -8,7 +8,7 @@ import { BarrierTag, ErrorNote, Page } from "../components/ui";
 export default function LearningPlanPage() {
   const { studentId } = useParams();
   const nav = useNavigate();
-  const students = useLoad(api.students);
+  const students = useLoad(api.students, [], false); // the roster does not change during a session
   const plan = useLoad(() => (studentId ? api.learningPlan(studentId) : Promise.resolve(null)), [studentId]);
   const [done, setDone] = useState<RecoveryResult | null>(null);
   const student = students.data?.find((s) => s.id === studentId);

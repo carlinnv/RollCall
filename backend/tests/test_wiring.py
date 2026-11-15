@@ -27,16 +27,15 @@ def test_live_story_cluster_appears_after_the_demo_reply(monkeypatch):
 
 
 def test_seed_reset_never_calls_a_model(monkeypatch):
-    monkeypatch.setenv("CLASSIFIER", "gemini")
-    from app.services import corrections
+    from app.services import classifier
 
     def boom(*a, **k):
         raise AssertionError("seed load must not call the model")
 
-    monkeypatch.setattr(corrections, "gemini_classifier", boom)
-    monkeypatch.setattr(corrections, "use_gemini", lambda: True)
-    Store()  # would raise if any seed reply went to the model
-
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    monkeypatch.setattr(classifier, "_generate", boom)
+    Store()  # would raise (or log a fallback) if any seed reply went to the model
+    assert all(a.classification.source != "keywords_fallback" for a in Store().absences.values() if a.classification)
 
 def test_assistant_needs_a_key(client, monkeypatch):
     from app.services import gemini_classifier

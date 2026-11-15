@@ -191,10 +191,8 @@ def _gemini_cls():
 
 
 def use_gemini() -> bool:
-    if os.environ.get("CLASSIFIER", "keyword").strip().lower() != "gemini":
-        return False
-    from .gemini_classifier import has_api_key
-    return has_api_key()
+    """Live replies use Gemini when a key is set (classifier.enabled); CLASSIFIER=keyword turns it off."""
+    return keyword.enabled()
 
 
 _gemini = None
@@ -216,8 +214,20 @@ def classify(text: str, language: Optional[str], store: CorrectionStore, school_
     matches = store.similar(text, school_id, k)
     info = {"examples": [{"absence_id": m.correction.absence_id, "label": m.correction.new_label.value,
                           "similarity": m.similarity} for m in matches], "path": "keyword"}
-    if model is not None or (allow_model and use_gemini()):
-        clf = model or gemini_classifier()
+    if model is None and allow_model and use_gemini():
+        # The one live Gemini path (classifier.classify), with this school's similar corrections as examples.
+        result = keyword.classify(text, names=list(names or []), language=language,
+                                  examples=examples_block(matches, names))
+        info.update(path=result.source, needs_review=result.source != "gemini" or result.safety_critical)
+        if result.source in ("gemini", "safety_keywords"):
+            if matches and result.source == "gemini":
+                result = result.model_copy(update={"correction_ref": matches[0].correction.absence_id,
+                                                   "correction_similarity": matches[0].similarity})
+            return result, info
+        base = result  # Gemini failed or timed out: keyword result, then the correction override below
+    elif model is not None:
+        # An injected model (tests, evaluation): the GeminiClassifier interface from gemini_classifier.py
+        clf = model
         try:
             result, meta = clf.classify_with_model(text, language=language, names=names, examples=matches)
         except TypeError:  # a plain GeminiClassifier (no examples parameter)
@@ -232,7 +242,7 @@ def classify(text: str, language: Optional[str], store: CorrectionStore, school_
         # fell back (error, timeout, unsupported language): keyword result + override below
         base = result
     else:
-        base = keyword.classify(text, language=language)
+        base = keyword.keyword_classify(text, language=language)
     if not keyword.language_supported(language) and not base.safety_critical:
         return base, info  # fail closed: a person reads replies in languages we cannot check
     out = apply_override(text, base, matches)

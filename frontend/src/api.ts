@@ -72,10 +72,28 @@ export interface QueueRow extends Absence {
   escalated: boolean;
 }
 
+export interface Message {
+  message_id: string;
+  absence_id: string | null;
+  student_id: string | null;
+  direction: "inbound" | "outbound";
+  channel: "imessage" | "sms" | "simulated" | "seed" | null;
+  language: string;
+  raw_text_or_transcript: string;
+  timestamp: string;
+  latency_ms: number | null;
+  kind: "reply" | "check_in" | "plan" | "ack";
+  status: "received" | "sent" | "queued" | "blocked" | "failed";
+  reason: string | null;
+  route: string | null;
+  classification: Classification | null;
+}
+
 export interface AbsenceDetail extends Absence {
   student: Student;
   check_in_message: string;
   escalated: boolean;
+  messages: Message[];
 }
 
 export interface Cluster {
@@ -135,7 +153,7 @@ export interface ActionPlan {
 }
 
 export interface OutboxMessage {
-  kind: "plan" | "check_in";
+  kind: "plan" | "check_in" | "ack";
   plan_id?: string;
   absence_id?: string;
   to: string;

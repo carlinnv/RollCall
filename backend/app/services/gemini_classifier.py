@@ -198,7 +198,7 @@ class KeywordClassifier:
 
     def classify_with_model(self, text: str, language: Optional[str] = None,
                             names: Optional[Iterable[str]] = None) -> Tuple[Classification, ClassifierMeta]:
-        result = keyword.classify(text, language=language)
+        result = keyword.keyword_classify(text, language=language)
         unsupported = not keyword.language_supported(language)
         meta = ClassifierMeta(
             source="unsupported_language" if unsupported else "keyword",
@@ -306,7 +306,7 @@ class GeminiClassifier:
     def classify_with_model(self, text: str, language: Optional[str] = None,
                             names: Optional[Iterable[str]] = None) -> Tuple[Classification, ClassifierMeta]:
         started = time.monotonic()
-        kw = keyword.classify(text, language=language)  # always runs; its safety flag is final
+        kw = keyword.keyword_classify(text, language=language)  # always runs; its safety flag is final
         kw_safety = kw.safety_critical
 
         def fallback(source: str, reason: str) -> Tuple[Classification, ClassifierMeta]:

@@ -1,10 +1,14 @@
 import { useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { api, fmtDate, type AbsenceStatus } from "../api";
-import { useLoad } from "../hooks";
+import { api, fmtDate, type AbsenceStatus, type QueueRow } from "../api";
+import { useChanged, useLoad, useStableOrder } from "../hooks";
 import { BarrierTag, ErrorNote, Page, Stat, StatusTag } from "../components/ui";
 
 const FILTERS: (AbsenceStatus | "all")[] = ["all", "awaiting reply", "unknown", "reason captured"];
+
+const rowId = (r: QueueRow) => r.id;
+/** What must differ for a row to count as changed: its status, label, escalation or reply. */
+const rowSignature = (r: QueueRow) => [r.status, r.classification?.barrier, r.escalated, r.reply?.text].join("|");
 
 export default function CaseQueue() {
   const { data, error, reload } = useLoad(api.queue);
@@ -12,7 +16,10 @@ export default function CaseQueue() {
   const [importMsg, setImportMsg] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const rows = useMemo(() => (data ?? []).filter((r) => filter === "all" || r.status === filter), [data, filter]);
+  // Live updates highlight the row that changed and leave it where it is, so it is easy to follow.
+  const changed = useChanged(data, rowId, rowSignature);
+  const { rows: ordered, held, resort } = useStableOrder(data, rowId, (r) => r.escalated);
+  const rows = useMemo(() => ordered.filter((r) => filter === "all" || r.status === filter), [ordered, filter]);
   const count = (s: AbsenceStatus) => (data ?? []).filter((r) => r.status === s).length;
 
   const onImport = async (file: File) => {
@@ -49,6 +56,14 @@ export default function CaseQueue() {
           </button>
         ))}
       </div>
+      {held && (
+        <p className="note">
+          A case just changed. Rows are holding their place so you can follow it.{" "}
+          <button className="link" onClick={resort}>
+            Re-sort by priority
+          </button>
+        </p>
+      )}
       <table>
         <thead>
           <tr>
@@ -62,7 +77,7 @@ export default function CaseQueue() {
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.id} className={r.escalated ? "row-alert" : undefined}>
+            <tr key={r.id} className={[r.escalated && "row-alert", changed.has(r.id) && "flash"].filter(Boolean).join(" ") || undefined}>
               <td>
                 <Link to={`/cases/${r.id}`}>
                   {r.student.first_name} {r.student.last_name}
