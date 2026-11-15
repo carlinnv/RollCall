@@ -14,10 +14,10 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 from .data import seed
 from .models import (
-    Absence, AbsenceStatus, ActionPlan, Barrier, CaseReport, Classification, Cluster, Escalation, FamilyReply,
+    Absence, AbsenceStatus, ActionPlan, Barrier, CaseReport, Classification, Page, Staff, Cluster, Escalation, FamilyReply,
     LearningPlan, Message, PlanStatus, RevenueSettings, RevenueSummary, Student,
 )
-from .services import action_plan, case_report, classifier, clustering, learning_plan, outreach, revenue
+from .services import action_plan, case_report, classifier, clustering, learning_plan, oncall, outreach, revenue
 
 TODAY = date(2026, 11, 14)
 PRIOR_DAYS_RECOVERED = 14  # recovered through Attendance Recovery before this week (synthetic)
@@ -37,6 +37,11 @@ def elapsed_ms(start: datetime) -> int:
     return max(0, round((utc_now() - start).total_seconds() * 1000))
 
 
+def _no_staff_channel(phone: str, text: str, key: str) -> dict:
+    """Default page delivery when no messaging channel is running."""
+    return {"status": "queued", "reason": "messaging channel is off", "channel": None}
+
+
 def _no_channel(student: Student, phone: str, text: str, key: str) -> dict:
     """Default delivery when no messaging channel is running: the message waits in the outbox."""
     return {"status": "queued", "reason": "messaging channel is off", "channel": None}
@@ -48,6 +53,10 @@ class Store:
         # (student, phone, text, idempotency_key) -> {"status": sent | queued | failed, "reason", "channel"}
         self.sender: Callable[[Student, str, str, str], dict] = _no_channel
         self._log_lock = threading.Lock()  # the Photon thread and API requests both append messages
+        # Page delivery to staff phones, set by the Photon channel. (phone, text, key) -> outcome
+        self.staff_sender: Callable[[str, str, str], dict] = _no_staff_channel
+        # On-call roster: staff configuration, saved to disk, kept across reset().
+        self.roster = oncall.Roster()
         self.reset()
 
     # ---------- setup ----------
@@ -58,6 +67,7 @@ class Store:
         self.case_reports: Dict[str, List[CaseReport]] = {}  # escalation_id -> saved versions, oldest first
         self.plans: Dict[str, ActionPlan] = {}
         self.messages: List[Message] = []  # every inbound and outbound text, oldest first
+        self._held_keys: Dict[str, str] = {}  # message_id -> idempotency key, for messages held for quiet hours
         self.completed_learning: Dict[str, int] = {}  # student_id -> days recovered
         self.settings: RevenueSettings = revenue.STATE_DEFAULTS["CA"].model_copy()
         for rec in seed.absences():
@@ -115,7 +125,97 @@ class Store:
             # The message keeps its own label, even when an open escalation holds the absence's label.
             route=route, classification=result, phone=phone, external_id=external_id, reason=reason,
         )
+        if route == "escalated" and channel != "seed":
+            escalation = self.open_escalation(absence_id)
+            if escalation is not None:
+                seen = set(escalation.safety_types) | set(result.safety_types)
+                escalation.safety_types = [t for t in classifier.SAFETY_TYPES if t in seen]
+                self._maybe_send_crisis(escalation, result)
+                if not escalation.pages:
+                    self._page(escalation, oncall.CHAIN[oncall.first_role(outreach.school_now())], "first")
         return route
+
+    # ---------- paging staff about safety cases ----------
+    def _page(self, e: Escalation, chain: List[str], level: str) -> None:
+        """Page everyone on call for the first role in `chain` that has someone on call."""
+        at = iso(outreach.school_now())
+        targets = self.roster.targets(chain)
+        if not targets:
+            e.pages.append(Page(level=level, at=at, status="blocked",
+                                reason=f"no one on call ({', '.join(chain)}); add staff on the On-call page"))
+            return
+        text = oncall.page_text(e.escalation_id, self.students[e.student_id].grade, escalated=(level == "escalated"))
+        for staff in targets:
+            reason = outreach.blocked_reason(staff.phone, text, household_suppressed=False)
+            if reason:
+                outcome = {"status": "blocked", "reason": reason, "channel": None}
+            else:
+                outcome = self.staff_sender(staff.phone, text, f"rollcall-page:{e.escalation_id}:{level}:{staff.staff_id}")
+            e.pages.append(Page(staff_id=staff.staff_id, name=staff.name, role=staff.role, phone=staff.phone,
+                                level=level, at=at, status=outcome["status"], reason=outcome.get("reason")))
+            self.log_message(direction="outbound", kind="page", channel=outcome.get("channel"),
+                             raw_text_or_transcript=text, timestamp=at, status=outcome["status"],
+                             reason=outcome.get("reason"), phone=staff.phone)
+
+    def check_paging(self) -> int:
+        """Page the principal about cases still unacknowledged 15 minutes after the first page.
+
+        Runs on every Photon poll and whenever the escalations list is read. Returns how many
+        cases were escalated.
+        """
+        now = outreach.school_now()
+        count = 0
+        for e in list(self.escalations.values()):
+            if e.status != "open" or not e.pages or any(pg.level == "escalated" for pg in e.pages):
+                continue
+            first = datetime.fromisoformat(e.pages[0].at.replace("Z", "+00:00"))
+            if (now - first).total_seconds() > self.ACK_WITHIN_MINUTES * 60:
+                self._page(e, oncall.CHAIN["principal"], "escalated")
+                count += 1
+        return count
+
+    def staff_command(self, phone: str, text: str) -> Optional[str]:
+        """Handle a text from a staff phone. Returns the reply, or None if it is not a staff command.
+
+        "ACK" acknowledges the oldest open case this person was paged about; "ACK E004" names one.
+        Anything else returns None, so the same phone can also be used to play a family in testing.
+        """
+        staff = self.roster.by_phone(phone)
+        words = outreach.plain(text).split()
+        if staff is None or not words or words[0] not in ("ack", "acknowledge", "acknowledged"):
+            return None
+        named = words[1].upper() if len(words) > 1 else None
+        paged = [e for e in self.escalations.values() if e.status == "open"
+                 and any(pg.staff_id == staff.staff_id for pg in e.pages)]
+        if named:
+            target = next((e for e in self.escalations.values() if e.escalation_id == named), None)
+            if target is None:
+                return f"There is no case {named}."
+            if target.status != "open":
+                return f"{named} is already acknowledged."
+        elif paged:
+            target = sorted(paged, key=lambda e: e.opened_at)[0]
+        else:
+            return "You have no unacknowledged cases."
+        self.acknowledge_escalation(target.escalation_id, staff.name)
+        return f"Acknowledged {target.escalation_id}. Details are on the Escalations page."
+
+    def _maybe_send_crisis(self, e: Escalation, result: Classification) -> None:
+        """Send the fixed crisis-resource message once per case, if the case calls for it."""
+        if e.crisis_message_status in ("sent", "withheld"):
+            return  # sent once already, or abuse was disclosed: never again for this case
+        decision = outreach.crisis_decision(e.safety_types)
+        if decision:
+            if "abuse_or_neglect" in e.safety_types:
+                e.crisis_message_status, e.crisis_message_reason = "withheld", decision
+            return
+        student = self.students[e.student_id]
+        entry = self.send_to_family(
+            e.student_id, outreach.crisis_text(result.language, student.preferred_language), "crisis",
+            key=f"rollcall-crisis:{e.escalation_id}", absence_id=e.absence_id,
+            language=result.language or student.preferred_language, urgent=True)
+        e.crisis_message_status, e.crisis_message_reason = entry["status"], entry["reason"]
+        e.crisis_message_at = entry["sent_at"]
 
     def _route_reply(self, absence_id: str, reply: FamilyReply, at: str,
                      use_model: bool = True) -> Tuple[str, Classification]:
@@ -136,6 +236,7 @@ class Store:
                     escalation_id=eid, absence_id=absence_id, student_id=absence.student_id,
                     household_id=self.students[absence.student_id].household_id,
                     reason=result.barrier.value, evidence=result.evidence, opened_at=at,
+                    safety_types=result.safety_types,
                 )
             return "escalated", result
 
@@ -305,27 +406,62 @@ class Store:
         return any(e.status != "closed" and e.household_id == household for e in self.escalations.values())
 
     def send_to_family(self, student_id: str, text: str, kind: str, key: str,
-                       absence_id: Optional[str] = None, plan_id: Optional[str] = None) -> dict:
+                       absence_id: Optional[str] = None, plan_id: Optional[str] = None,
+                       language: Optional[str] = None, urgent: bool = False) -> dict:
         """Apply the outreach rules, deliver if allowed, and record the outcome in the message log.
 
-        status: sent (accepted by the channel) | queued (allowed, not deliverable yet) |
-                blocked (a rule forbids it) | failed (the channel rejected it).
+        status: sent (accepted by the channel) | queued (allowed, not deliverable yet, or held for
+                quiet hours) | blocked (a rule forbids it) | failed (the channel rejected it).
+        `urgent` is only for the crisis message: it is not held for quiet hours and is the one
+        message allowed through an open safety escalation. Opt-outs and the no-link rule still apply.
         """
         student = self.students[student_id]
         phone = outreach.phone_for(student)
-        reason = outreach.blocked_reason(phone, text, self.household_suppressed(student_id))
+        suppressed = False if urgent else self.household_suppressed(student_id)
+        reason = outreach.blocked_reason(phone, text, suppressed)
+        until = None if urgent or reason else outreach.quiet_until(outreach.school_now())
         start = utc_now()
         if reason:
             outcome = {"status": "blocked", "reason": reason, "channel": None}
+        elif until:
+            outcome = {"status": "queued", "channel": None,
+                       "reason": f"quiet hours: will send at {until.strftime('%-I:%M %p %b %d')} school time"}
         else:
             outcome = self.sender(student, phone, text, key)
         message = self.log_message(
             absence_id=absence_id, student_id=student_id, direction="outbound", kind=kind,
-            language=student.preferred_language, raw_text_or_transcript=text, timestamp=iso(start),
+            language=language or student.preferred_language, raw_text_or_transcript=text, timestamp=iso(start),
             latency_ms=elapsed_ms(start) if outcome["status"] == "sent" else None,
-            phone=phone, plan_id=plan_id, **outcome,
+            phone=phone, plan_id=plan_id, deliver_after=iso(until) if until else None, **outcome,
         )
+        if until:
+            self._held_keys[message.message_id] = key
         return self._outbox_entry(message)
+
+    def flush_due(self) -> int:
+        """Send messages held for quiet hours whose time has come. Returns how many were processed.
+
+        The rules are checked again first: a household may have been escalated, or a family may
+        have opted out, while the message waited.
+        """
+        school_now = outreach.school_now()
+        if outreach.quiet_until(school_now):
+            return 0
+        now = school_now.astimezone(timezone.utc)
+        with self._log_lock:
+            due = [m for m in self.messages if m.status == "queued" and m.deliver_after
+                   and datetime.fromisoformat(m.deliver_after.replace("Z", "+00:00")) <= now]
+        for m in due:
+            student = self.students[m.student_id]
+            phone = outreach.phone_for(student)
+            reason = outreach.blocked_reason(phone, m.raw_text_or_transcript, self.household_suppressed(student.id))
+            if reason:
+                outcome = {"status": "blocked", "reason": reason, "channel": None}
+            else:
+                key = self._held_keys.pop(m.message_id, f"rollcall-held:{m.message_id}")
+                outcome = self.sender(student, phone, m.raw_text_or_transcript, key)
+            m.status, m.reason, m.channel, m.deliver_after = outcome["status"], outcome["reason"], outcome["channel"], None
+        return len(due)
 
     def send_check_in(self, absence_id: str) -> dict:
         """Send the supportive first check-in for an absence that has no reason on file."""

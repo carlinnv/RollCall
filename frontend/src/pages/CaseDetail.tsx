@@ -20,7 +20,7 @@ const SOURCE = {
   counselor: "relabeled by the counselor",
 };
 
-const KIND = { reply: "Family", check_in: "Check-in", plan: "Plan message", ack: "Automatic reply" };
+const KIND = { reply: "Family", check_in: "Check-in", plan: "Plan message", ack: "Automatic reply", crisis: "Crisis resources (988/911)", page: "Staff page" };
 const CHANNEL = { imessage: "iMessage", sms: "SMS", simulated: "simulated", seed: "sample data" };
 
 /** One line under a message: who, channel, time, and how long it took. */

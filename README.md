@@ -73,7 +73,12 @@ When the `PHOTON_*` values are set in `.env`, the API polls Photon every 2 secon
 
 - Safety escalations (`/escalations`): the counselor acknowledges a case, records the mandated-reporting decision, and closes it as a handled concern or a false alarm (relabeled). Messages to the household resume when its last open case closes. `POST /api/escalations/{id}/acknowledge`, `/report`, `/close`. The counselor can also generate an internal case report from the record, edit it, save versions and download it (`/case-report/draft`, `/case-reports`).
 
-Not built yet: paging the on-call counselor, the after-hours path, quiet hours, SMS fallback, voice notes (Photon Beta iMessage carries text and images only), speech-to-text, language detection, persistence.
+- Quiet hours: check-ins and plan messages are held between 8pm and 8am school time (`SCHOOL_TIMEZONE`, default `America/Los_Angeles`) and sent at 8am. Set `QUIET_HOURS=off` to test or demo outside those hours.
+- Crisis-resource message: after a self-harm or imminent-danger flag, one fixed 988/911 message goes to the family, never when abuse is disclosed. The wording is a placeholder until the district approves it.
+
+- On-call paging (`/oncall`): a roster of counselors, administrators and the principal, saved to `backend/.data/oncall.json` (kept across restarts and resets). A new safety case texts the on-call counselor during school hours (`SCHOOL_HOURS`, `SCHOOL_DAYS`) or the on-call administrator otherwise; if nobody acknowledges in 15 minutes the principal is paged. Staff reply `ACK` to acknowledge. Pages contain only the case ID and grade.
+
+Not built yet: SMS fallback, voice notes (Photon Beta iMessage carries text and images only), speech-to-text, language detection, persistence.
 
 ## Design rules (from the PRD)
 

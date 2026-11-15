@@ -33,7 +33,7 @@ log = logging.getLogger("uvicorn.error")
 DEFAULT_MODEL = "gemini-3.5-flash-lite"  # fastest reliable option on Nov 14, 2026; override with GEMINI_MODEL
 TIMEOUT_S = 6.0  # how long a reply waits for Gemini before the keyword fallback is used
 HTTP_TIMEOUT_MS = 10_000  # the API's minimum request deadline
-PROMPT_VERSION = "v1"  # bump when the prompt or schema changes, so old cache entries are not reused
+PROMPT_VERSION = "v2"  # bump when the prompt or schema changes, so old cache entries are not reused
 CACHE_DIR = Path(__file__).resolve().parents[2] / ".cache" / "gemini"
 
 # Safety terms match at the start of a word, so "suicid" catches "suicidal" and "amenaz" catches
@@ -52,6 +52,8 @@ SAFETY_TERMS = [
     "acoso", "acosan", "miedo", "amenaz", "le pegan", "golpe",
     "no quiere vivir", "no quiero vivir", "quiere morir", "quiero morir", "matarse", "matarme",
     "quitarse la vida", "hacerse dano", "lastimarse", "se corta", "no vale la pena vivir",
+    # reflexive forms of "kill oneself": "se quiere matar", "me voy a matar"
+    "se quiere matar", "me quiero matar", "se va a matar", "me voy a matar", "quitarme la vida", "hacerme dano",
 ]
 # Vietnamese terms keep their accents: without them, distinct words collide ("tự tử", suicide,
 # and "từ từ", slowly, both become "tu tu"). Matched on lowercase text with accents intact.
@@ -60,6 +62,23 @@ SAFETY_TERMS_VI = [
     "tự tử", "muốn chết", "không muốn sống", "tự làm hại", "tự làm đau", "bắt nạt", "bị đánh", "đe dọa",
     "xâm hại",
 ]
+
+# What kind of concern a term signals. This decides whether the fixed crisis-resource message may
+# be sent (PRD 3 section 3): yes for self-harm, never when abuse is disclosed. Other terms count as
+# "other" (bullying, threats, fear).
+SAFETY_TYPES = ("self_harm", "imminent_danger", "abuse_or_neglect", "bullying", "supervision", "other")
+SELF_HARM_TERMS = {
+    "suicid", "self harm", "self-harm", "doesnt want to live", "dont want to live", "does not want to live",
+    "do not want to live", "want to die", "wants to die", "wanted to die", "kill myself", "kill herself",
+    "kill himself", "end my life", "end her life", "end his life", "hurt herself", "hurt himself",
+    "hurting herself", "hurting himself", "cutting herself", "cutting himself", "better off dead",
+    "no reason to live", "no quiere vivir", "no quiero vivir", "quiere morir", "quiero morir", "matarse",
+    "matarme", "quitarse la vida", "hacerse dano", "lastimarse", "se corta", "no vale la pena vivir",
+    "se quiere matar", "me quiero matar", "se va a matar", "me voy a matar", "quitarme la vida", "hacerme dano",
+    "tự tử", "muốn chết", "không muốn sống", "tự làm hại", "tự làm đau",
+}
+ABUSE_TERMS = {"abuse", "hit him", "hit her", "le pegan", "golpe", "bị đánh", "xâm hại"}
+BULLYING_TERMS = {"bully", "bullied", "bullying", "acoso", "acosan", "bắt nạt"}
 
 RULES: Dict[Barrier, List[str]] = {
     Barrier.TRANSPORTATION: [
@@ -110,6 +129,25 @@ def _sentence_with(text: str, term: str) -> str:
     return text.strip()
 
 
+def keyword_safety_types(text: str) -> List[str]:
+    """Every kind of safety concern the keyword lists find in the text, in SAFETY_TYPES order."""
+    norm = _norm(text)
+    accented = unicodedata.normalize("NFC", text.lower())
+    hits = [t for t, p in zip(SAFETY_TERMS, _SAFETY) if p.search(norm)]
+    hits += [t for t, p in zip(SAFETY_TERMS_VI, _SAFETY_VI) if p.search(accented)]
+    found = set()
+    for term in hits:
+        if term in SELF_HARM_TERMS:
+            found.add("self_harm")
+        elif term in ABUSE_TERMS:
+            found.add("abuse_or_neglect")
+        elif term in BULLYING_TERMS:
+            found.add("bullying")
+        else:
+            found.add("other")
+    return [t for t in SAFETY_TYPES if t in found]
+
+
 def is_safety_critical(text: str) -> Optional[str]:
     """Return the matching evidence sentence if the reply needs a counselor, else None."""
     norm = _norm(text)
@@ -131,7 +169,7 @@ def keyword_classify(text: str) -> Classification:
     evidence = is_safety_critical(text)
     if evidence:
         return Classification(barrier=Barrier.SAFETY, confidence=0.95, evidence=evidence, safety_critical=True,
-                              source="keywords")
+                              source="keywords", safety_types=keyword_safety_types(text))
 
     norm = _norm(text) + " "
     scores: List[Tuple[int, Barrier, str]] = []
@@ -174,6 +212,8 @@ Return:
 - language: the ISO 639-1 code of the message language, for example "en", "es", "vi", "zh", "ar".
 - safety_concern: true if anything in the message suggests a child may be unsafe (bullying, threats, violence, abuse, neglect, a young child left alone or caring for an infant, self-harm), even when another label is the main reason. Otherwise false.
 
+- safety_type: when safety_concern is true, the kind of concern: "self_harm" (the child may hurt or kill themselves), "imminent_danger" (someone is in danger right now), "abuse_or_neglect" (an adult harms or neglects the child, at home or elsewhere), "bullying", "supervision" (a young child left alone or caring for an infant), or "other". When safety_concern is false, "none".
+
 Names in the message are replaced with placeholders such as [NAME1]. Keep the placeholders unchanged in evidence_quote."""
 
 RESPONSE_SCHEMA = {
@@ -184,8 +224,9 @@ RESPONSE_SCHEMA = {
         "confidence": {"type": "number"},
         "language": {"type": "string"},
         "safety_concern": {"type": "boolean"},
+        "safety_type": {"type": "string", "enum": ["none", *SAFETY_TYPES]},
     },
-    "required": ["label", "evidence_quote", "confidence", "language", "safety_concern"],
+    "required": ["label", "evidence_quote", "confidence", "language", "safety_concern", "safety_type"],
 }
 
 _pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="gemini")
@@ -306,11 +347,16 @@ def classify(text: str, names: Iterable[str] = ()) -> Classification:
     if not evidence or evidence not in text:
         evidence = text.strip()  # never show staff words the family did not write
 
+    # The model can add a kind of concern (an abuse disclosure the keywords missed) but never remove one.
+    model_type = data.get("safety_type") if data.get("safety_type") in SAFETY_TYPES else None
+    types = [t for t in SAFETY_TYPES if t in set(base.safety_types) | ({model_type} if model_type else set())]
+
     if base.safety_critical:  # the keyword check always wins; the model can never clear a safety flag
-        return base.model_copy(update={"source": "safety_keywords", "language": language})
+        return base.model_copy(update={"source": "safety_keywords", "language": language, "safety_types": types})
     if barrier == Barrier.SAFETY or data.get("safety_concern") is True:
         return Classification(barrier=Barrier.SAFETY, confidence=round(confidence, 2), evidence=evidence,
-                              safety_critical=True, source="gemini", language=language)
+                              safety_critical=True, source="gemini", language=language,
+                              safety_types=types or ["other"])
     if barrier == Barrier.UNKNOWN:
         evidence = text.strip()
     return Classification(barrier=barrier, confidence=round(confidence, 2), evidence=evidence,

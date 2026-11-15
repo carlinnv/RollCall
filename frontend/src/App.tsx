@@ -7,12 +7,14 @@ import Escalations from "./pages/Escalations";
 import Plans from "./pages/Plans";
 import LearningPlanPage from "./pages/LearningPlan";
 import Revenue from "./pages/Revenue";
+import OnCall from "./pages/OnCall";
 
 const NAV = [
   { to: "/", label: "Case queue", who: "Clerk" },
   { to: "/clusters", label: "Root causes", who: "Clerk · Counselor" },
   { to: "/plans", label: "Action plans", who: "Clerk" },
   { to: "/escalations", label: "Escalations", who: "Counselor · Nurse" },
+  { to: "/oncall", label: "On-call", who: "Counselor · Admin" },
   { to: "/learning", label: "Learning plans", who: "Teacher · Student" },
   { to: "/revenue", label: "Revenue", who: "Business manager" },
 ];
@@ -47,6 +49,7 @@ export default function App() {
           <Route path="/clusters" element={<Clusters />} />
           <Route path="/plans" element={<Plans />} />
           <Route path="/escalations" element={<Escalations />} />
+          <Route path="/oncall" element={<OnCall />} />
           <Route path="/learning" element={<LearningPlanPage />} />
           <Route path="/learning/:studentId" element={<LearningPlanPage />} />
           <Route path="/revenue" element={<Revenue />} />

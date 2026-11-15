@@ -21,7 +21,8 @@ SOURCE = {
     "safety_keywords": "safety keyword check",
     "counselor": "counselor",
 }
-KIND = {"reply": "Family", "check_in": "School check-in", "plan": "School plan message", "ack": "School automatic reply"}
+KIND = {"reply": "Family", "check_in": "School check-in", "plan": "School plan message", "ack": "School automatic reply",
+        "crisis": "School crisis-resource message"}
 NOTES_PLACEHOLDER = "(Write what you learned, who you spoke to, and what happens next.)"
 
 
@@ -58,7 +59,13 @@ def build(e: Escalation, student: Student, absence: Absence, messages: List[Mess
     if first_flag and first_flag.classification:
         flagged_by = SOURCE.get(first_flag.classification.source, first_flag.classification.source)
 
-    timeline = [f"- {_when(e.opened_at)}  Case opened ({e.reason})"]
+    timeline = [f"- {_when(e.opened_at)}  Case opened ({e.reason}"
+                + (f"; {', '.join(t.replace('_', ' ') for t in e.safety_types)})" if e.safety_types else ")")]
+    if e.crisis_message_status == "withheld":
+        timeline.append(f"- Crisis-resource message withheld: {e.crisis_message_reason}")
+    elif e.crisis_message_status:
+        timeline.append(f"- {_when(e.crisis_message_at)}  Crisis-resource message (988/911): {e.crisis_message_status}"
+                        + (f" ({e.crisis_message_reason})" if e.crisis_message_reason else ""))
     if e.acknowledged_at:
         timeline.append(f"- {_when(e.acknowledged_at)}  Acknowledged by {e.acknowledged_by}")
     if e.report_status:

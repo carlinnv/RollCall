@@ -153,6 +153,45 @@ function CaseReportPanel({ e, onChange }: { e: Escalation; onChange: () => void 
   );
 }
 
+const TYPE: Record<string, string> = {
+  self_harm: "self-harm",
+  imminent_danger: "imminent danger",
+  abuse_or_neglect: "abuse or neglect",
+  bullying: "bullying",
+  supervision: "supervision",
+  other: "other",
+};
+
+/** Whether the fixed 988/911 message went to the family, and if not, why. */
+function CrisisNote({ e }: { e: Escalation }) {
+  if (!e.crisis_message_status) return null;
+  if (e.crisis_message_status === "sent")
+    return <p className="note">Crisis-resource message (988/911) sent to the family, {when(e.crisis_message_at)}.</p>;
+  if (e.crisis_message_status === "withheld")
+    return <p className="alert-box">Crisis-resource message withheld: {e.crisis_message_reason}.</p>;
+  return (
+    <p className="alert-box">
+      Crisis-resource message {e.crisis_message_status}: {e.crisis_message_reason}. Contact the family directly.
+    </p>
+  );
+}
+
+/** Who was paged about this case, and whether the page went out. */
+function PageList({ e }: { e: Escalation }) {
+  if (!e.pages.length) return null;
+  return (
+    <ul className="pages small">
+      {e.pages.map((p, i) => (
+        <li key={i} className={p.status === "sent" ? "muted" : "overdue"}>
+          {p.level === "escalated" ? "Escalated: paged " : "Paged "}
+          {p.name ? `${p.name} (${p.role})` : "nobody"}, {when(p.at)} · {p.status}
+          {p.reason && `: ${p.reason}`}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function OpenCase({ e, onChange }: { e: Escalation; onChange: () => void }) {
   const [relabel, setRelabel] = useState<Barrier>("illness");
   const [falseAlarm, setFalseAlarm] = useState(false);
@@ -183,7 +222,10 @@ function OpenCase({ e, onChange }: { e: Escalation; onChange: () => void }) {
         Grade {e.student.grade} · {e.student.classroom} · guardian {e.student.guardian_name} ({e.student.guardian_phone})
       </p>
       <blockquote>{e.evidence}</blockquote>
-      <p className="muted small">All automated messages to this household are paused until this case is closed.</p>
+      {e.safety_types.length > 0 && <p className="muted small">Concern: {e.safety_types.map((t) => TYPE[t] ?? t).join(", ")}</p>}
+      <CrisisNote e={e} />
+      <PageList e={e} />
+      <p className="muted small">All other automated messages to this household are paused until this case is closed.</p>
 
       <ol className="steps">
         <li>

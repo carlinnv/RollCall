@@ -69,7 +69,8 @@ export interface Message {
   raw_text_or_transcript: string;
   timestamp: string;
   latency_ms: number | null;
-  kind: "reply" | "check_in" | "plan" | "ack";
+  kind: "reply" | "check_in" | "plan" | "ack" | "crisis" | "page";
+  deliver_after: string | null;
   status: "received" | "sent" | "queued" | "blocked" | "failed";
   reason: string | null;
   route: string | null;
@@ -115,7 +116,7 @@ export interface ActionPlan {
 }
 
 export interface OutboxMessage {
-  kind: "plan" | "check_in" | "ack";
+  kind: "plan" | "check_in" | "ack" | "crisis" | "page";
   plan_id?: string;
   absence_id?: string;
   to: string;
@@ -158,11 +159,52 @@ export interface Escalation {
   outcome: "resolved" | "not_safety" | null;
   relabeled_to: Barrier | null;
   note: string | null;
+  safety_types: string[];
+  crisis_message_status: "sent" | "queued" | "blocked" | "failed" | "withheld" | null;
+  crisis_message_reason: string | null;
+  crisis_message_at: string | null;
+  pages: Page[];
   minutes_open: number;
   overdue: boolean;
   case_report_versions: number;
   case_report_saved_at: string | null;
   student: Student;
+}
+
+export type StaffRole = "counselor" | "administrator" | "principal";
+
+export interface StaffMember {
+  staff_id: string;
+  name: string;
+  role: StaffRole;
+  phone: string;
+  on_call: boolean;
+  reachable: boolean;
+}
+
+export interface OnCallStatus {
+  staff: StaffMember[];
+  school_time: string;
+  timezone: string;
+  school_hours: string;
+  school_days: string;
+  in_school_hours: boolean;
+  first_role_now: StaffRole;
+  would_page_now: string[];
+  escalate_after_minutes: number;
+  agent_handle: string | null;
+  channel_listening: boolean;
+}
+
+export interface Page {
+  staff_id: string | null;
+  name: string | null;
+  role: StaffRole | null;
+  phone: string | null;
+  level: "first" | "escalated";
+  at: string;
+  status: "sent" | "queued" | "blocked" | "failed";
+  reason: string | null;
 }
 
 export interface CaseReport {
@@ -220,6 +262,12 @@ export const api = {
   acknowledgeEscalation: (id: string, by: string) => post<Escalation>(`/escalations/${id}/acknowledge`, { by }),
   reportEscalation: (id: string, by: string, decision: "report_filed" | "not_required") =>
     post<Escalation>(`/escalations/${id}/report`, { by, decision }),
+  oncall: () => req<OnCallStatus>("/oncall"),
+  addStaff: (s: { name: string; role: StaffRole; phone: string; on_call: boolean }) => post<StaffMember>("/oncall/staff", s),
+  updateStaff: (id: string, fields: Partial<StaffMember>) =>
+    req<StaffMember>(`/oncall/staff/${id}`, { method: "PATCH", body: JSON.stringify(fields) }),
+  removeStaff: (id: string) => req<{ ok: boolean }>(`/oncall/staff/${id}`, { method: "DELETE" }),
+  testPage: (id: string) => post<{ status: string; reason: string | null }>(`/oncall/staff/${id}/test`),
   draftCaseReport: (id: string, by: string) => post<{ text: string }>(`/escalations/${id}/case-report/draft`, { by }),
   caseReports: (id: string) => req<CaseReport[]>(`/escalations/${id}/case-reports`),
   saveCaseReport: (id: string, by: string, text: string) => post<CaseReport>(`/escalations/${id}/case-reports`, { by, text }),

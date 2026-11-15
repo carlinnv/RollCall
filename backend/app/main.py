@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from .models import Barrier, FamilyReply, RevenueSettings
-from .services import classifier, photon_channel
+from .services import classifier, oncall, outreach, photon_channel
 from .store import TODAY, iso, store, utc_now
 
 
@@ -69,6 +69,13 @@ class CaseReportIn(StaffIn):
     text: str
 
 
+class StaffMemberIn(BaseModel):
+    name: str
+    role: str  # counselor | administrator | principal
+    phone: str
+    on_call: bool = True
+
+
 class CloseIn(StaffIn):
     outcome: str  # resolved | not_safety
     relabel_to: Optional[Barrier] = None
@@ -77,7 +84,7 @@ class CloseIn(StaffIn):
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "today": TODAY, "classifier": classifier.status()}
+    return {"ok": True, "today": TODAY, "classifier": classifier.status(), "quiet_hours": outreach.quiet_status()}
 
 
 @app.get("/api/taxonomy")
@@ -135,6 +142,7 @@ def check_in(absence_id: str):
 @app.get("/api/escalations")
 def escalations():
     """Every escalation: open ones first (oldest first), then closed ones (most recent first)."""
+    store.check_paging()
     items = list(store.escalations.values())
     still_open = sorted((e for e in items if e.status != "closed"), key=lambda e: e.opened_at)
     closed = sorted((e for e in items if e.status == "closed"), key=lambda e: e.closed_at or "", reverse=True)
@@ -188,6 +196,73 @@ def save_case_report(escalation_id: str, body: CaseReportIn):
 def close_escalation(escalation_id: str, body: CloseIn):
     """Close a case: resolved (real concern) or not_safety (false alarm, with relabel_to)."""
     return _act(store.close_escalation, escalation_id, body.by, body.outcome, body.relabel_to, body.note)
+
+
+# ---------- on-call roster and paging ----------
+def _staff_view(member):
+    reachable = outreach.digits(member.phone) in photon_channel.contacts
+    return {**member.model_dump(), "reachable": reachable}
+
+
+@app.get("/api/oncall")
+def oncall_status():
+    """The roster, who would be paged right now, and the settings that decide it."""
+    now = outreach.school_now()
+    start, end = oncall.school_hours()
+    first = oncall.first_role(now)
+    would_page = store.roster.targets(oncall.CHAIN[first])
+    return {
+        "staff": [_staff_view(m) for m in store.roster.staff.values()],
+        "school_time": now.isoformat(timespec="minutes"),
+        "timezone": str(now.tzinfo),
+        "school_hours": f"{start.strftime('%H:%M')}-{end.strftime('%H:%M')}",
+        "school_days": "every day" if oncall.school_days_all() else "Monday to Friday",
+        "in_school_hours": oncall.in_school_hours(now),
+        "first_role_now": first,
+        "would_page_now": [m.name for m in would_page],
+        "escalate_after_minutes": store.ACK_WITHIN_MINUTES,
+        "agent_handle": photon_channel.status()["agent_handle"],
+        "channel_listening": photon_channel.status()["listening"],
+    }
+
+
+@app.post("/api/oncall/staff")
+def add_staff(body: StaffMemberIn):
+    try:
+        return _staff_view(store.roster.add(body.name, body.role, body.phone, body.on_call))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.patch("/api/oncall/staff/{staff_id}")
+def update_staff(staff_id: str, fields: dict):
+    _get(store.roster.staff, staff_id, "staff member")
+    try:
+        return _staff_view(store.roster.update(staff_id, fields))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.delete("/api/oncall/staff/{staff_id}")
+def remove_staff(staff_id: str):
+    _get(store.roster.staff, staff_id, "staff member")
+    store.roster.remove(staff_id)
+    return {"ok": True}
+
+
+@app.post("/api/oncall/staff/{staff_id}/test")
+def test_page(staff_id: str):
+    """Send a test page, to check this phone can receive pages."""
+    member = _get(store.roster.staff, staff_id, "staff member")
+    text = "RollCall test page: this phone will receive safety-case pages. No action needed."
+    reason = outreach.blocked_reason(member.phone, text, household_suppressed=False)
+    if reason:
+        return {"status": "blocked", "reason": reason}
+    stamp = iso(utc_now())
+    outcome = store.staff_sender(member.phone, text, f"rollcall-testpage:{staff_id}:{stamp}")
+    store.log_message(direction="outbound", kind="page", channel=outcome.get("channel"), raw_text_or_transcript=text,
+                      timestamp=stamp, status=outcome["status"], reason=outcome.get("reason"), phone=member.phone)
+    return {"status": outcome["status"], "reason": outcome.get("reason")}
 
 
 # ---------- F2: message log ----------

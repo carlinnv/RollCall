@@ -9,20 +9,31 @@ from app.main import app
 import json
 import time
 
-from app.services import case_report, classifier, outreach, photon_channel
+from app.services import case_report, classifier, oncall, outreach, photon_channel
 from app.services.classifier import classify
 from app.store import _no_channel, store
 
 client = TestClient(app)
 
 
+def set_school_clock(monkeypatch, hour, minute=0, day=16):
+    """Pin school time to Nov `day`, 2026 at hour:minute in the school's time zone."""
+    moment = datetime(2026, 11, day, hour, minute, tzinfo=outreach.school_timezone())
+    monkeypatch.setattr(outreach, "school_now", lambda: moment)
+
+
 @pytest.fixture(autouse=True)
-def fresh(monkeypatch):
+def fresh(monkeypatch, tmp_path):
     store.reset()
     photon_channel.contacts.clear()
     outreach.opted_out.clear()
     monkeypatch.setattr(store, "sender", _no_channel)
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)  # tests never call the real model
+    monkeypatch.delenv("QUIET_HOURS", raising=False)
+    for name in ("SCHOOL_DAYS", "SCHOOL_HOURS"):
+        monkeypatch.delenv(name, raising=False)
+    set_school_clock(monkeypatch, 10)  # mid-morning, outside quiet hours, unless a test moves it
+    monkeypatch.setattr(store, "roster", oncall.Roster(tmp_path / "oncall.json"))  # never the real roster
 
 
 # F1: every absence has a status and inspectable source message
@@ -359,6 +370,9 @@ def test_texts_that_match_no_absence_are_still_logged():
     "she is suicidal",
     "Dice que ya no quiere vivir.",
     "Dijo que quiere morirse",
+    "Mi hijo dice que se quiere matar.",
+    "Me dijo: me voy a matar",
+    "Dice que se va a matar si vuelve a la escuela",
     "Cháu nói muốn chết",
     "Con bị bắt nạt ở trường",
     "Cháu không muốn sống nữa",
@@ -398,9 +412,9 @@ def gemini(monkeypatch, tmp_path):
     return state
 
 
-def answer(label, quote="", confidence=0.9, language="es", safety=False):
+def answer(label, quote="", confidence=0.9, language="es", safety=False, safety_type=None):
     return {"label": label, "evidence_quote": quote, "confidence": confidence, "language": language,
-            "safety_concern": safety}
+            "safety_concern": safety, "safety_type": safety_type or ("other" if safety else "none")}
 
 
 def test_gemini_label_language_and_evidence_are_used(gemini):
@@ -597,3 +611,244 @@ def test_empty_case_report_is_rejected():
     eid = escalation_for("A020")["escalation_id"]
     assert client.post(f"/api/escalations/{eid}/case-reports", json={"text": "   "}).status_code == 400
     assert client.post("/api/escalations/E999/case-report/draft", json={}).status_code == 404
+
+
+# Quiet hours: check-ins and plan messages wait for 8am school time
+def test_check_in_at_night_is_held_until_morning(delivered, monkeypatch):
+    set_school_clock(monkeypatch, 21, 30)
+    out = client.post("/api/absences/A004/check-in").json()
+    assert out["status"] == "queued" and "quiet hours" in out["reason"] and not delivered
+    held = client.get("/api/messages", params={"direction": "outbound"}).json()[-1]
+    assert held["deliver_after"].startswith("2026-11-17T16:00")  # 8am Pacific
+    assert store.flush_due() == 0  # still night
+    set_school_clock(monkeypatch, 8, 5, day=17)
+    assert store.flush_due() == 1
+    assert [c["key"] for c in delivered] == ["rollcall-checkin:A004"]
+    sent = client.get("/api/messages", params={"direction": "outbound"}).json()[-1]
+    assert sent["status"] == "sent" and sent["deliver_after"] is None
+
+
+def test_held_message_is_checked_again_before_sending(parent, delivered, monkeypatch):
+    set_school_clock(monkeypatch, 6)
+    client.post("/api/absences/A004/check-in")
+    photon_channel.handle_inbound(parent, "STOP", "2026-11-16T14:30:00Z")
+    set_school_clock(monkeypatch, 9)
+    store.flush_due()
+    assert not delivered
+    assert client.get("/api/messages", params={"direction": "outbound"}).json()[-1]["status"] == "blocked"
+
+
+def test_quiet_hours_can_be_switched_off(delivered, monkeypatch):
+    monkeypatch.setenv("QUIET_HOURS", "off")
+    set_school_clock(monkeypatch, 23)
+    assert client.post("/api/absences/A004/check-in").json()["status"] == "sent"
+
+
+def test_reply_to_a_family_text_is_not_held(parent, monkeypatch):
+    set_school_clock(monkeypatch, 22)
+    out = photon_channel.handle_inbound(parent, "El autobus no llego.", "2026-11-17T06:00:00Z")
+    assert out["reply"] is not None
+
+
+# Crisis-resource message after a self-harm flag
+def crisis_messages():
+    return [m for m in client.get("/api/messages", params={"direction": "outbound"}).json() if m["kind"] == "crisis"]
+
+
+def test_self_harm_flag_sends_the_crisis_message_once(delivered, monkeypatch):
+    set_school_clock(monkeypatch, 23)  # not held for quiet hours
+    client.post("/api/absences/A004/reply", json={"text": "Dice que ya no quiere vivir.", "language": "es"})
+    client.post("/api/absences/A004/reply", json={"text": "Sigue diciendo que quiere morirse.", "language": "es"})
+    assert [c["key"] for c in delivered] == [f"rollcall-crisis:{escalation_for('A004')['escalation_id']}"]
+    assert "988" in delivered[0]["text"] and "911" in delivered[0]["text"] and not outreach.has_link(delivered[0]["text"])
+    assert delivered[0]["text"] == outreach.CRISIS["es"]  # fixed text, in the family's language
+    e = escalation_for("A004")
+    assert e["crisis_message_status"] == "sent" and "self_harm" in e["safety_types"]
+    # At 11pm only the crisis message goes: another family's check-in waits for morning,
+    # and everything else to this household stays paused.
+    assert "quiet hours" in client.post("/api/absences/A016/check-in").json()["reason"]
+    assert store.household_suppressed("S002")
+
+
+def test_crisis_message_is_never_sent_when_abuse_is_disclosed(delivered):
+    client.post("/api/absences/A004/reply",
+                json={"text": "She doesn't want to live anymore because her dad hit her.", "language": "en"})
+    e = escalation_for("A004")
+    assert e["crisis_message_status"] == "withheld" and "phone may not be safe" in e["crisis_message_reason"]
+    assert not delivered and not crisis_messages()
+
+
+def test_crisis_message_is_not_sent_for_bullying(delivered):
+    client.post("/api/absences/A004/reply", json={"text": "Kids are bullying her on the bus.", "language": "en"})
+    assert escalation_for("A004")["crisis_message_status"] is None and not delivered
+
+
+def test_model_can_add_abuse_and_stop_the_crisis_message(gemini, delivered):
+    gemini["answer"] = answer("safety or bullying", "doesn't want to live", language="en", safety=True,
+                              safety_type="abuse_or_neglect")
+    client.post("/api/absences/A004/reply", json={"text": "She says she doesn't want to live at home.", "language": "en"})
+    e = escalation_for("A004")
+    assert set(e["safety_types"]) == {"self_harm", "abuse_or_neglect"} and e["crisis_message_status"] == "withheld"
+    assert not delivered
+
+
+def test_crisis_message_respects_opt_out(parent, delivered):
+    photon_channel.handle_inbound(parent, "STOP", "2026-11-16T18:00:00Z")
+    photon_channel.handle_inbound(parent, "She wants to die.", "2026-11-16T18:05:00Z")
+    assert escalation_for("A004")["crisis_message_status"] == "blocked" and not delivered
+
+
+def test_seed_data_never_sends_a_crisis_message(delivered):
+    client.post("/api/reset")
+    assert not delivered and not crisis_messages()
+
+
+@pytest.mark.parametrize("text", [
+    "Mi hijo dice que se quiere matar.",
+    "Me dijo: me voy a matar",
+    "Dijo que quiere quitarse la vida",
+])
+def test_spanish_self_harm_is_typed_as_self_harm(text):
+    # Typed as self-harm, so the crisis-resource message goes out.
+    assert "self_harm" in classifier.keyword_classify(text).safety_types
+
+
+@pytest.mark.parametrize("text", ["Vamos a matar el tiempo en la biblioteca", "Se va a mudar con su tía"])
+def test_spanish_look_alikes_are_not_flagged(text):
+    assert not classifier.keyword_classify(text).safety_critical
+
+
+# On-call roster and paging
+@pytest.fixture
+def pages(monkeypatch):
+    """Record pages instead of sending them."""
+    sent = []
+
+    def fake(phone, text, key):
+        sent.append({"phone": phone, "text": text, "key": key})
+        return {"status": "sent", "reason": None, "channel": "imessage"}
+
+    monkeypatch.setattr(store, "staff_sender", fake)
+    return sent
+
+
+def add_staff(name, role, phone, on_call=True):
+    r = client.post("/api/oncall/staff", json={"name": name, "role": role, "phone": phone, "on_call": on_call})
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+def safety_message(absence_id="A004"):
+    client.post(f"/api/absences/{absence_id}/reply", json={"text": "Kids are bullying her on the bus.", "language": "en"})
+    return escalation_for(absence_id)
+
+
+def test_roster_is_validated_and_saved_to_disk():
+    member = add_staff("Ms. Rivera", "counselor", "+1 555 010 9999")
+    assert member["staff_id"] == "T01" and member["on_call"] and member["reachable"] is False
+    for bad in [{"name": "X", "role": "janitor", "phone": "+15550109998"},
+                {"name": "X", "role": "counselor", "phone": "555"},
+                {"name": "X", "role": "counselor", "phone": "+15550109999"}]:  # duplicate number
+        assert client.post("/api/oncall/staff", json=bad).status_code == 400
+    client.patch("/api/oncall/staff/T01", json={"on_call": False})
+    assert [s.on_call for s in oncall.Roster(store.roster.path).staff.values()] == [False]  # read back from the file
+    client.delete("/api/oncall/staff/T01")
+    assert oncall.Roster(store.roster.path).staff == {}
+
+
+def test_reset_keeps_the_roster():
+    add_staff("Ms. Rivera", "counselor", "+15550109999")
+    client.post("/api/reset")
+    assert [s["name"] for s in client.get("/api/oncall").json()["staff"]] == ["Ms. Rivera"]
+
+
+def test_new_case_in_school_hours_pages_the_on_call_counselor(pages):
+    add_staff("Ms. Rivera", "counselor", "+15550109999")
+    add_staff("Mr. Diaz", "administrator", "+15550108888")
+    add_staff("Off Duty", "counselor", "+15550107777", on_call=False)
+    e = safety_message()
+    assert [p["phone"] for p in pages] == ["+15550109999"]
+    assert e["pages"][0]["name"] == "Ms. Rivera" and e["pages"][0]["status"] == "sent" and e["pages"][0]["level"] == "first"
+    text = pages[0]["text"]
+    assert e["escalation_id"] in text and "ACK" in text
+    assert "Sofia" not in text and "Ramírez" not in text and "bullying" not in text  # no family details on a staff phone
+    assert client.get("/api/oncall").json()["would_page_now"] == ["Ms. Rivera"]
+
+
+def test_after_hours_pages_the_administrator(pages, monkeypatch):
+    add_staff("Ms. Rivera", "counselor", "+15550109999")
+    add_staff("Mr. Diaz", "administrator", "+15550108888")
+    set_school_clock(monkeypatch, 19)
+    safety_message()
+    assert [p["phone"] for p in pages] == ["+15550108888"]
+    assert client.get("/api/oncall").json()["first_role_now"] == "administrator"
+
+
+def test_falls_through_the_chain_and_warns_when_nobody_is_on_call(pages, monkeypatch):
+    set_school_clock(monkeypatch, 19)
+    add_staff("Dr. Kim", "principal", "+15550106666")
+    safety_message("A004")
+    assert [p["phone"] for p in pages] == ["+15550106666"]  # no administrator on call: the principal
+    client.patch("/api/oncall/staff/T01", json={"on_call": False})
+    e = safety_message("A016")
+    assert e["pages"][0]["status"] == "blocked" and "no one on call" in e["pages"][0]["reason"]
+
+
+def test_unacknowledged_case_pages_the_principal_after_15_minutes(pages, monkeypatch):
+    add_staff("Ms. Rivera", "counselor", "+15550109999")
+    add_staff("Dr. Kim", "principal", "+15550106666")
+    safety_message()
+    set_school_clock(monkeypatch, 10, 10)
+    assert store.check_paging() == 0  # 10 minutes: not yet
+    set_school_clock(monkeypatch, 10, 16)
+    client.get("/api/escalations")  # reading the inbox runs the check
+    assert [p["phone"] for p in pages] == ["+15550109999", "+15550106666"]
+    assert "not been acknowledged" in pages[1]["text"]
+    assert store.check_paging() == 0  # the principal is paged once
+
+
+def test_acknowledged_case_is_not_escalated(pages, monkeypatch):
+    add_staff("Ms. Rivera", "counselor", "+15550109999")
+    add_staff("Dr. Kim", "principal", "+15550106666")
+    e = safety_message()
+    client.post(f"/api/escalations/{e['escalation_id']}/acknowledge", json={})
+    set_school_clock(monkeypatch, 11)
+    assert store.check_paging() == 0 and len(pages) == 1
+
+
+def test_staff_can_acknowledge_by_replying_ack(pages):
+    add_staff("Ms. Rivera", "counselor", "+15550109999")
+    eid = safety_message()["escalation_id"]
+    out = photon_channel.handle_inbound("+15550109999", "Ack", "2026-11-16T18:00:00Z")
+    assert out["route"] == "staff" and out["reply"] == f"Acknowledged {eid}. Details are on the Escalations page."
+    e = escalation_for("A004")
+    assert e["status"] == "acknowledged" and e["acknowledged_by"] == "Ms. Rivera"
+    again = photon_channel.handle_inbound("+15550109999", "ACK", "2026-11-16T18:01:00Z")
+    assert again["reply"] == "You have no unacknowledged cases."
+
+
+def test_staff_phone_can_still_play_a_family(parent, pages):
+    add_staff("Carlin", "counselor", parent)  # one phone for both roles while testing
+    out = photon_channel.handle_inbound(parent, "El autobus no llego.", "2026-11-16T18:00:00Z")
+    assert out["route"] in {"cluster", "case"} and out["absence_id"] == "A004"
+
+
+def test_seed_escalation_is_not_paged(pages):
+    add_staff("Ms. Rivera", "counselor", "+15550109999")
+    client.post("/api/reset")
+    assert not pages and escalation_for("A020")["pages"] == []
+
+
+def test_test_page_goes_through_the_staff_channel(pages):
+    add_staff("Ms. Rivera", "counselor", "+15550109999")
+    assert client.post("/api/oncall/staff/T01/test").json()["status"] == "sent"
+    assert pages[0]["phone"] == "+15550109999" and "test page" in pages[0]["text"]
+
+
+def test_weekend_counts_as_school_days_when_configured(pages, monkeypatch):
+    add_staff("Ms. Rivera", "counselor", "+15550109999")
+    add_staff("Mr. Diaz", "administrator", "+15550108888")
+    set_school_clock(monkeypatch, 10, day=14)  # Saturday morning
+    assert client.get("/api/oncall").json()["first_role_now"] == "administrator"
+    monkeypatch.setenv("SCHOOL_DAYS", "all")
+    assert client.get("/api/oncall").json()["first_role_now"] == "counselor"

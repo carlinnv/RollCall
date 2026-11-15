@@ -24,9 +24,10 @@ Owners follow PRD 3 §5: **A** Messaging & Photon (me), **B** ML & Graph, **C** 
 - [x] Plain-language opt-outs in English, Spanish and Vietnamese ("no más mensajes"). Today only exact keywords work.
 - [x] Closing an escalation, so household suppression can be lifted.
 - [x] Counselor acknowledgement and the 15-minute timer on safety flags. (Acknowledge button and an overdue flag after 15 minutes.)
-- [ ] Paging the on-call counselor when a case opens, and the after-hours path (on-call administrator, then principal). The overdue flag only shows on the inbox.
-- [ ] Fixed crisis-resource message (988/911) for self-harm or imminent danger. Never for abuse disclosures.
-- [ ] Quiet hours, 8am–8pm; queue messages outside them.
+- [x] Paging the on-call counselor when a case opens, and the after-hours path (on-call administrator, then principal). On the On-call page.
+- [x] Fixed crisis-resource message (988/911) for self-harm or imminent danger. Never for abuse disclosures.
+- [ ] Get the crisis-message wording approved by the district, and the Spanish reviewed by a fluent speaker. The text in `outreach.py` is a placeholder.
+- [x] Quiet hours, 8am–8pm; queue messages outside them.
 - [ ] Voice notes through Gemini audio. Blocked on Photon Beta; needs an in-app upload. See `CARLINNOTES.md`.
 - [ ] SMS fallback. Architecture only for now. See `CARLINNOTES.md`.
 - [ ] Demo mode with a replayable message fixture. "Never cut" in the PRD.

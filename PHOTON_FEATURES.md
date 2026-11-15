@@ -136,6 +136,9 @@ Checked in this order; the first one that applies blocks the message:
 2. **Opt-out.** No message goes to a number that has opted out.
 3. **No links.** A message is blocked if it contains `http://`, `https://`, `www.`, or a domain ending in `.com`, `.org`, `.net`, `.edu`, `.gov`, `.io`, `.co`, `.ly` or `.us`.
 4. **Not empty.** A blank message is blocked.
+5. **Quiet hours.** Check-ins and plan messages are not sent between 8pm and 8am school time (`SCHOOL_TIMEZONE`, default `America/Los_Angeles`). They are logged as `queued` with the time they will go, and released at 8am. Before release, rules 1–4 are checked again, since a household may have been escalated or a family may have opted out overnight. `QUIET_HOURS=off` turns this off. Replies to a family's own message are never held.
+
+The crisis-resource message (section 11) is the one exception: it is not held for quiet hours and may go to a household with an open escalation. Rules 2–4 still apply to it.
 
 A blocked message is recorded in the outbox with status `blocked` and the reason. It is not retried.
 
@@ -279,6 +282,14 @@ What happens after a message is flagged, and how the counselor closes it.
 - A closed escalation cannot be changed. A new safety message for the same absence opens a new escalation; the closed one stays on record.
 - Every action records who did it and when. There is no sign-in yet, so the inbox records every action as "Counselor".
 - The seeded escalation's timestamp is days old, so it shows as overdue in the demo.
+- **Crisis-resource message.** After a safety flag, one fixed message with 988 and 911 is sent to the family:
+  - only when the case involves self-harm or imminent danger, as found by the keyword lists or Gemini
+  - never when abuse or neglect is disclosed in any message of the case, because the guardian's phone may not be safe. The inbox shows it as withheld, with the reason.
+  - at most once per case, in English or Spanish (detected language first, then the student's record)
+  - never model-written. The wording in `outreach.py` is a placeholder until the district approves it.
+  - not held for quiet hours, but an opt-out still stops it
+  - never for sample data
+- Gemini can add a kind of concern (for example, abuse the keywords missed) but never remove one.
 - **Internal case report.** On any escalation, open or closed, the counselor can generate a report, edit it, save it and download it as a .txt file.
   - It is filled in from the record only, with no model call: student and guardian details, the concern and who flagged it, the family's exact words, a timeline of every step, all messages with the family, and how long the household's messages were paused.
   - The counselor adds their own notes. Regenerating picks up new events and keeps the notes from the last saved version.
@@ -288,9 +299,39 @@ What happens after a message is flagged, and how the counselor closes it.
 
 ---
 
+## 12. On-call paging
+
+Who is told when a case opens, and how they acknowledge it.
+
+**Files**
+
+- `backend/app/services/oncall.py`: roster, school hours, who to page, page text
+- `backend/app/store.py`: `_page`, `check_paging`, `staff_command`
+- `backend/app/services/photon_channel.py`: `handle_inbound` (ACK replies), polling loop (escalation check)
+- `backend/app/main.py`: `GET /api/oncall`, `POST/PATCH/DELETE /api/oncall/staff`, `POST /api/oncall/staff/{id}/test`
+- `frontend/src/pages/OnCall.tsx`: the On-call page
+
+**Rules**
+
+- The roster lists staff with a name, a role (counselor, administrator or principal), a phone number and an on-call switch. Each phone number can appear once.
+- The roster is saved to `backend/.data/oncall.json`, which is git-ignored because it holds phone numbers. Unlike the rest of the data, it survives restarts and "Reset demo data".
+- When a safety case opens:
+  - during school hours (`SCHOOL_HOURS`, default 08:00–15:30; `SCHOOL_DAYS`, default Monday to Friday), everyone on call as counselor is paged
+  - otherwise, everyone on call as administrator
+  - if no one is on call for that role, the next role in line (administrator, then principal)
+  - if no one is on call at all, the case records a failed page and the inbox shows it in red
+- If the case is still not acknowledged 15 minutes after the first page, everyone on call as principal is paged, once. This check runs on every Photon poll and whenever the Escalations page loads.
+- Pages say only the case ID and the grade, and ask the person to reply ACK. No student name, no family words: staff phones may be personal devices.
+- Pages are not held for quiet hours. They go through the same channel as family messages, so a staff phone must have texted the agent line once, and an opt-out from that phone stops them. Links are never included.
+- Replying **ACK** acknowledges the oldest open case that person was paged about; **ACK E004** names a case. The acknowledgement is recorded under the staff member's name.
+- Any other text from a staff phone is handled as a family message. This lets one phone play both a parent and a counselor while testing.
+- Sample-data cases are never paged.
+- Each page appears on the escalation card, and in the message log as kind `page`.
+- **Send test page** on the On-call page checks that a phone can receive pages.
+
+---
+
 ## Not on this branch
 
-- Paging the on-call counselor and the after-hours path
 - A check-in button in the UI
-- Quiet hours (8am–8pm)
 - Voice notes, SMS fallback, language detection (see `CARLINNOTES.md`)

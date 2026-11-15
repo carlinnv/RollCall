@@ -151,3 +151,6 @@ button.link { background: none; border: none; padding: 0; color: var(--brand); f
 .report-text { width: 100%; min-height: 360px; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; padding: 10px; border: 1px solid var(--line); border-radius: 8px; box-sizing: border-box; }
 .report-text[readonly] { background: #f6f7f9; }
 .report-row td { padding-top: 0; }
+
+/* Pages sent about an escalation */
+.pages { margin: 8px 0 0; padding-left: 18px; }
