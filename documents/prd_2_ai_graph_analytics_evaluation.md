@@ -10,6 +10,8 @@
 
 **Insight to test and report honestly:** SocioPatterns contacts are mostly within a class. Measure what contact ego-nets add *beyond* class sections (e.g., cross-class contagion that section-level zones miss). A null result is still worth reporting.
 
+**Result:** they add nothing measurable. Held-out right-cause recall is 0.53 with school records only and 0.53 with sensor contact circles added (illness 0.13 vs 0.17, 4 vs 5 of 30 events). 83% (Lyon) and 94% (Marseille) of contact time is within a class, so class rosters capture most of it. A school without sensors can therefore run on records only; the evaluation keeps sensor contacts on by default.
+
 ---
 
 ## 2. Data Sources & Synthetic Simulation
@@ -21,6 +23,7 @@
   * **Optional extra held-out graphs:** Utah Elem1 (339) and Mid1 (591) from *Toth et al., J. R. Soc. Interface 2015*, available via HypergraphX. License not stated there; check the paper's supplementary material before use.
   * **Do not merge schools into one graph.** They have no edges between them and come from different sensors and time resolutions.
 * **Daily graph construction:** `w_ij` = seconds of contact per day; keep each node's top-k edges by weight (rank-based, robust across sensors) rather than an absolute threshold. Cycle the recorded days across the simulated calendar.
+* **No sensors in production:** a real school cannot collect proximity data. The sensor network plays "nature" in the simulator (illness spreads along real contacts); the detector uses sensor contact circles plus school records by default (`eval/ablation.json`); `DETECTOR_RECORDS_ONLY=1` limits it to records a school already keeps (class rosters, bus rosters, households, neighborhoods; `eval/ablation_records_only.json`). Held-out right-cause recall is 0.53 both ways, so a school without sensors loses nothing measurable.
 * **Graph handling rules:** re-key node IDs and drop original class names; contact edges are used only for illness-spread scoring; never attach safety or housing labels to real-graph nodes.
 * **Logistics Layers (Synthetic):** Assign synthetic bus routes, household IDs, and neighborhoods to every student node.
 * **Scaling benchmark (synthetic):** a 10k–50k-student stochastic block model with class structure matched to the real graphs, used only for a runtime-vs-N chart (Arlequin "responsible compute").
@@ -44,7 +47,7 @@
 
 ### Core Data Entities (ML & Graph Scope)
 * **Student:** `anonymous_id`, `grade`, `class_sections`, `bus_route`, `household_id`, `neighborhood`
-* **Message:** `message_id`, `absence_id`, `direction`, `language`, `text_or_transcript`, `received_at`
+* **Message:** `message_id`, `absence_id`, `direction`, `language`, `text`, `received_at`
 * **Reason:** `absence_id`, `barrier_label`, `confidence_score`, `evidence_quote`, `source_message_id`
 * **Cluster:** `id` (deterministic), `layers_involved`, `zone`, `member_ids`, `likely_cause`, `observed`, `expected`, `p_value`, `start_date`, `detected_on`, `weekly_revenue_at_risk`, `evidence_message_ids`
 * **Correction:** `absence_id`, `old_label`, `new_label`, `corrected_by`, `timestamp`
@@ -53,22 +56,23 @@
 
 ## 3. AI & Graph Pipeline Specifications
 
-### 3.1 Multilingual Voice & Reason Classification (F1 / F2)
-* **Speech-to-Text:** send voice notes to **Gemini's native audio input**, which transcribes and classifies in one call. Whisper is a fallback only. Low-confidence or unsupported languages (e.g., Mixteco, Triqui) go to a human interpreter.
-* **Barrier Classification:** **Gemini** maps the text/transcript to one label from the taxonomy in PRD 1 F1.
+### 3.1 Multilingual Reason Classification (F1 / F2)
+* **Text only:** Voice notes are out of scope this weekend: the Photon 2.0 beta iMessage channel carries text and images only. Revisit when the channel supports audio (a tested Gemini-audio + Whisper pipeline exists in git history, commit 52a9e7c).
+* **Language access:** low-confidence or unsupported languages (e.g., Mixteco, Triqui) go to a human interpreter.
+* **Barrier Classification:** **Gemini** maps the reply text to one label from the taxonomy in PRD 1 F1.
 * **Structured Output:** constrained JSON `{ "label": enum, "confidence": float, "evidence_quote": string }`. The label must match the enum; `evidence_quote` must be an exact substring of the input or it is dropped.
-* **Confidence:** self-reported confidence is poorly calibrated, so use agreement across 5 samples at T = 0.7. Choose the auto-accept threshold τ on a dev split so auto-accepted labels reach ≥ 0.95 precision; everything else goes to the clerk queue. Report the share sent to clerks, a risk–coverage curve, and ECE.
+* **Confidence:** self-reported confidence is poorly calibrated, so use agreement across 3 samples at T = 0.7 (5 on a paid key). Choose the auto-accept threshold τ on a dev split so auto-accepted labels reach ≥ 0.95 precision; everything else goes to the clerk queue. Report the share sent to clerks, a risk–coverage curve, and ECE.
 * **Latency:** 6 s timeout, keyword fallback, disk cache of responses (also used by demo mode).
 * **Learning From Corrections (F8):** staff-confirmed corrections are stored per school; the most similar past corrections are added to the prompt as examples. Corrections used as examples must come from a split that does not overlap the test set.
 
 ### 3.2 Root-Cause Cluster Detection (F3 — P0)
-* **Zones Z:** every group in each logistics layer (class section, route, neighborhood), plus k-nearest contact ego-nets for every student with k ∈ {5, 10, 20} ranked by contact weight. Households are collapsed to one unit (siblings out together is expected, not a cluster).
+* **Zones Z:** every group in each logistics layer (class section, route, neighborhood), plus k-nearest sensor-contact ego-nets for every student, k ∈ {5, 10, 20} (off with `DETECTOR_RECORDS_ONLY=1`; a real school has no sensor data). Households are collapsed to one unit (siblings out together is expected, not a cluster).
 * **Windows W:** the last w ∈ {1, 2, 3} school days, run prospectively each day with an `as_of` date (needed for replay and lead time).
 * **Statistic:** for each barrier *b*, a Kulldorff space-time permutation scan. With `c` = b-absences in Z×W, `C_Z`, `C_W` the zone and window totals, `C` the total over a baseline of ≥ 40 simulated days, and `μ = C_Z · C_W / C` (which conditions out school-wide waves):
   `LLR = c · ln(c/μ) + (C − c) · ln((C − c)/(C − μ))` when `c > μ`, else 0.
 * **Null & multiple testing:** shuffle the dates of b-absences across students 999 times and take the max LLR over all (Z, W) in each (layer, barrier) family, giving a family-wise p-value. Apply Benjamini–Hochberg at q = 0.10 across families. Vectorized NumPy; runs on a laptop.
 * **Cause Attribution:**
-  * `illness` over contact ego-nets on consecutive days $\rightarrow$ **contagion-like illness cluster** (contact edges are used only here).
+  * `illness` concentrated in a class section over consecutive days $\rightarrow$ **contagion-like illness cluster**.
   * `transportation` concentrated on one route $\rightarrow$ **route failure (school-caused)**.
 * **Output:** rank clusters by p-value then size; attach cited source messages and weekly revenue at risk.
 * **Revenue at Risk:** `weekly_revenue_at_risk = (absence days by cluster members this school week) × daily_rate`, default $65, editable. Matches `backend/app/services/revenue.py`.

@@ -78,7 +78,7 @@ When the `PHOTON_*` values are set in `.env`, the API polls Photon every 2 secon
 
 - On-call paging (`/oncall`): a roster of counselors, administrators and the principal, saved to `backend/.data/oncall.json` (kept across restarts and resets). A new safety case texts the on-call counselor during school hours (`SCHOOL_HOURS`, `SCHOOL_DAYS`) or the on-call administrator otherwise; if nobody acknowledges in 15 minutes the principal is paged. Staff reply `ACK` to acknowledge. Pages contain only the case ID and grade.
 
-Not built yet: SMS fallback, voice notes (Photon Beta iMessage carries text and images only), speech-to-text, language detection, persistence.
+Not built yet: SMS fallback, voice notes (out of scope: Photon Beta iMessage carries text and images only), persistence (everything except the on-call roster is in memory).
 
 ## Design rules (from the PRD)
 
