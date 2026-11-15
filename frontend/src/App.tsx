@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { NavLink, Route, Routes } from "react-router-dom";
+import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { api } from "./api";
+import { canOpen, useAuth } from "./auth";
+import type { Role } from "./auth";
+import Login from "./pages/Login";
 import Overview from "./pages/Overview";
 import CaseQueue from "./pages/CaseQueue";
 import CaseDetail from "./pages/CaseDetail";
@@ -95,11 +98,58 @@ function useEngine() {
 }
 
 export default function App() {
+  const { role } = useAuth();
+  const location = useLocation();
+  if (location.pathname === "/login") return <Login />;
+  if (!role) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  return <Shell role={role} />;
+}
+
+function NoAccess({ role }: { role: Role }) {
+  return (
+    <section className="page">
+      <header className="page-head">
+        <div>
+          <h1>Not available for your role</h1>
+          <p className="muted">
+            Signed in as {role.label}. This page is for other staff.
+          </p>
+        </div>
+      </header>
+      <div className="row">
+        <Link className="button" to={role.home}>
+          Go to my home page
+        </Link>
+        <Link className="button ghost" to="/login">
+          Switch user
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+function Shell({ role }: { role: Role }) {
   const engine = useEngine();
+  const { signOut, district } = useAuth();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
   const reset = async () => {
     await api.reset();
     window.location.reload();
   };
+  const switchUser = () => {
+    signOut();
+    navigate("/login");
+  };
+  // Only the pages this role can open, and only the group headings that still have pages under them.
+  const nav = NAV.filter((n, i) => {
+    if (!("group" in n)) return canOpen(role, n.to);
+    for (let j = i + 1; j < NAV.length && !("group" in NAV[j]); j++) {
+      const item = NAV[j];
+      if (!("group" in item) && canOpen(role, item.to)) return true;
+    }
+    return false;
+  });
   return (
     <div className="shell">
       <nav className="sidebar">
@@ -113,7 +163,7 @@ export default function App() {
             <span>Find the cause. Fix it together.</span>
           </div>
         </div>
-        {NAV.map((n) =>
+        {nav.map((n) =>
           "group" in n ? (
             <div key={n.group} className="nav-group">
               {n.group}
@@ -128,16 +178,27 @@ export default function App() {
             </NavLink>
           ),
         )}
-        <button className="ghost reset" onClick={reset} title="Reload the synthetic demo data">
-          Reset demo data
-        </button>
+        <div className="whoami">
+          <span>
+            <b>{role.person}</b>
+            <small>{role.label}</small>
+          </span>
+          <button className="link small" onClick={switchUser}>
+            Switch user
+          </button>
+        </div>
+        {role.id === "admin" && (
+          <button className="ghost" onClick={reset} title="Reload the synthetic demo data">
+            Reset demo data
+          </button>
+        )}
         <p className="fine">Synthetic data only. No real student records.</p>
       </nav>
       <main>
         <div className="topbar">
           <div className="crumb">
             <b>Lincoln Elementary</b>
-            <span>Demo district · week of Nov 9–13, 2026</span>
+            <span>{district?.name ?? "Demo district"} · week of Nov 9–13, 2026</span>
           </div>
           <div className="row">
             {engine && (
@@ -149,6 +210,9 @@ export default function App() {
             <span className="pill">Synthetic data</span>
           </div>
         </div>
+        {!canOpen(role, pathname) ? (
+          <NoAccess role={role} />
+        ) : (
         <Routes>
           <Route path="/" element={<Overview />} />
           <Route path="/queue" element={<CaseQueue />} />
@@ -163,6 +227,7 @@ export default function App() {
           <Route path="/assistant" element={<Assistant />} />
           <Route path="/evidence" element={<Evidence />} />
         </Routes>
+        )}
       </main>
       <DemoBar />
     </div>

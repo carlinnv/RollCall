@@ -1,8 +1,16 @@
 import { useEffect, useState } from "react";
+import { fmtDate } from "../api";
+import { Heatmap, HeatScale, Panel, Tip } from "./charts";
 
 type Row = { day: string; key: string; absences: number };
 
-/** Daily absences per bus route, read from the TigerData continuous aggregate. Hidden when the sidecar is off. */
+/** Most groups and days shown, so the heatmap stays readable. */
+const MAX_GROUPS = 6;
+const MAX_DAYS = 10;
+
+const LABEL: Record<string, string> = { bus_route: "bus route", classroom: "classroom", barrier: "reason" };
+
+/** Daily absences per group, read from the TigerData continuous aggregate. Hidden when the sidecar is off. */
 export default function Timeline({ group = "bus_route" }: { group?: string }) {
   const [rows, setRows] = useState<Row[] | null>(null);
 
@@ -15,44 +23,47 @@ export default function Timeline({ group = "bus_route" }: { group?: string }) {
 
   if (!rows || rows.length === 0) return null;
 
-  const days = [...new Set(rows.map((r) => r.day))].sort();
+  const days = [...new Set(rows.map((r) => r.day))].sort().slice(-MAX_DAYS);
+  const shown = rows.filter((r) => days.includes(r.day));
   const totals = new Map<string, number>();
-  rows.forEach((r) => totals.set(r.key, (totals.get(r.key) ?? 0) + r.absences));
-  const keys = [...totals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k]) => k);
-  const max = Math.max(...rows.map((r) => r.absences), 1);
-  const count = (k: string, d: string) => rows.find((r) => r.key === k && r.day === d)?.absences ?? 0;
+  shown.forEach((r) => totals.set(r.key, (totals.get(r.key) ?? 0) + r.absences));
+  const keys = [...totals.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], undefined, { numeric: true }))
+    .slice(0, MAX_GROUPS)
+    .map(([k]) => k);
+  const count = (k: string, d: string) => shown.find((r) => r.key === k && r.day === d)?.absences ?? 0;
+  const max = Math.max(3, ...shown.map((r) => r.absences));
+  const what = LABEL[group] ?? group.replace("_", " ");
+
+  const cells = keys.map((k) =>
+    days.map((d) => {
+      const n = count(k, d);
+      return {
+        value: n,
+        aria: `${k}, ${fmtDate(d)}: ${n} absent`,
+        tip: <Tip title={`${k} · ${fmtDate(d)}`} rows={[{ label: "Absences", value: n }]} />,
+      };
+    }),
+  );
 
   return (
-    <div className="card">
-      <div className="row between">
-        <h3>Daily absences by {group.replace("_", " ")}</h3>
-        <span className="muted small">TigerData hypertable · continuous aggregate</span>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th />
-            {days.map((d) => (
-              <th key={d}>{new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {keys.map((k) => (
-            <tr key={k}>
-              <td>{k}</td>
-              {days.map((d) => {
-                const n = count(k, d);
-                return (
-                  <td key={d} style={{ background: n ? `rgba(47, 91, 234, ${0.15 + 0.85 * (n / max)})` : undefined, color: n / max > 0.5 ? "#fff" : undefined, textAlign: "center" }}>
-                    {n || ""}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Panel
+      title={`Daily absences by ${what}`}
+      note={`The ${keys.length === totals.size ? "" : `${MAX_GROUPS} busiest `}${what}s over the last ${days.length} school day(s). From the TigerData continuous aggregate.`}
+    >
+      <Heatmap
+        ariaLabel={`Absences by ${what} and day`}
+        max={max}
+        totalLabel={days.length > 1 ? "Total" : "Day"}
+        rows={keys.map((k) => ({ key: k, label: k }))}
+        cols={days.map((d) => {
+          const [weekday, date] = fmtDate(d).split(",");
+          return { key: d, label: weekday, sub: date?.trim() };
+        })}
+        cells={cells}
+        rowTotals={cells.map((r) => r.reduce((a, c) => a + c.value, 0))}
+      />
+      <HeatScale max={max} />
+    </Panel>
   );
 }

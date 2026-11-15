@@ -21,6 +21,14 @@ docker compose up -d --build
 | `DEMO_STORY` | `live` for the demo (Route 7 cluster appears on the live reply) |
 | `CLUSTER_METHOD` | `rules` for clean demo clusters |
 | `PHOTON_*` | Leave empty on the server unless this is the only place Photon runs. Two running copies would both answer each iMessage |
+| `TIGER_DATABASE_URL` | Optional. TigerData Postgres connection string for the daily-absences timeline. Leave empty to turn it off |
+
+If you set `TIGER_DATABASE_URL`, create its tables once after the containers are up:
+
+```bash
+docker compose exec backend python scripts/tiger_setup.py
+docker compose restart backend
+```
 
 Ports 80 and 443 must be open. Update with `git pull && docker compose up -d --build`.
 State is in memory: a restart reloads the demo data.

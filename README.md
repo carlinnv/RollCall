@@ -34,6 +34,20 @@ npm run dev
 cd backend && .venv/bin/pytest -q
 ```
 
+### Optional: TigerData timeline
+
+Mirrors absences into a TigerData (Timescale) hypertable. A continuous aggregate feeds the "Daily absences by bus route" heatmap on the Root causes page. Without it, that panel is hidden and nothing else changes.
+
+1. Create a TigerData service and copy its Postgres connection string.
+2. Add `TIGER_DATABASE_URL=postgres://...` to `.env` (project root) or `backend/.env`.
+3. Create the hypertable and continuous aggregate once (schema in `backend/db/schema.sql`):
+   ```bash
+   cd backend && .venv/bin/python scripts/tiger_setup.py
+   ```
+4. Restart the API.
+
+If the database is unreachable, the app logs a warning and carries on. Tests never connect to it.
+
 ## What's built (PRD 1 features)
 
 | PRD | Surface | Route | Status |
