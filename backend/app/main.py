@@ -15,6 +15,10 @@ _ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(_ROOT / ".env")
 load_dotenv(_ROOT / "backend" / ".env")
 
+from .services import demo  # noqa: E402
+
+demo.apply_settings()  # DEMO_MODE fixes the story and quiet hours before the store loads the seed
+
 from .models import Barrier, FamilyReply, RevenueSettings  # noqa: E402
 from .services import classifier, oncall, outreach, photon_channel  # noqa: E402
 from .store import RECOVERY_SESSION, TODAY, iso, store, utc_now  # noqa: E402
@@ -26,6 +30,8 @@ EVAL_DIR = Path(__file__).resolve().parents[1] / "eval"
 async def lifespan(_: FastAPI):
     # Lifespan only runs under a real server (or `with TestClient`), so plain tests never start Photon.
     load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+    if demo.enabled():  # no Photon: outbound texts are logged on the replay channel
+        store.sender, store.staff_sender = demo.replay_sender, demo.replay_staff_sender
     photon_channel.start()
     yield
     photon_channel.stop()
@@ -103,7 +109,8 @@ class CloseIn(StaffIn):
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "today": TODAY, "classifier": classifier.status(), "quiet_hours": outreach.quiet_status()}
+    return {"ok": True, "today": TODAY, "classifier": classifier.status(), "quiet_hours": outreach.quiet_status(),
+            "demo_mode": demo.enabled()}
 
 
 @app.get("/api/taxonomy")
@@ -320,6 +327,26 @@ def message_latency(channel: Optional[str] = None):
 def channel():
     """Photon channel status and the recent message audit trail."""
     return photon_channel.status()
+
+
+# ---------- demo mode (PRD 3 section 2) ----------
+@app.get("/api/demo")
+def demo_state():
+    """The scripted demo: each step, whether it has run, and what it produced."""
+    return demo.state(store)
+
+
+@app.post("/api/demo/next")
+def demo_next():
+    """Play the next step of the script through the inbound path. Only in demo mode."""
+    if not demo.enabled():
+        raise HTTPException(409, "demo mode is off (set DEMO_MODE=1 and restart the server)")
+    try:
+        return demo.play_next(store)
+    except LookupError as error:
+        raise HTTPException(409, str(error))
+    except PermissionError as error:
+        raise HTTPException(403, str(error))
 
 
 # ---------- clusters ----------

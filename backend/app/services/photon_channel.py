@@ -29,7 +29,7 @@ from typing import Dict, Optional
 
 from ..models import AbsenceStatus, Barrier, FamilyReply, Student
 from ..store import elapsed_ms, iso, store, utc_now
-from . import classifier, outreach
+from . import classifier, demo, outreach
 
 log = logging.getLogger("uvicorn.error")
 
@@ -68,7 +68,8 @@ def _parse(received_at: str) -> datetime:
     return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
 
 
-def handle_inbound(sender: str, text: str, received_at: str, message_id: str = "") -> dict:
+def handle_inbound(sender: str, text: str, received_at: str, message_id: str = "",
+                   channel: str = "imessage") -> dict:
     """Process one inbound text and log it.
 
     Returns {"route", "absence_id", "student_id", "reply"}; reply None means send nothing.
@@ -78,7 +79,7 @@ def handle_inbound(sender: str, text: str, received_at: str, message_id: str = "
     result = {"route": "ignored", "absence_id": None, "student_id": None, "reply": None}
     staff_reply = store.staff_command(sender, text)
     if staff_reply is not None:  # "ACK" from a staff phone: never classified as a family reply
-        store.log_message(direction="inbound", channel="imessage", raw_text_or_transcript=text,
+        store.log_message(direction="inbound", channel=channel, raw_text_or_transcript=text,
                           timestamp=iso(_parse(received_at)), route="staff", phone=sender,
                           external_id=message_id or None)
         return {**result, "route": "staff", "reply": staff_reply}
@@ -118,7 +119,7 @@ def handle_inbound(sender: str, text: str, received_at: str, message_id: str = "
                     target.id,
                     FamilyReply(text=text, channel="text", language=student.preferred_language,
                                 received_at=received_at),
-                    channel="imessage", received=received, external_id=message_id or None, phone=sender,
+                    channel=channel, received=received, external_id=message_id or None, phone=sender,
                     reason=note)
                 logged = True
                 # Answer in the language the family wrote in when we have a template for it.
@@ -135,7 +136,7 @@ def handle_inbound(sender: str, text: str, received_at: str, message_id: str = "
         result["reply"] = None  # an opted-out number gets nothing back, not even a confirmation
 
     if not logged:  # texts that are not attached to an absence are still on the record
-        store.log_message(direction="inbound", channel="imessage", student_id=result["student_id"],
+        store.log_message(direction="inbound", channel=channel, student_id=result["student_id"],
                           raw_text_or_transcript=text, timestamp=iso(received), route=result["route"],
                           phone=sender, external_id=message_id or None, reason=note)
     return result
@@ -253,7 +254,8 @@ def _loop(cfg: dict) -> None:
 
 
 def enabled() -> bool:
-    return all(os.environ.get(name) for name in REQUIRED)
+    """Photon runs when its settings are present, never in demo mode (the replay channel stands in)."""
+    return all(os.environ.get(name) for name in REQUIRED) and not demo.enabled()
 
 
 def start() -> bool:
