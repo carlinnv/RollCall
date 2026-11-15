@@ -1,0 +1,70 @@
+{
+ "title": "Monday, 9am: Route 7",
+ "about": "Steps for DEMO_MODE, in the order of the 3-minute script (PRD 1 section 5). Each reply goes through the same inbound path as a real iMessage. After editing a text, record the model answers again: python -m app.services.demo record. Kinds: reply (a family text), correct (a clerk relabels a reply), view (only opens a page). \"show\" is the page the presenter is taken to after the step: a path, or \"case\" for the case the step changed.",
+ "steps": [
+  {
+   "id": "route7",
+   "kind": "reply",
+   "student_id": "S002",
+   "language": "es",
+   "text": "Otra vez no pasó el autobús de la ruta 7. Esperamos en la parada casi una hora.",
+   "say": "A Spanish reply arrives over iMessage. Within seconds it has a label and an evidence quote from the family's own words.",
+   "expect": {
+    "barrier": "transportation",
+    "cluster": "Route 7"
+   },
+   "show": "case"
+  },
+  {
+   "id": "route7-cluster",
+   "kind": "view",
+   "show": "/clusters",
+   "say": "Root causes: Route 7 is now a cluster. This reply made it the third household to say the bus never came, so the school can fix the route instead of sending truancy letters."
+  },
+  {
+   "id": "custody",
+   "kind": "reply",
+   "student_id": "S042",
+   "language": "en",
+   "text": "She went with me to court for the custody hearing, the judge wanted to talk to her.",
+   "say": "A reply the model labels as an appointment. At this school, court dates for family matters count as a family obligation.",
+   "expect": {
+    "barrier": "appointment or travel"
+   },
+   "show": "case"
+  },
+  {
+   "id": "fix",
+   "kind": "correct",
+   "step": "custody",
+   "label": "caregiving or family obligation",
+   "by": "clerk",
+   "say": "Maria corrects the label to caregiving or family obligation. (Or do it by hand on the case page.)",
+   "show": "case"
+  },
+  {
+   "id": "custody2",
+   "kind": "reply",
+   "student_id": "S039",
+   "language": "en",
+   "text": "He came to court with me for the custody hearing, the judge wanted to talk to him.",
+   "say": "The next similar reply comes back right, and the case page cites Maria's correction.",
+   "expect": {
+    "barrier": "caregiving or family obligation"
+   },
+   "show": "case"
+  },
+  {
+   "id": "safety",
+   "kind": "reply",
+   "student_id": "S038",
+   "language": "en",
+   "text": "Zoe says an older kid at the bus stop keeps pushing her and taking her lunch. She is scared to go to school.",
+   "say": "A safety disclosure. It goes straight to the counselor, the on-call counselor is paged, and no automatic reply is sent.",
+   "expect": {
+    "barrier": "safety or bullying"
+   },
+   "show": "/escalations"
+  }
+ ]
+}

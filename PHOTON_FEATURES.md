@@ -322,7 +322,7 @@ Who is told when a case opens, and how they acknowledge it.
   - if no one is on call at all, the case records a failed page and the inbox shows it in red
 - If the case is still not acknowledged 15 minutes after the first page, everyone on call as principal is paged, once. This check runs on every Photon poll and whenever the Escalations page loads.
 - Pages say only the case ID and the grade, and ask the person to reply ACK. No student name, no family words: staff phones may be personal devices.
-- Pages are not held for quiet hours. They go through the same channel as family messages, so a staff phone must have texted the agent line once, and an opt-out from that phone stops them. Links are never included.
+- Pages are not held for quiet hours. They go through the same channel as family messages, so a staff phone must have texted its assigned agent line once (on a shared line, each phone added in the Photon dashboard gets its own agent number; the app listens on all of the project's lines and replies on the one that phone used), and an opt-out from that phone stops them. Links are never included.
 - Replying **ACK** acknowledges the oldest open case that person was paged about; **ACK E004** names a case. The acknowledgement is recorded under the staff member's name.
 - Any other text from a staff phone is handled as a family message. This lets one phone play both a parent and a counselor while testing.
 - Sample-data cases are never paged.

@@ -1,0 +1,39 @@
+{
+ "model": "gemini-3.5-flash-lite",
+ "prompt_version": "v2",
+ "recorded_at": "2026-11-15T04:09:09+00:00",
+ "answers": {
+  "10969d877bd47f1073b332952717d950c65ed3f268c6c0254d58af1e19f21618": {
+   "label": "transportation",
+   "evidence_quote": "Otra vez no pasó el autobús de la ruta 7.",
+   "confidence": 1.0,
+   "language": "es",
+   "safety_concern": false,
+   "safety_type": "none"
+  },
+  "36d5bfa8b631ff9e4fd00ee23ab9884a5c16429c72ccf021554f1e46c23bafd7": {
+   "label": "caregiving or family obligation",
+   "evidence_quote": "came to court with me for the custody hearing",
+   "confidence": 0.95,
+   "language": "en",
+   "safety_concern": false,
+   "safety_type": "none"
+  },
+  "7792ea942095abcf165d7e007abd2fcba999964b21efc6a92a330589e5340bd9": {
+   "label": "safety or bullying",
+   "evidence_quote": "an older kid at the bus stop keeps pushing her and taking her lunch. She is scared to go to school",
+   "confidence": 1.0,
+   "language": "en",
+   "safety_concern": true,
+   "safety_type": "bullying"
+  },
+  "97e6a1c2da45be914861a4dd1264d3deff3f5f294b93c483da9006c8d47572f1": {
+   "label": "appointment or travel",
+   "evidence_quote": "went with me to court for the custody hearing",
+   "confidence": 0.9,
+   "language": "en",
+   "safety_concern": false,
+   "safety_type": "none"
+  }
+ }
+}
