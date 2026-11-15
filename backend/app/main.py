@@ -180,6 +180,18 @@ def correct_label(absence_id: str, body: CorrectIn):
 @app.get("/api/corrections")
 def list_corrections():
     return store.corrections.all()
+@app.get("/api/check-ins")
+def check_ins_pending():
+    """How many families the "Send check-ins" button would text right now."""
+    return {"to_send": len(store.check_in_targets())}
+
+
+@app.post("/api/check-ins")
+def send_check_ins():
+    """Send the first check-in to every family whose absence is awaiting a reply and was not checked in with yet."""
+    return store.send_check_ins()
+
+
 @app.post("/api/absences/{absence_id}/check-in")
 def check_in(absence_id: str):
     """Send the first check-in. Returns status sent | queued | blocked | failed, with the reason."""

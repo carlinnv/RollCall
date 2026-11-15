@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { api, fmtDate, money } from "../api";
+import { api, fmtDate } from "../api";
 import type { Barrier, Cluster, QueueRow, Student } from "../api";
 import { useLoad } from "../hooks";
 import { ErrorNote, Page } from "../components/ui";
@@ -410,11 +410,8 @@ export default function Overview() {
                     <span className={`tag barrier-${short(cause)}`}>{cause}</span>
                   </div>
                   {c.expected != null && <Bullet observed={observed} expected={c.expected} cls={`barrier-${short(cause)}`} compact />}
-                  <div className="row between small muted">
-                    <span>
-                      {c.student_ids.length} students{c.p_value != null ? ` · p = ${fmtP(c.p_value)}` : ""}
-                    </span>
-                    <span className="money">{money(c.dollars_at_risk_week)}</span>
+                  <div className="small muted">
+                    {c.student_ids.length} students{c.p_value != null ? ` · p = ${fmtP(c.p_value)}` : ""}
                   </div>
                 </Link>
               );

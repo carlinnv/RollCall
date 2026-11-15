@@ -1,58 +1,56 @@
 import { useNavigate } from "react-router-dom";
-import { api, fmtDate, money } from "../api";
+import { api, fmtDate } from "../api";
 import type { Cluster } from "../api";
 import { useChanged, useLoad } from "../hooks";
 import { BarrierTag, ErrorNote, Page } from "../components/ui";
 import Timeline from "../components/Timeline";
 import { Bullet } from "../components/charts";
 
+/** What the students in a group have in common, in plain words. */
 const LINK: Record<string, string> = {
-  bus_route: "Shared bus route",
-  classroom: "Shared classroom",
-  household: "Same household",
+  bus_route: "Same bus",
+  classroom: "Same class",
+  household: "Same family",
   grade: "Same grade",
   neighborhood: "Same neighborhood",
-  contact: "Close contacts",
+  contact: "Spend time together",
   school: "Whole school",
 };
 
 function methodLabel(m: string) {
-  if (m === "rule_based") return "Rule-based fallback";
+  if (m === "rule_based") return "Rule-based";
   const det = m.replace(/^scan:/, "").replace(/\+synthetic_baseline$/, "");
-  return `Scan (${det})${m.endsWith("+synthetic_baseline") ? " · synthetic baseline" : ""}`;
+  return `Statistical scan (${det})${m.endsWith("+synthetic_baseline") ? ", synthetic baseline" : ""}`;
 }
 
-function fmtP(p: number | null) {
-  if (p === null || p === undefined) return "n/a";
-  return p < 0.001 ? p.toExponential(1) : p.toFixed(3);
+const fmtP = (p: number) => (p < 0.001 ? p.toExponential(1) : p.toFixed(3));
+
+/** The p-value as a plain sentence. */
+function chance(p: number | null) {
+  if (p === null || p === undefined) return null;
+  if (p < 0.01) return "Very unlikely to be chance.";
+  if (p < 0.05) return "Unlikely to be chance.";
+  return "Could still be chance. Keep an eye on it.";
 }
 
-function Stats({ c }: { c: Cluster }) {
-  if (c.observed !== null && c.expected !== null) {
-    return (
-      <div className="cluster-stat">
-        <Bullet observed={c.observed} expected={c.expected} cls={`barrier-${(c.likely_cause ?? c.barrier).split(" ")[0]}`} unit="students absent" />
-        <p className="small muted" style={{ margin: 0 }}>
-          p-value <b className="pv">{fmtP(c.p_value)}</b> · the chance of a group this size seeing this many by luck
-        </p>
-      </div>
-    );
-  }
+function HowWeFound({ c }: { c: Cluster }) {
   return (
-    <div className="ablation">
-      <div>
-        <b>{c.observed ?? "–"}</b>
-        <span>observed</span>
-      </div>
-      <div>
-        <b>{c.expected !== null ? c.expected.toFixed(1) : "–"}</b>
-        <span>expected</span>
-      </div>
-      <div className="hl">
-        <b>{fmtP(c.p_value)}</b>
-        <span>p-value</span>
-      </div>
-    </div>
+    <details className="viz-table">
+      <summary>How we found this</summary>
+      <ul className="small muted" style={{ margin: "8px 0 0", paddingLeft: 18 }}>
+        <li>
+          Found by: {methodLabel(c.method)}
+          {c.layers_involved.length > 0 && <>, using {c.layers_involved.join(" + ")}</>}
+        </li>
+        {c.p_value !== null && <li>p-value: {fmtP(c.p_value)} (the chance a group this size has this many absences by luck)</li>}
+        <li>
+          Absences linked using: the reason alone {c.ablation.text_only}, the shared link alone {c.ablation.network_only}, both together{" "}
+          {c.ablation.combined}
+        </li>
+        {c.method_note && <li>{c.method_note}</li>}
+        <li>Family messages: {c.evidence_message_ids.join(", ") || "none"}</li>
+      </ul>
+    </details>
   );
 }
 
@@ -69,70 +67,62 @@ export default function Clusters() {
   };
 
   return (
-    <Page title="Root causes" subtitle="Absences grouped by shared reason and a shared school link (bus route, classroom, grade).">
+    <Page title="Root causes" subtitle="Students out for the same reason who share a bus, class or family. One fix can help them all.">
       <ErrorNote error={error} />
       <Timeline />
-      {meta.data && (
-        <p className="muted small">
-          Dataset: {meta.data.dataset} · method: {meta.data.method} · detector: {meta.data.detector}
-          {meta.data.notes.map((n) => (
-            <span key={n}>
-              <br />
-              {n}
-            </span>
-          ))}
-        </p>
+      {data?.length === 0 && (
+        <p className="muted">No shared causes yet. One shows up when several absent students share a reason and a bus, class or family.</p>
       )}
-      {data?.length === 0 && <p className="muted">No clusters detected yet.</p>}
       <div className="cards">
-        {data?.map((c) => (
-          <div key={c.id} className={changed.has(c.id) ? "card cluster flash" : "card cluster"}>
-            <div className="row between">
-              <span>
-                <BarrierTag barrier={c.likely_cause ?? c.barrier} />{" "}
-                {c.cause_provisional && <span className="tag" title="Fewer than 2 replies (or under half the members) back this cause">provisional cause</span>}
-              </span>
-              <span className="money">{money(c.weekly_revenue_at_risk ?? c.dollars_at_risk_week)} at risk this week</span>
+        {data?.map((c) => {
+          const cause = c.likely_cause ?? c.barrier;
+          return (
+            <div key={c.id} className={changed.has(c.id) ? "card cluster flash" : "card cluster"}>
+              <div className="row">
+                <BarrierTag barrier={cause} />
+                {c.cause_provisional && (
+                  <span className="tag" title="Only a few families have replied so far">
+                    not confirmed yet
+                  </span>
+                )}
+              </div>
+              <h3>
+                {LINK[c.link_type] ?? c.link_type}: {c.link_value}
+              </h3>
+              <p>{c.summary}</p>
+              {c.observed !== null && c.expected !== null && (
+                <div className="cluster-stat">
+                  <Bullet observed={c.observed} expected={c.expected} cls={`barrier-${cause.split(" ")[0]}`} unit="students absent" compact />
+                  {chance(c.p_value) && <p className="small muted" style={{ margin: 0 }}>{chance(c.p_value)}</p>}
+                </div>
+              )}
+              <p className="muted small">
+                {c.student_ids.length} student(s) · {fmtDate(c.first_date)} – {fmtDate(c.last_date)}
+              </p>
+              {c.dataset === "demo" ? (
+                <button onClick={() => draft(c.id)}>Make an action plan</button>
+              ) : (
+                <p className="muted small">Practice school: no families to message.</p>
+              )}
+              <HowWeFound c={c} />
             </div>
-            <h3>
-              {LINK[c.link_type] ?? c.link_type}: {c.link_value}
-            </h3>
-            <p>{c.summary}</p>
-            <p className="muted small">
-              {fmtDate(c.first_date)} – {fmtDate(c.last_date)} · {c.absence_ids.length} absence(s) · {c.student_ids.length} student(s)
-              {c.detected_on && <> · detected {fmtDate(c.detected_on)}</>}
-            </p>
-            <p className="small">
-              <span className="tag" title={c.method_note ?? ""}>
-                {methodLabel(c.method)}
-              </span>{" "}
-              <span className="muted">layers: {c.layers_involved.join(" + ") || "–"}</span>
-            </p>
-            <Stats c={c} />
-            <div className="ablation">
-              <div>
-                <b>{c.ablation.text_only}</b>
-                <span>reason text only</span>
-              </div>
-              <div>
-                <b>{c.ablation.network_only}</b>
-                <span>school link only</span>
-              </div>
-              <div className="hl">
-                <b>{c.ablation.combined}</b>
-                <span>both signals</span>
-              </div>
-            </div>
-            {c.method_note && <p className="muted small">{c.method_note}</p>}
-            <p className="muted small">Evidence messages: {c.evidence_message_ids.join(", ") || "none"}</p>
-            {c.dataset === "demo" ? (
-              <button onClick={() => draft(c.id)}>Draft cluster action plan</button>
-            ) : (
-              <p className="muted small">Simulated school: no families to message.</p>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
+      {meta.data && (
+        <details className="viz-table">
+          <summary>About this page</summary>
+          <p className="small muted" style={{ margin: "8px 0 0" }}>
+            Data: {meta.data.dataset} · method: {meta.data.method} · detector: {meta.data.detector}
+            {meta.data.notes.map((n) => (
+              <span key={n}>
+                <br />
+                {n}
+              </span>
+            ))}
+          </p>
+        </details>
+      )}
     </Page>
   );
 }

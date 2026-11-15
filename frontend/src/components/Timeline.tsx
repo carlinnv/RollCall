@@ -49,7 +49,7 @@ export default function Timeline({ group = "bus_route" }: { group?: string }) {
   return (
     <Panel
       title={`Daily absences by ${what}`}
-      note={`The ${keys.length === totals.size ? "" : `${MAX_GROUPS} busiest `}${what}s over the last ${days.length} school day(s). From the TigerData continuous aggregate.`}
+      note={`Absences each day${keys.length === totals.size ? "" : `, for the ${MAX_GROUPS} busiest ${what}s`}. Darker means more students out.`}
     >
       <Heatmap
         ariaLabel={`Absences by ${what} and day`}

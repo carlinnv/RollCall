@@ -302,6 +302,16 @@ export interface RevenueSummary {
   by_root_cause: { barrier: Barrier; absences: number; dollars: number }[];
 }
 
+export interface CheckInResult {
+  attempted: number;
+  sent: number;
+  queued: number;
+  blocked: number;
+  failed: number;
+  /** Why texts were not sent, with how many families each. */
+  reasons: Record<string, number>;
+}
+
 export interface DemoStep {
   id: string;
   kind: "reply" | "correct" | "view";
@@ -347,6 +357,8 @@ export const api = {
   queue: () => req<QueueRow[]>("/absences"),
   absence: (id: string) => req<AbsenceDetail>(`/absences/${id}`),
   students: () => req<Student[]>("/students"),
+  checkInsPending: () => req<{ to_send: number }>("/check-ins"),
+  sendCheckIns: () => post<CheckInResult>("/check-ins"),
   importCsv: (csv: string) => post<{ added: number; errors: string[]; students_added: number }>("/absences/import", { csv }),
   reply: (id: string, text: string, channel: "text", language: string) =>
     post<{ route: "escalated" | "cluster" | "case" | "unknown"; absence: Absence }>(`/absences/${id}/reply`, {

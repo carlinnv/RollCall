@@ -611,9 +611,11 @@ class Store:
         if outreach.quiet_until(school_now):
             return 0
         now = school_now.astimezone(timezone.utc)
+        # With quiet hours turned off (QUIET_HOURS=off), everything held is released now, not at its 8am time.
+        release_all = not outreach.quiet_hours_enabled()
         with self._log_lock:
             due = [m for m in self.messages if m.status == "queued" and m.deliver_after
-                   and datetime.fromisoformat(m.deliver_after.replace("Z", "+00:00")) <= now]
+                   and (release_all or datetime.fromisoformat(m.deliver_after.replace("Z", "+00:00")) <= now)]
         for m in due:
             student = self.students[m.student_id]
             phone = outreach.phone_for(student)
@@ -634,6 +636,37 @@ class Store:
                     "absence_id": absence_id}
         return self.send_to_family(absence.student_id, self.check_in_message(absence), "check_in",
                                    key=f"rollcall-checkin:{absence_id}", absence_id=absence_id)
+
+    def check_in_targets(self) -> List[Absence]:
+        """Absences awaiting a reply whose family has not been checked in with yet.
+
+        Skipped: a check-in that was sent, one held for quiet hours (it goes out at 8am by itself), and
+        a family a rule blocks right now (open safety case, opted out); they count again once it lifts.
+        Tried again: one the channel could not deliver yet (the family has not texted the line) or that failed.
+        """
+        with self._log_lock:
+            done = {m.absence_id for m in self.messages
+                    if m.kind == "check_in" and m.direction == "outbound"
+                    and (m.status == "sent" or (m.status == "queued" and m.deliver_after))}
+
+        def blocked(a: Absence) -> bool:
+            student = self.students[a.student_id]
+            return outreach.blocked_reason(outreach.phone_for(student), self.check_in_message(a),
+                                           self.household_suppressed(student.id)) is not None
+
+        return [a for a in self.absences.values()
+                if a.reply is None and a.status == AbsenceStatus.AWAITING_REPLY and a.id not in done and not blocked(a)]
+
+    def send_check_ins(self) -> dict:
+        """Send the first check-in to every family in `check_in_targets`. Returns counts by outcome."""
+        counts = {"sent": 0, "queued": 0, "blocked": 0, "failed": 0}
+        reasons: Dict[str, int] = {}
+        for a in self.check_in_targets():
+            out = self.send_check_in(a.id)
+            counts[out["status"]] = counts.get(out["status"], 0) + 1
+            if out["status"] != "sent" and out.get("reason"):
+                reasons[out["reason"]] = reasons.get(out["reason"], 0) + 1
+        return {"attempted": sum(counts.values()), **counts, "reasons": reasons}
 
     def queue(self) -> List[dict]:
         """Case queue. Ordered by risk of harm, never by dollar value."""
