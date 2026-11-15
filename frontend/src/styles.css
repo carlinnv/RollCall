@@ -75,7 +75,6 @@ th { font-size: 12px; color: var(--muted); font-weight: 600; background: #fafbfc
 tr:last-child td { border-bottom: none; }
 .row-alert { background: var(--alert-bg); }
 .quote { max-width: 380px; }
-.voice { font-size: 11px; background: #eef1ff; color: var(--brand); padding: 1px 6px; border-radius: 4px; }
 
 .tag, .status { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #eef0f4; white-space: nowrap; }
 .tag.alert { background: var(--alert); color: #fff; margin-left: 4px; }

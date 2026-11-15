@@ -115,8 +115,10 @@ def test_rate_change_recalculates():
 
 
 def test_completing_learning_plan_recovers_dollars():
+    # PRD 1 F5: only a supervised Attendance Recovery session counts (deliberate change: the call now
+    # names the supervisor; without one it recovers nothing, see test_integration.py).
     before = client.get("/api/revenue").json()["days_recovered_to_date"]
-    client.post("/api/learning-plans/S010/complete")
+    client.post("/api/learning-plans/S010/complete", json={"supervised_by": "Ms. Rivera"})
     assert client.get("/api/revenue").json()["days_recovered_to_date"] == before + 2
 
 
@@ -388,7 +390,8 @@ def test_language_the_keywords_miss_is_classified(gemini):
     gemini["answer"] = answer("illness", "con bị sốt", language="vi")
     route = client.post("/api/absences/A016/reply", json={"text": "Hôm qua con bị sốt cao.", "language": "en"}).json()
     assert route["absence"]["classification"]["barrier"] == "illness"
-    assert classifier.keyword_classify("Hôm qua con bị sốt cao.").barrier == "unknown"  # the old stub could not
+    # The keyword rules read Vietnamese now too; Gemini is still the path used when it is on.
+    assert route["absence"]["classification"]["source"] == "gemini"
 
 
 def test_evidence_that_is_not_in_the_message_is_replaced_by_the_message(gemini):

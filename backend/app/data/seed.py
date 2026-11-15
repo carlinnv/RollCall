@@ -53,7 +53,7 @@ _STUDENTS: List[Tuple] = [
 _D = date
 _ABSENCES: List[Tuple[str, date, str, Optional[Tuple[str, str, str]]]] = [
     # Route 7 did not run Tuesday and Wednesday
-    ("S001", _D(2026, 11, 10), "unexcused", ("voice", "es", "El autobús de la ruta 7 no pasó esta mañana y no tenemos carro para llevarlo.")),
+    ("S001", _D(2026, 11, 10), "unexcused", ("text", "es", "El autobús de la ruta 7 no pasó esta mañana y no tenemos carro para llevarlo.")),
     ("S001", _D(2026, 11, 11), "unexcused", ("text", "es", "Otra vez no llegó el autobús.")),
     ("S002", _D(2026, 11, 10), "unexcused", ("text", "es", "No pasó el bus, esperamos 40 minutos en la parada.")),
     ("S002", _D(2026, 11, 11), "unexcused", None),
@@ -66,7 +66,7 @@ _ABSENCES: List[Tuple[str, date, str, Optional[Tuple[str, str, str]]]] = [
     # Room 104 stomach bug
     ("S010", _D(2026, 11, 11), "excused", ("text", "en", "Ava has a fever and has been throwing up since last night.")),
     ("S010", _D(2026, 11, 12), "excused", ("text", "en", "Still sick, the doctor said stomach flu.")),
-    ("S011", _D(2026, 11, 11), "excused", ("voice", "es", "Lucas está enfermo, tiene fiebre y vómito.")),
+    ("S011", _D(2026, 11, 11), "excused", ("text", "es", "Lucas está enfermo, tiene fiebre y vómito.")),
     ("S012", _D(2026, 11, 12), "excused", ("text", "en", "Mia came down with the stomach bug going around her class.")),
     ("S013", _D(2026, 11, 12), "unverified", ("text", "es", "Elijah está con dolor de estómago, lo llevamos al médico.")),
     ("S014", _D(2026, 11, 12), "unverified", None),

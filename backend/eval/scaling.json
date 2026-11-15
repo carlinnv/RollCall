@@ -1,0 +1,243 @@
+{
+  "meta": {
+    "ns": [
+      250,
+      1000,
+      5000,
+      10000,
+      25000,
+      50000
+    ],
+    "n_days": 100,
+    "as_of": 60,
+    "perms": 199,
+    "perms_large": 199,
+    "large_n": 10000,
+    "extra_perms": 999,
+    "seed": 0,
+    "config": "CONFIG_A (all planted event types) with n_days and seed replaced",
+    "graph": "graphs.synthetic_sbm(N, seed): 25 students/section, 3 recorded days, top-10 edges, default (Lyon-fitted) weights",
+    "logistics": "assign_logistics with n_routes = max(8, N // 30), n_neighborhoods = max(6, N // 40)",
+    "detectors_in_day_scan": [
+      "content_only",
+      "graph_only",
+      "combined",
+      "two_stage"
+    ],
+    "machine": {
+      "platform": "Linux-7.2.13-200.fc44.x86_64-x86_64-with-glibc2.43",
+      "python": "3.11.17",
+      "cpu_count": 16,
+      "processor": ""
+    },
+    "single_process": true,
+    "total_s": 72.07,
+    "peak_rss_note": "peak resident memory of the worker for that N, including the extra-perms scan"
+  },
+  "rows": [
+    {
+      "n": 250,
+      "n_days": 100,
+      "as_of": 60,
+      "perms": 199,
+      "sbm_s": 0.012,
+      "logistics_s": 0.001,
+      "simulate_s": 0.074,
+      "n_absences": 1026,
+      "n_replies": 774,
+      "n_events": 9,
+      "pipeline_build_s": 0.017,
+      "n_zones": 780,
+      "n_contact_zones": 750,
+      "day_scan_all_cause_s": 0.023,
+      "day_scan_labels_s": 0.015,
+      "day_scan_s": 0.038,
+      "n_candidates": {
+        "graph_only": 2,
+        "two_stage": 2,
+        "content_only": 1,
+        "combined": 7
+      },
+      "n_alarms_bh": {
+        "graph_only": 2,
+        "two_stage": 2,
+        "content_only": 1,
+        "combined": 0
+      },
+      "day_scan_one_call_s": 0.03,
+      "extra_perms": 999,
+      "day_scan_extra_perms_s": 0.14,
+      "peak_rss_mb": 113.3
+    },
+    {
+      "n": 1000,
+      "n_days": 100,
+      "as_of": 60,
+      "perms": 199,
+      "sbm_s": 0.035,
+      "logistics_s": 0.003,
+      "simulate_s": 0.174,
+      "n_absences": 3405,
+      "n_replies": 2570,
+      "n_events": 9,
+      "pipeline_build_s": 0.106,
+      "n_zones": 3104,
+      "n_contact_zones": 3000,
+      "day_scan_all_cause_s": 0.095,
+      "day_scan_labels_s": 0.051,
+      "day_scan_s": 0.147,
+      "n_candidates": {
+        "graph_only": 23,
+        "two_stage": 23,
+        "content_only": 4,
+        "combined": 17
+      },
+      "n_alarms_bh": {
+        "graph_only": 4,
+        "two_stage": 4,
+        "content_only": 1,
+        "combined": 2
+      },
+      "day_scan_one_call_s": 0.129,
+      "extra_perms": 999,
+      "day_scan_extra_perms_s": 0.502,
+      "peak_rss_mb": 302.5
+    },
+    {
+      "n": 5000,
+      "n_days": 100,
+      "as_of": 60,
+      "perms": 199,
+      "sbm_s": 0.195,
+      "logistics_s": 0.015,
+      "simulate_s": 0.81,
+      "n_absences": 17605,
+      "n_replies": 13149,
+      "n_events": 9,
+      "pipeline_build_s": 0.463,
+      "n_zones": 15495,
+      "n_contact_zones": 15000,
+      "day_scan_all_cause_s": 0.178,
+      "day_scan_labels_s": 0.091,
+      "day_scan_s": 0.27,
+      "n_candidates": {
+        "graph_only": 2,
+        "two_stage": 2,
+        "content_only": 3,
+        "combined": 35
+      },
+      "n_alarms_bh": {
+        "graph_only": 2,
+        "two_stage": 2,
+        "content_only": 0,
+        "combined": 5
+      },
+      "day_scan_one_call_s": 0.261,
+      "extra_perms": 999,
+      "day_scan_extra_perms_s": 1.089,
+      "peak_rss_mb": 812.3
+    },
+    {
+      "n": 10000,
+      "n_days": 100,
+      "as_of": 60,
+      "perms": 199,
+      "sbm_s": 0.377,
+      "logistics_s": 0.03,
+      "simulate_s": 2.428,
+      "n_absences": 31382,
+      "n_replies": 23312,
+      "n_events": 9,
+      "pipeline_build_s": 0.959,
+      "n_zones": 30980,
+      "n_contact_zones": 29999,
+      "day_scan_all_cause_s": 0.289,
+      "day_scan_labels_s": 0.135,
+      "day_scan_s": 0.424,
+      "n_candidates": {
+        "graph_only": 0,
+        "two_stage": 0,
+        "content_only": 1,
+        "combined": 7
+      },
+      "n_alarms_bh": {
+        "graph_only": 0,
+        "two_stage": 0,
+        "content_only": 0,
+        "combined": 0
+      },
+      "day_scan_one_call_s": 0.399,
+      "extra_perms": 999,
+      "day_scan_extra_perms_s": 1.96,
+      "peak_rss_mb": 1368.6
+    },
+    {
+      "n": 25000,
+      "n_days": 100,
+      "as_of": 60,
+      "perms": 199,
+      "sbm_s": 0.949,
+      "logistics_s": 0.078,
+      "simulate_s": 4.47,
+      "n_absences": 76102,
+      "n_replies": 57313,
+      "n_events": 9,
+      "pipeline_build_s": 2.528,
+      "n_zones": 77448,
+      "n_contact_zones": 74999,
+      "day_scan_all_cause_s": 0.684,
+      "day_scan_labels_s": 0.318,
+      "day_scan_s": 1.002,
+      "n_candidates": {
+        "graph_only": 4,
+        "two_stage": 4,
+        "content_only": 0,
+        "combined": 9
+      },
+      "n_alarms_bh": {
+        "graph_only": 2,
+        "two_stage": 2,
+        "content_only": 0,
+        "combined": 2
+      },
+      "day_scan_one_call_s": 0.99,
+      "extra_perms": 999,
+      "day_scan_extra_perms_s": 4.812,
+      "peak_rss_mb": 3234.0
+    },
+    {
+      "n": 50000,
+      "n_days": 100,
+      "as_of": 60,
+      "perms": 199,
+      "sbm_s": 2.331,
+      "logistics_s": 0.196,
+      "simulate_s": 11.309,
+      "n_absences": 165813,
+      "n_replies": 124801,
+      "n_events": 9,
+      "pipeline_build_s": 8.281,
+      "n_zones": 154896,
+      "n_contact_zones": 149995,
+      "day_scan_all_cause_s": 2.057,
+      "day_scan_labels_s": 0.918,
+      "day_scan_s": 2.974,
+      "n_candidates": {
+        "graph_only": 0,
+        "two_stage": 0,
+        "content_only": 1,
+        "combined": 6
+      },
+      "n_alarms_bh": {
+        "graph_only": 0,
+        "two_stage": 0,
+        "content_only": 0,
+        "combined": 0
+      },
+      "day_scan_one_call_s": 2.861,
+      "extra_perms": 999,
+      "day_scan_extra_perms_s": 17.336,
+      "peak_rss_mb": 6574.5
+    }
+  ]
+}

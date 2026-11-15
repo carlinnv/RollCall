@@ -28,7 +28,7 @@ export interface Student {
 }
 
 export interface FamilyReply {
-  channel: "text" | "voice";
+  channel: "text";
   text: string;
   language: string;
   received_at: string;
@@ -39,6 +39,21 @@ export interface Classification {
   confidence: number;
   evidence: string;
   safety_critical: boolean;
+  // keyword | gemini | correction_override | staff_correction
+  source?: string;
+  correction_ref?: string | null;
+  correction_similarity?: number | null;
+}
+
+export interface Correction {
+  absence_id: string;
+  old_label: Barrier | null;
+  new_label: Barrier;
+  corrected_by: string;
+  timestamp: string;
+  school_id: string;
+  text: string;
+  language: string;
 }
 
 export interface Absence {
@@ -84,7 +99,7 @@ export interface AbsenceDetail extends Absence {
 export interface Cluster {
   id: string;
   barrier: Barrier;
-  link_type: "bus_route" | "classroom" | "household";
+  link_type: "bus_route" | "classroom" | "household" | "grade" | "neighborhood" | "contact" | "school";
   link_value: string;
   student_ids: string[];
   absence_ids: string[];
@@ -93,6 +108,31 @@ export interface Cluster {
   dollars_at_risk_week: number;
   ablation: { text_only: number; network_only: number; combined: number };
   summary: string;
+  // PRD 2 fields
+  layers_involved: string[];
+  zone: string | null;
+  member_ids: string[];
+  likely_cause: Barrier | null;
+  cause_provisional: boolean;
+  observed: number | null;
+  expected: number | null;
+  p_value: number | null;
+  start_date: string | null;
+  detected_on: string | null;
+  weekly_revenue_at_risk: number | null;
+  evidence_message_ids: string[];
+  method: string; // "rule_based" | "scan:<detector>" | "scan:<detector>+synthetic_baseline"
+  method_note: string | null;
+  dataset: "demo" | "sim";
+}
+
+export interface ClusterMeta {
+  dataset: "demo" | "sim";
+  method: string;
+  detector: string;
+  notes: string[];
+  counts: Record<string, number>;
+  version?: number;
 }
 
 export interface ActionPlan {
@@ -125,6 +165,13 @@ export interface OutboxMessage {
   channel: string | null;
 }
 
+export interface ClaimFlag {
+  where: string;
+  claim: string;
+  reason: string;
+  rule: string;
+}
+
 export interface LearningPlan {
   student_id: string;
   course: string;
@@ -134,6 +181,22 @@ export interface LearningPlan {
   steps: { order: number; topic: string; missed_date: string; activity: string; minutes: number; source: string }[];
   teacher_checkins: string[];
   total_minutes: number;
+  eligible: boolean;
+  eligibility_note: string;
+  reteach_suggestion: string;
+  take_home: string;
+  attendance_recovery_offer: string;
+  home_language: string;
+  verification_status: "verified" | "flagged" | "unverified";
+  verification_method: string;
+  flags: ClaimFlag[];
+}
+
+export interface RecoveryResult {
+  days_recovered: number;
+  counted: boolean;
+  reason: string;
+  total_days_recovered_for_student: number;
 }
 
 export interface Escalation {
@@ -183,7 +246,7 @@ export const api = {
   absence: (id: string) => req<AbsenceDetail>(`/absences/${id}`),
   students: () => req<Student[]>("/students"),
   importCsv: (csv: string) => post<{ added: number; errors: string[] }>("/absences/import", { csv }),
-  reply: (id: string, text: string, channel: "text" | "voice", language: string) =>
+  reply: (id: string, text: string, channel: "text", language: string) =>
     post<{ route: "escalated" | "cluster" | "case" | "unknown"; absence: Absence }>(`/absences/${id}/reply`, {
       text,
       channel,
@@ -191,6 +254,11 @@ export const api = {
     }),
   escalations: () => req<Escalation[]>("/escalations"),
   clusters: () => req<Cluster[]>("/clusters"),
+  clusterMeta: () => req<ClusterMeta>("/clusters/meta"),
+  correct: (id: string, label: Barrier, corrected_by: string) =>
+    post<{ absence: Absence; correction: Correction; escalated: boolean }>(`/absences/${id}/correct`, { label, corrected_by }),
+  corrections: () => req<Correction[]>("/corrections"),
+  taxonomy: () => req<Barrier[]>("/taxonomy"),
   plans: () => req<ActionPlan[]>("/plans"),
   draftPlan: (target: { cluster_id?: string; absence_id?: string }) => post<ActionPlan>("/plans/draft", target),
   updatePlan: (id: string, fields: Partial<ActionPlan>) =>
@@ -198,11 +266,27 @@ export const api = {
   approvePlan: (id: string, approved_by: string) => post<ActionPlan>(`/plans/${id}/approve`, { approved_by, send: true }),
   outbox: () => req<OutboxMessage[]>("/outbox"),
   learningPlan: (studentId: string) => req<LearningPlan>(`/learning-plans/${studentId}`),
-  completeLearningPlan: (studentId: string) => post<{ days_recovered: number }>(`/learning-plans/${studentId}/complete`),
+  completeLearningPlan: (studentId: string, supervised_by: string, session_type = "attendance_recovery") =>
+    post<RecoveryResult>(`/learning-plans/${studentId}/complete`, { supervised_by, session_type }),
   revenue: () => req<RevenueSummary>("/revenue"),
   saveSettings: (s: RevenueSettings) => req<RevenueSummary>("/revenue/settings", { method: "PUT", body: JSON.stringify(s) }),
   reset: () => post<{ ok: boolean }>("/reset"),
+  ablation: () => req<Record<string, any>>("/eval/ablation"),
+  ablationRecords: () => req<Record<string, any>>("/eval/ablation-records-only"),
+  retrieval: () => req<Record<string, any>>("/eval/retrieval"),
+  scaling: () => req<Record<string, any>>("/eval/scaling"),
+  ask: (question: string) => post<AssistantAnswer>("/assistant/ask", { question }),
 };
+
+export interface AssistantAnswer {
+  question: string;
+  answer: string;
+  citations: string[];
+  dropped_citations: { id: string; reason: string }[];
+  report: string | null;
+  error: string | null;
+  dataset: string;
+}
 
 export const money = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });

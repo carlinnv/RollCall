@@ -7,6 +7,8 @@ import Escalations from "./pages/Escalations";
 import Plans from "./pages/Plans";
 import LearningPlanPage from "./pages/LearningPlan";
 import Revenue from "./pages/Revenue";
+import Evidence from "./pages/Evidence";
+import Assistant from "./pages/Assistant";
 
 const NAV = [
   { to: "/", label: "Case queue", who: "Clerk" },
@@ -15,6 +17,8 @@ const NAV = [
   { to: "/escalations", label: "Escalations", who: "Counselor · Nurse" },
   { to: "/learning", label: "Learning plans", who: "Teacher · Student" },
   { to: "/revenue", label: "Revenue", who: "Business manager" },
+  { to: "/assistant", label: "Assistant", who: "Counselor" },
+  { to: "/evidence", label: "Evidence", who: "How we know it works" },
 ];
 
 export default function App() {
@@ -50,6 +54,8 @@ export default function App() {
           <Route path="/learning" element={<LearningPlanPage />} />
           <Route path="/learning/:studentId" element={<LearningPlanPage />} />
           <Route path="/revenue" element={<Revenue />} />
+          <Route path="/assistant" element={<Assistant />} />
+          <Route path="/evidence" element={<Evidence />} />
         </Routes>
       </main>
     </div>

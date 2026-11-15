@@ -1,0 +1,3177 @@
+{
+  "meta": {
+    "school": "lyon_primary_2009",
+    "tune_school": "marseille_hs_2013",
+    "runs": 10,
+    "perms": 199,
+    "baseline_days": 40,
+    "target_fa_per_20_days": 1.0,
+    "scan_params": {
+      "baseline_days": 40,
+      "windows": [
+        1,
+        2,
+        3
+      ],
+      "n_perm": 199,
+      "min_window_obs": 2,
+      "min_cases": 2,
+      "min_units": 2,
+      "spells": true,
+      "report_p": 0.25,
+      "seed": 0,
+      "ks": [
+        5,
+        10,
+        20
+      ]
+    },
+    "seeds": {
+      "tune_null": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "test": [
+        1000,
+        1001,
+        1002,
+        1003,
+        1004,
+        1005,
+        1006,
+        1007,
+        1008,
+        1009
+      ],
+      "test_null": [
+        1000,
+        1001,
+        1002,
+        1003,
+        1004,
+        1005,
+        1006,
+        1007,
+        1008,
+        1009
+      ],
+      "label_noise": [
+        1000,
+        1001,
+        1002,
+        1003,
+        1004,
+        1005,
+        1006,
+        1007,
+        1008,
+        1009
+      ]
+    },
+    "configs": {
+      "tune_null": {
+        "name": "A-null",
+        "n_days": 100,
+        "seed": 0,
+        "base_absence_rate": 0.03,
+        "chronic_shape": 0.6,
+        "n_contagion": 0,
+        "beta": 0.0002,
+        "infectious_days": 2,
+        "n_route_failures": 0,
+        "route_absent_frac": [
+          0.5,
+          0.8
+        ],
+        "n_caregiving_spikes": 0,
+        "n_flu_waves": 1,
+        "reply_rate": [
+          0.6,
+          0.9
+        ],
+        "reply_delay_max": 2,
+        "label_accuracy": 0.85,
+        "n_bus_illness": 0,
+        "n_road_closures": 0,
+        "n_section_caregiving": 0
+      },
+      "test": {
+        "name": "B",
+        "n_days": 100,
+        "seed": 1000,
+        "base_absence_rate": 0.045,
+        "chronic_shape": 0.4,
+        "n_contagion": 2,
+        "beta": 8e-05,
+        "infectious_days": 3,
+        "n_route_failures": 3,
+        "route_absent_frac": [
+          0.3,
+          0.5
+        ],
+        "n_caregiving_spikes": 2,
+        "n_flu_waves": 1,
+        "reply_rate": [
+          0.4,
+          0.6
+        ],
+        "reply_delay_max": 3,
+        "label_accuracy": 0.8,
+        "n_bus_illness": 1,
+        "n_road_closures": 1,
+        "n_section_caregiving": 1
+      },
+      "test_null": {
+        "name": "B-null",
+        "n_days": 100,
+        "seed": 1000,
+        "base_absence_rate": 0.045,
+        "chronic_shape": 0.4,
+        "n_contagion": 0,
+        "beta": 8e-05,
+        "infectious_days": 3,
+        "n_route_failures": 0,
+        "route_absent_frac": [
+          0.3,
+          0.5
+        ],
+        "n_caregiving_spikes": 0,
+        "n_flu_waves": 1,
+        "reply_rate": [
+          0.4,
+          0.6
+        ],
+        "reply_delay_max": 3,
+        "label_accuracy": 0.8,
+        "n_bus_illness": 0,
+        "n_road_closures": 0,
+        "n_section_caregiving": 0
+      }
+    },
+    "label_noise_model": "observed = true w.p. accuracy, else a uniformly drawn other barrier (evaluate.relabel; the default rows use the simulator's own noise model)",
+    "timings_s": {
+      "total": 10.23,
+      "simulate_and_scan_wall": 8.45,
+      "simulate_cpu": 8.44,
+      "scan_cpu": 54.75,
+      "evaluate": 1.78,
+      "n_runs_scanned": 90,
+      "scan_ms_per_run_day": 9.97,
+      "jobs": 8
+    },
+    "n_events_test": 100,
+    "detectors": [
+      "content_only",
+      "graph_only",
+      "combined",
+      "two_stage",
+      "ears_c1"
+    ],
+    "pre_registered_events": "These three event types were written down and fixed on 2026-11-14 BEFORE any detector was evaluated\non them, and they must not be tuned afterwards to favour any detector. Each one breaks the\n\"zone type = cause\" shortcut that graph-only attribution relies on (in the original simulator every\nevent type lined up with exactly one zone type, which is a simulator artifact, not reality):\n\n  bus_illness (truth: illness; zone type: route -> graph-only says \"transportation\")\n      An SEIR outbreak seeded in 1-2 riders of one bus route. Besides the school contact graph it\n      transmits along co-ridership: every pair of riders of that route who are both at school that\n      day shares BUS_CONTACT_S (~20 min) of contact, with the same p = 1 - exp(-beta * w). Same\n      outbreak-size conditioning as contagion (each re-seeding try draws a route afresh); school\n      contacts can still carry it off the bus. Realistic: respiratory and GI illness spreading on\n      school buses is well documented; the absences then cluster by route although the barrier is\n      illness, not a bus that failed to come.\n  road_closure (truth: transportation; zone type: neighborhood -> graph-only says \"caregiving\")\n      A road into one neighborhood served by (at least) two routes is closed for 1-2 days. Per\n      household and day: riders of those two routes living in the neighborhood are absent with\n      probability f ~ U(route_absent_frac); riders of those routes living elsewhere (bus delayed\n      or rerouted) with ROAD_THROUGH_FRAC * f; non-riders living in the neighborhood (car trips)\n      with ROAD_CAR_FRAC. Realistic: closures, floods, a broken bridge, or construction strand a\n      whole neighborhood, riders and drivers alike, and do not respect route boundaries.\n  section_caregiving (truth: caregiving or family obligation; zone type: section -> \"illness\")\n      A cultural or religious observance kept by families concentrated in one class section (for\n      example a language-program class): a share SECTION_OBS_FRAC of the section's households keep\n      their child home on the same 1-2 days (siblings in other sections join with\n      SECTION_SIBLING_JOIN), plus SECTION_OUTSIDE_RATE of other households in the school.\n      Realistic: families sharing a language or culture are often placed in the same section, and\n      observances fall on the same day(s) for all of them.\n\nOne revision, made before any detector had been run on these events: a simulator-only check of\nevent sizes showed bus_illness did not meet its own declared size conditioning (bus contacts on\nevery route exploded to ~40% of Marseille under config A's beta; a single fixed small route\nfizzled to one case in Lyon under config B). Bus contacts were restricted to the seeded route and\neach re-seeding try now draws the route afresh. Nothing has been changed since detectors were run.",
+    "matching": "graph_only/two_stage: TP = purity >= 0.5 and day in [onset, onset+D+2] (cause ignored); content_only/combined: TP also needs the right barrier (PRD). Actionable = some matched alarm carries the right cause by onset+D+2 (two_stage: as re-attributed from replies received by then). See app/ml/evaluate.py.",
+    "graph_only_two_stage_same_threshold": true
+  },
+  "thresholds": {
+    "content_only": {
+      "threshold": [
+        0.045,
+        1.2589188554292037
+      ],
+      "p_threshold": 0.045,
+      "llr_tiebreak": 1.2589188554292037,
+      "null_false_alarms": 30,
+      "null_days": 610,
+      "null_fa_per_20_days": 0.9836065573770492
+    },
+    "graph_only": {
+      "threshold": [
+        0.035,
+        3.540819667638181
+      ],
+      "p_threshold": 0.035,
+      "llr_tiebreak": 3.540819667638181,
+      "null_false_alarms": 30,
+      "null_days": 610,
+      "null_fa_per_20_days": 0.9836065573770492
+    },
+    "combined": {
+      "threshold": [
+        0.02,
+        3.0289306330664525
+      ],
+      "p_threshold": 0.02,
+      "llr_tiebreak": 3.0289306330664525,
+      "null_false_alarms": 30,
+      "null_days": 610,
+      "null_fa_per_20_days": 0.9836065573770492
+    },
+    "two_stage": {
+      "threshold": [
+        0.035,
+        3.540819667638181
+      ],
+      "p_threshold": 0.035,
+      "llr_tiebreak": 3.540819667638181,
+      "null_false_alarms": 30,
+      "null_days": 610,
+      "null_fa_per_20_days": 0.9836065573770492
+    }
+  },
+  "test": {
+    "content_only": {
+      "detection_recall": 0.21,
+      "actionable_recall": 0.19,
+      "attribution_accuracy_among_detected": 0.9047619047619048,
+      "attribution_accuracy_first_alarm": 0.9047619047619048,
+      "pct_actionable_by_onset_plus_2": 0.17,
+      "time_to_correct_attribution": {
+        "n": 19,
+        "median": 1.0,
+        "q1": 0.0,
+        "q3": 1.0
+      },
+      "detection_to_correct_attribution": {
+        "n": 19,
+        "median": 0.0,
+        "q1": 0.0,
+        "q3": 0.0
+      },
+      "provisional_at_first_alarm": 0.0,
+      "by_event_type": {
+        "bus_illness": {
+          "n": 10,
+          "detected": 1,
+          "actionable": 1,
+          "detection_recall": 0.1,
+          "actionable_recall": 0.1,
+          "attribution_accuracy_among_detected": 1.0,
+          "attribution_accuracy_first_alarm": 1.0,
+          "pct_actionable_by_onset_plus_2": 0.0,
+          "time_to_correct_attribution": {
+            "n": 1,
+            "median": 6.0,
+            "q1": 6.0,
+            "q3": 6.0
+          },
+          "detection_to_correct_attribution": {
+            "n": 1,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "provisional_at_first_alarm": 0.0,
+          "recall": 0.1
+        },
+        "caregiving_spike": {
+          "n": 20,
+          "detected": 0,
+          "actionable": 0,
+          "detection_recall": 0.0,
+          "actionable_recall": 0.0,
+          "attribution_accuracy_among_detected": null,
+          "attribution_accuracy_first_alarm": null,
+          "pct_actionable_by_onset_plus_2": 0.0,
+          "time_to_correct_attribution": {
+            "n": 0,
+            "median": null,
+            "q1": null,
+            "q3": null
+          },
+          "detection_to_correct_attribution": {
+            "n": 0,
+            "median": null,
+            "q1": null,
+            "q3": null
+          },
+          "provisional_at_first_alarm": null,
+          "recall": 0.0
+        },
+        "contagion": {
+          "n": 20,
+          "detected": 2,
+          "actionable": 2,
+          "detection_recall": 0.1,
+          "actionable_recall": 0.1,
+          "attribution_accuracy_among_detected": 1.0,
+          "attribution_accuracy_first_alarm": 1.0,
+          "pct_actionable_by_onset_plus_2": 0.05,
+          "time_to_correct_attribution": {
+            "n": 2,
+            "median": 2.0,
+            "q1": 1.5,
+            "q3": 2.5
+          },
+          "detection_to_correct_attribution": {
+            "n": 2,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "provisional_at_first_alarm": 0.0,
+          "recall": 0.1
+        },
+        "road_closure": {
+          "n": 10,
+          "detected": 6,
+          "actionable": 5,
+          "detection_recall": 0.6,
+          "actionable_recall": 0.5,
+          "attribution_accuracy_among_detected": 0.8333333333333334,
+          "attribution_accuracy_first_alarm": 0.8333333333333334,
+          "pct_actionable_by_onset_plus_2": 0.5,
+          "time_to_correct_attribution": {
+            "n": 5,
+            "median": 1.0,
+            "q1": 0.0,
+            "q3": 1.0
+          },
+          "detection_to_correct_attribution": {
+            "n": 5,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "provisional_at_first_alarm": 0.0,
+          "recall": 0.5
+        },
+        "route_failure": {
+          "n": 30,
+          "detected": 5,
+          "actionable": 5,
+          "detection_recall": 0.16666666666666666,
+          "actionable_recall": 0.16666666666666666,
+          "attribution_accuracy_among_detected": 1.0,
+          "attribution_accuracy_first_alarm": 1.0,
+          "pct_actionable_by_onset_plus_2": 0.16666666666666666,
+          "time_to_correct_attribution": {
+            "n": 5,
+            "median": 1.0,
+            "q1": 0.0,
+            "q3": 1.0
+          },
+          "detection_to_correct_attribution": {
+            "n": 5,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "provisional_at_first_alarm": 0.0,
+          "recall": 0.16666666666666666
+        },
+        "section_caregiving": {
+          "n": 10,
+          "detected": 7,
+          "actionable": 6,
+          "detection_recall": 0.7,
+          "actionable_recall": 0.6,
+          "attribution_accuracy_among_detected": 0.8571428571428571,
+          "attribution_accuracy_first_alarm": 0.8571428571428571,
+          "pct_actionable_by_onset_plus_2": 0.6,
+          "time_to_correct_attribution": {
+            "n": 6,
+            "median": 0.5,
+            "q1": 0.0,
+            "q3": 1.0
+          },
+          "detection_to_correct_attribution": {
+            "n": 6,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "provisional_at_first_alarm": 0.0,
+          "recall": 0.6
+        }
+      },
+      "n_events": 100,
+      "n_events_excluded": 0,
+      "recall": 0.19,
+      "recall_by_kind": {
+        "caregiving_spike": {
+          "n": 20,
+          "detected": 0,
+          "recall": 0.0
+        },
+        "road_closure": {
+          "n": 10,
+          "detected": 5,
+          "recall": 0.5
+        },
+        "route_failure": {
+          "n": 30,
+          "detected": 5,
+          "recall": 0.16666666666666666
+        },
+        "bus_illness": {
+          "n": 10,
+          "detected": 1,
+          "recall": 0.1
+        },
+        "contagion": {
+          "n": 20,
+          "detected": 2,
+          "recall": 0.1
+        },
+        "section_caregiving": {
+          "n": 10,
+          "detected": 6,
+          "recall": 0.6
+        }
+      },
+      "pct_detected_by_onset_plus_2": 0.17,
+      "delay": {
+        "n": 19,
+        "median": 1.0,
+        "q1": 0.0,
+        "q3": 1.0
+      },
+      "false_alarms": 50,
+      "days": 610,
+      "fa_per_20_days": 1.639344262295082,
+      "attribution_confusion": {
+        "illness": {
+          "illness": 3,
+          "transportation": 0,
+          "other": 0,
+          "missed": 27
+        },
+        "transportation": {
+          "illness": 0,
+          "transportation": 10,
+          "other": 1,
+          "missed": 29
+        },
+        "other": {
+          "illness": 0,
+          "transportation": 1,
+          "other": 6,
+          "missed": 23
+        }
+      },
+      "first_tp_layer": {
+        "school": 15,
+        "grade": 4
+      },
+      "contagion_tp_via": {
+        "contact_only": 0,
+        "section_only": 0,
+        "both": 0
+      },
+      "lead_vs_ears_c1": {
+        "lead": {
+          "n": 16,
+          "median": -0.5,
+          "q1": -1.0,
+          "q3": 0.0
+        },
+        "only_ours": 3,
+        "only_baseline": 46,
+        "neither": 35
+      },
+      "test_null_fa_per_20_days": 1.180327868852459
+    },
+    "graph_only": {
+      "detection_recall": 0.57,
+      "actionable_recall": 0.42,
+      "attribution_accuracy_among_detected": 0.7368421052631579,
+      "attribution_accuracy_first_alarm": 0.6140350877192983,
+      "pct_actionable_by_onset_plus_2": 0.41,
+      "time_to_correct_attribution": {
+        "n": 42,
+        "median": 0.0,
+        "q1": 0.0,
+        "q3": 0.0
+      },
+      "detection_to_correct_attribution": {
+        "n": 42,
+        "median": 0.0,
+        "q1": 0.0,
+        "q3": 0.0
+      },
+      "provisional_at_first_alarm": 0.0,
+      "by_event_type": {
+        "bus_illness": {
+          "n": 10,
+          "detected": 3,
+          "actionable": 1,
+          "detection_recall": 0.3,
+          "actionable_recall": 0.1,
+          "attribution_accuracy_among_detected": 0.3333333333333333,
+          "attribution_accuracy_first_alarm": 0.3333333333333333,
+          "pct_actionable_by_onset_plus_2": 0.0,
+          "time_to_correct_attribution": {
+            "n": 1,
+            "median": 4.0,
+            "q1": 4.0,
+            "q3": 4.0
+          },
+          "detection_to_correct_attribution": {
+            "n": 1,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "provisional_at_first_alarm": 0.0,
+          "recall": 0.3
+        },
+        "caregiving_spike": {
+          "n": 20,
+          "detected": 6,
+          "actionable": 4,
+          "detection_recall": 0.3,
+          "actionable_recall": 0.2,
+          "attribution_accuracy_among_detected": 0.6666666666666666,
+          "attribution_accuracy_first_alarm": 0.5,
+          "pct_actionable_by_onset_plus_2": 0.2,
+          "time_to_correct_attribution": {
+            "n": 4,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "detection_to_correct_attribution": {
+            "n": 4,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "provisional_at_first_alarm": 0.0,
+          "recall": 0.3
+        },
+        "contagion": {
+          "n": 20,
+          "detected": 4,
+          "actionable": 3,
+          "detection_recall": 0.2,
+          "actionable_recall": 0.15,
+          "attribution_accuracy_among_detected": 0.75,
+          "attribution_accuracy_first_alarm": 0.75,
+          "pct_actionable_by_onset_plus_2": 0.15,
+          "time_to_correct_attribution": {
+            "n": 3,
+            "median": 1.0,
+            "q1": 0.5,
+            "q3": 1.5
+          },
+          "detection_to_correct_attribution": {
+            "n": 3,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "provisional_at_first_alarm": 0.0,
+          "recall": 0.2
+        },
+        "road_closure": {
+          "n": 10,
+          "detected": 9,
+          "actionable": 6,
+          "detection_recall": 0.9,
+          "actionable_recall": 0.6,
+          "attribution_accuracy_among_detected": 0.6666666666666666,
+          "attribution_accuracy_first_alarm": 0.2222222222222222,
+          "pct_actionable_by_onset_plus_2": 0.6,
+          "time_to_correct_attribution": {
+            "n": 6,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "detection_to_correct_attribution": {
+            "n": 6,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "provisional_at_first_alarm": 0.0,
+          "recall": 0.9
+        },
+        "route_failure": {
+          "n": 30,
+          "detected": 26,
+          "actionable": 26,
+          "detection_recall": 0.8666666666666667,
+          "actionable_recall": 0.8666666666666667,
+          "attribution_accuracy_among_detected": 1.0,
+          "attribution_accuracy_first_alarm": 0.9230769230769231,
+          "pct_actionable_by_onset_plus_2": 0.8666666666666667,
+          "time_to_correct_attribution": {
+            "n": 26,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "detection_to_correct_attribution": {
+            "n": 26,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "provisional_at_first_alarm": 0.0,
+          "recall": 0.8666666666666667
+        },
+        "section_caregiving": {
+          "n": 10,
+          "detected": 9,
+          "actionable": 2,
+          "detection_recall": 0.9,
+          "actionable_recall": 0.2,
+          "attribution_accuracy_among_detected": 0.2222222222222222,
+          "attribution_accuracy_first_alarm": 0.2222222222222222,
+          "pct_actionable_by_onset_plus_2": 0.2,
+          "time_to_correct_attribution": {
+            "n": 2,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "detection_to_correct_attribution": {
+            "n": 2,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "provisional_at_first_alarm": 0.0,
+          "recall": 0.9
+        }
+      },
+      "n_events": 100,
+      "n_events_excluded": 0,
+      "recall": 0.57,
+      "recall_by_kind": {
+        "caregiving_spike": {
+          "n": 20,
+          "detected": 6,
+          "recall": 0.3
+        },
+        "road_closure": {
+          "n": 10,
+          "detected": 9,
+          "recall": 0.9
+        },
+        "route_failure": {
+          "n": 30,
+          "detected": 26,
+          "recall": 0.8666666666666667
+        },
+        "bus_illness": {
+          "n": 10,
+          "detected": 3,
+          "recall": 0.3
+        },
+        "contagion": {
+          "n": 20,
+          "detected": 4,
+          "recall": 0.2
+        },
+        "section_caregiving": {
+          "n": 10,
+          "detected": 9,
+          "recall": 0.9
+        }
+      },
+      "pct_detected_by_onset_plus_2": 0.53,
+      "delay": {
+        "n": 57,
+        "median": 0.0,
+        "q1": 0.0,
+        "q3": 0.0
+      },
+      "false_alarms": 14,
+      "days": 610,
+      "fa_per_20_days": 0.45901639344262296,
+      "attribution_confusion": {
+        "illness": {
+          "illness": 4,
+          "transportation": 3,
+          "other": 0,
+          "missed": 23
+        },
+        "transportation": {
+          "illness": 0,
+          "transportation": 26,
+          "other": 9,
+          "missed": 5
+        },
+        "other": {
+          "illness": 6,
+          "transportation": 4,
+          "other": 5,
+          "missed": 15
+        }
+      },
+      "first_tp_layer": {
+        "neighborhood": 14,
+        "route": 33,
+        "section": 10
+      },
+      "contagion_tp_via": {
+        "contact_only": 0,
+        "section_only": 3,
+        "both": 0
+      },
+      "lead_vs_ears_c1": {
+        "lead": {
+          "n": 33,
+          "median": 0.0,
+          "q1": 0.0,
+          "q3": 0.0
+        },
+        "only_ours": 24,
+        "only_baseline": 29,
+        "neither": 14
+      },
+      "test_null_fa_per_20_days": 0.7540983606557377
+    },
+    "combined": {
+      "detection_recall": 0.33,
+      "actionable_recall": 0.31,
+      "attribution_accuracy_among_detected": 0.9393939393939394,
+      "attribution_accuracy_first_alarm": 0.9393939393939394,
+      "pct_actionable_by_onset_plus_2": 0.28,
+      "time_to_correct_attribution": {
+        "n": 31,
+        "median": 1.0,
+        "q1": 0.0,
+        "q3": 1.0
+      },
+      "detection_to_correct_attribution": {
+        "n": 31,
+        "median": 0.0,
+        "q1": 0.0,
+        "q3": 0.0
+      },
+      "provisional_at_first_alarm": 0.0,
+      "by_event_type": {
+        "bus_illness": {
+          "n": 10,
+          "detected": 3,
+          "actionable": 2,
+          "detection_recall": 0.3,
+          "actionable_recall": 0.2,
+          "attribution_accuracy_among_detected": 0.6666666666666666,
+          "attribution_accuracy_first_alarm": 0.6666666666666666,
+          "pct_actionable_by_onset_plus_2": 0.0,
+          "time_to_correct_attribution": {
+            "n": 2,
+            "median": 8.5,
+            "q1": 7.25,
+            "q3": 9.75
+          },
+          "detection_to_correct_attribution": {
+            "n": 2,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "provisional_at_first_alarm": 0.0,
+          "recall": 0.2
+        },
+        "caregiving_spike": {
+          "n": 20,
+          "detected": 3,
+          "actionable": 3,
+          "detection_recall": 0.15,
+          "actionable_recall": 0.15,
+          "attribution_accuracy_among_detected": 1.0,
+          "attribution_accuracy_first_alarm": 1.0,
+          "pct_actionable_by_onset_plus_2": 0.15,
+          "time_to_correct_attribution": {
+            "n": 3,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.5
+          },
+          "detection_to_correct_attribution": {
+            "n": 3,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "provisional_at_first_alarm": 0.0,
+          "recall": 0.15
+        },
+        "contagion": {
+          "n": 20,
+          "detected": 4,
+          "actionable": 4,
+          "detection_recall": 0.2,
+          "actionable_recall": 0.2,
+          "attribution_accuracy_among_detected": 1.0,
+          "attribution_accuracy_first_alarm": 1.0,
+          "pct_actionable_by_onset_plus_2": 0.15,
+          "time_to_correct_attribution": {
+            "n": 4,
+            "median": 2.0,
+            "q1": 1.75,
+            "q3": 2.25
+          },
+          "detection_to_correct_attribution": {
+            "n": 4,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "provisional_at_first_alarm": 0.0,
+          "recall": 0.2
+        },
+        "road_closure": {
+          "n": 10,
+          "detected": 5,
+          "actionable": 5,
+          "detection_recall": 0.5,
+          "actionable_recall": 0.5,
+          "attribution_accuracy_among_detected": 1.0,
+          "attribution_accuracy_first_alarm": 1.0,
+          "pct_actionable_by_onset_plus_2": 0.5,
+          "time_to_correct_attribution": {
+            "n": 5,
+            "median": 1.0,
+            "q1": 1.0,
+            "q3": 1.0
+          },
+          "detection_to_correct_attribution": {
+            "n": 5,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "provisional_at_first_alarm": 0.0,
+          "recall": 0.5
+        },
+        "route_failure": {
+          "n": 30,
+          "detected": 15,
+          "actionable": 14,
+          "detection_recall": 0.5,
+          "actionable_recall": 0.4666666666666667,
+          "attribution_accuracy_among_detected": 0.9333333333333333,
+          "attribution_accuracy_first_alarm": 0.9333333333333333,
+          "pct_actionable_by_onset_plus_2": 0.4666666666666667,
+          "time_to_correct_attribution": {
+            "n": 14,
+            "median": 0.5,
+            "q1": 0.0,
+            "q3": 1.0
+          },
+          "detection_to_correct_attribution": {
+            "n": 14,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "provisional_at_first_alarm": 0.0,
+          "recall": 0.4666666666666667
+        },
+        "section_caregiving": {
+          "n": 10,
+          "detected": 3,
+          "actionable": 3,
+          "detection_recall": 0.3,
+          "actionable_recall": 0.3,
+          "attribution_accuracy_among_detected": 1.0,
+          "attribution_accuracy_first_alarm": 1.0,
+          "pct_actionable_by_onset_plus_2": 0.3,
+          "time_to_correct_attribution": {
+            "n": 3,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.5
+          },
+          "detection_to_correct_attribution": {
+            "n": 3,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "provisional_at_first_alarm": 0.0,
+          "recall": 0.3
+        }
+      },
+      "n_events": 100,
+      "n_events_excluded": 0,
+      "recall": 0.31,
+      "recall_by_kind": {
+        "caregiving_spike": {
+          "n": 20,
+          "detected": 3,
+          "recall": 0.15
+        },
+        "road_closure": {
+          "n": 10,
+          "detected": 5,
+          "recall": 0.5
+        },
+        "route_failure": {
+          "n": 30,
+          "detected": 14,
+          "recall": 0.4666666666666667
+        },
+        "bus_illness": {
+          "n": 10,
+          "detected": 2,
+          "recall": 0.2
+        },
+        "contagion": {
+          "n": 20,
+          "detected": 4,
+          "recall": 0.2
+        },
+        "section_caregiving": {
+          "n": 10,
+          "detected": 3,
+          "recall": 0.3
+        }
+      },
+      "pct_detected_by_onset_plus_2": 0.28,
+      "delay": {
+        "n": 31,
+        "median": 1.0,
+        "q1": 0.0,
+        "q3": 1.0
+      },
+      "false_alarms": 29,
+      "days": 610,
+      "fa_per_20_days": 0.9508196721311475,
+      "attribution_confusion": {
+        "illness": {
+          "illness": 6,
+          "transportation": 0,
+          "other": 1,
+          "missed": 23
+        },
+        "transportation": {
+          "illness": 0,
+          "transportation": 19,
+          "other": 1,
+          "missed": 20
+        },
+        "other": {
+          "illness": 0,
+          "transportation": 0,
+          "other": 6,
+          "missed": 24
+        }
+      },
+      "first_tp_layer": {
+        "route": 16,
+        "section": 6,
+        "neighborhood": 8,
+        "grade": 1
+      },
+      "contagion_tp_via": {
+        "contact_only": 0,
+        "section_only": 2,
+        "both": 0
+      },
+      "lead_vs_ears_c1": {
+        "lead": {
+          "n": 19,
+          "median": 0.0,
+          "q1": -1.0,
+          "q3": 0.0
+        },
+        "only_ours": 12,
+        "only_baseline": 43,
+        "neither": 26
+      },
+      "test_null_fa_per_20_days": 0.8524590163934426
+    },
+    "two_stage": {
+      "detection_recall": 0.57,
+      "actionable_recall": 0.53,
+      "attribution_accuracy_among_detected": 0.9298245614035088,
+      "attribution_accuracy_first_alarm": 0.8771929824561403,
+      "pct_actionable_by_onset_plus_2": 0.51,
+      "time_to_correct_attribution": {
+        "n": 53,
+        "median": 0.0,
+        "q1": 0.0,
+        "q3": 0.0
+      },
+      "detection_to_correct_attribution": {
+        "n": 53,
+        "median": 0.0,
+        "q1": 0.0,
+        "q3": 0.0
+      },
+      "provisional_at_first_alarm": 0.21052631578947367,
+      "by_event_type": {
+        "bus_illness": {
+          "n": 10,
+          "detected": 3,
+          "actionable": 1,
+          "detection_recall": 0.3,
+          "actionable_recall": 0.1,
+          "attribution_accuracy_among_detected": 0.3333333333333333,
+          "attribution_accuracy_first_alarm": 0.3333333333333333,
+          "pct_actionable_by_onset_plus_2": 0.0,
+          "time_to_correct_attribution": {
+            "n": 1,
+            "median": 4.0,
+            "q1": 4.0,
+            "q3": 4.0
+          },
+          "detection_to_correct_attribution": {
+            "n": 1,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "provisional_at_first_alarm": 0.6666666666666666,
+          "recall": 0.3
+        },
+        "caregiving_spike": {
+          "n": 20,
+          "detected": 6,
+          "actionable": 6,
+          "detection_recall": 0.3,
+          "actionable_recall": 0.3,
+          "attribution_accuracy_among_detected": 1.0,
+          "attribution_accuracy_first_alarm": 1.0,
+          "pct_actionable_by_onset_plus_2": 0.3,
+          "time_to_correct_attribution": {
+            "n": 6,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "detection_to_correct_attribution": {
+            "n": 6,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "provisional_at_first_alarm": 0.16666666666666666,
+          "recall": 0.3
+        },
+        "contagion": {
+          "n": 20,
+          "detected": 4,
+          "actionable": 3,
+          "detection_recall": 0.2,
+          "actionable_recall": 0.15,
+          "attribution_accuracy_among_detected": 0.75,
+          "attribution_accuracy_first_alarm": 0.75,
+          "pct_actionable_by_onset_plus_2": 0.15,
+          "time_to_correct_attribution": {
+            "n": 3,
+            "median": 1.0,
+            "q1": 0.5,
+            "q3": 1.5
+          },
+          "detection_to_correct_attribution": {
+            "n": 3,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "provisional_at_first_alarm": 0.5,
+          "recall": 0.2
+        },
+        "road_closure": {
+          "n": 10,
+          "detected": 9,
+          "actionable": 9,
+          "detection_recall": 0.9,
+          "actionable_recall": 0.9,
+          "attribution_accuracy_among_detected": 1.0,
+          "attribution_accuracy_first_alarm": 0.7777777777777778,
+          "pct_actionable_by_onset_plus_2": 0.8,
+          "time_to_correct_attribution": {
+            "n": 9,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "detection_to_correct_attribution": {
+            "n": 9,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "provisional_at_first_alarm": 0.2222222222222222,
+          "recall": 0.9
+        },
+        "route_failure": {
+          "n": 30,
+          "detected": 26,
+          "actionable": 26,
+          "detection_recall": 0.8666666666666667,
+          "actionable_recall": 0.8666666666666667,
+          "attribution_accuracy_among_detected": 1.0,
+          "attribution_accuracy_first_alarm": 0.9615384615384616,
+          "pct_actionable_by_onset_plus_2": 0.8666666666666667,
+          "time_to_correct_attribution": {
+            "n": 26,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "detection_to_correct_attribution": {
+            "n": 26,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 0.0
+          },
+          "provisional_at_first_alarm": 0.15384615384615385,
+          "recall": 0.8666666666666667
+        },
+        "section_caregiving": {
+          "n": 10,
+          "detected": 9,
+          "actionable": 8,
+          "detection_recall": 0.9,
+          "actionable_recall": 0.8,
+          "attribution_accuracy_among_detected": 0.8888888888888888,
+          "attribution_accuracy_first_alarm": 0.8888888888888888,
+          "pct_actionable_by_onset_plus_2": 0.8,
+          "time_to_correct_attribution": {
+            "n": 8,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 1.0
+          },
+          "detection_to_correct_attribution": {
+            "n": 8,
+            "median": 0.0,
+            "q1": 0.0,
+            "q3": 1.0
+          },
+          "provisional_at_first_alarm": 0.1111111111111111,
+          "recall": 0.9
+        }
+      },
+      "n_events": 100,
+      "n_events_excluded": 0,
+      "recall": 0.57,
+      "recall_by_kind": {
+        "caregiving_spike": {
+          "n": 20,
+          "detected": 6,
+          "recall": 0.3
+        },
+        "road_closure": {
+          "n": 10,
+          "detected": 9,
+          "recall": 0.9
+        },
+        "route_failure": {
+          "n": 30,
+          "detected": 26,
+          "recall": 0.8666666666666667
+        },
+        "bus_illness": {
+          "n": 10,
+          "detected": 3,
+          "recall": 0.3
+        },
+        "contagion": {
+          "n": 20,
+          "detected": 4,
+          "recall": 0.2
+        },
+        "section_caregiving": {
+          "n": 10,
+          "detected": 9,
+          "recall": 0.9
+        }
+      },
+      "pct_detected_by_onset_plus_2": 0.53,
+      "delay": {
+        "n": 57,
+        "median": 0.0,
+        "q1": 0.0,
+        "q3": 0.0
+      },
+      "false_alarms": 14,
+      "days": 610,
+      "fa_per_20_days": 0.45901639344262296,
+      "attribution_confusion": {
+        "illness": {
+          "illness": 4,
+          "transportation": 3,
+          "other": 0,
+          "missed": 23
+        },
+        "transportation": {
+          "illness": 1,
+          "transportation": 32,
+          "other": 2,
+          "missed": 5
+        },
+        "other": {
+          "illness": 1,
+          "transportation": 0,
+          "other": 14,
+          "missed": 15
+        }
+      },
+      "first_tp_layer": {
+        "neighborhood": 14,
+        "route": 33,
+        "section": 10
+      },
+      "contagion_tp_via": {
+        "contact_only": 0,
+        "section_only": 3,
+        "both": 0
+      },
+      "lead_vs_ears_c1": {
+        "lead": {
+          "n": 33,
+          "median": 0.0,
+          "q1": 0.0,
+          "q3": 0.0
+        },
+        "only_ours": 24,
+        "only_baseline": 29,
+        "neither": 14
+      },
+      "test_null_fa_per_20_days": 0.7540983606557377
+    }
+  },
+  "bh_q_0.10": {
+    "content_only": {
+      "recall": 0.16,
+      "fa_per_20_days": 1.2459016393442623,
+      "detection_recall": 0.17,
+      "actionable_recall": 0.16,
+      "pct_detected_by_onset_plus_2": 0.15,
+      "tune_null_fa_per_20_days": 0.6885245901639344,
+      "test_null_fa_per_20_days": 0.8852459016393442
+    },
+    "graph_only": {
+      "recall": 0.59,
+      "fa_per_20_days": 0.6229508196721312,
+      "detection_recall": 0.59,
+      "actionable_recall": 0.46,
+      "pct_detected_by_onset_plus_2": 0.55,
+      "tune_null_fa_per_20_days": 0.9836065573770492,
+      "test_null_fa_per_20_days": 0.7868852459016393
+    },
+    "combined": {
+      "recall": 0.25,
+      "fa_per_20_days": 0.6557377049180327,
+      "detection_recall": 0.25,
+      "actionable_recall": 0.25,
+      "pct_detected_by_onset_plus_2": 0.24,
+      "tune_null_fa_per_20_days": 0.39344262295081966,
+      "test_null_fa_per_20_days": 0.7868852459016393
+    },
+    "two_stage": {
+      "recall": 0.59,
+      "fa_per_20_days": 0.6229508196721312,
+      "detection_recall": 0.59,
+      "actionable_recall": 0.55,
+      "pct_detected_by_onset_plus_2": 0.55,
+      "tune_null_fa_per_20_days": 0.9836065573770492,
+      "test_null_fa_per_20_days": 0.7868852459016393
+    }
+  },
+  "ears_c1": {
+    "n_events": 100,
+    "recall": 0.62,
+    "pct_detected_by_onset_plus_2": 0.39,
+    "delay": {
+      "n": 62,
+      "median": 0.5,
+      "q1": 0.0,
+      "q3": 4.0
+    },
+    "false_alarm_days": 9,
+    "days": 610,
+    "fa_per_20_days": 0.29508196721311475,
+    "detection_recall": 0.62,
+    "actionable_recall": null,
+    "by_event_type": {
+      "caregiving_spike": {
+        "n": 20,
+        "detected": 9,
+        "detection_recall": 0.45
+      },
+      "road_closure": {
+        "n": 10,
+        "detected": 6,
+        "detection_recall": 0.6
+      },
+      "route_failure": {
+        "n": 30,
+        "detected": 13,
+        "detection_recall": 0.43333333333333335
+      },
+      "bus_illness": {
+        "n": 10,
+        "detected": 8,
+        "detection_recall": 0.8
+      },
+      "contagion": {
+        "n": 20,
+        "detected": 17,
+        "detection_recall": 0.85
+      },
+      "section_caregiving": {
+        "n": 10,
+        "detected": 9,
+        "detection_recall": 0.9
+      }
+    },
+    "test_null_fa_per_20_days": 1.5737704918032787
+  },
+  "curve": {
+    "content_only": [
+      {
+        "threshold": 1e-06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.02,
+        "detection_recall": 0.02,
+        "actionable_recall": 0.02
+      },
+      {
+        "threshold": 3.0954359274983764e-06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.02,
+        "detection_recall": 0.02,
+        "actionable_recall": 0.02
+      },
+      {
+        "threshold": 9.581723581247715e-06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.02,
+        "detection_recall": 0.02,
+        "actionable_recall": 0.02
+      },
+      {
+        "threshold": 2.9659611420752585e-05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.04,
+        "detection_recall": 0.04,
+        "actionable_recall": 0.04
+      },
+      {
+        "threshold": 9.180942678743853e-05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.04,
+        "detection_recall": 0.04,
+        "actionable_recall": 0.04
+      },
+      {
+        "threshold": 0.0002841901981608691,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.06,
+        "detection_recall": 0.06,
+        "actionable_recall": 0.06
+      },
+      {
+        "threshold": 0.0008796925496300363,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.09836065573770492,
+        "recall": 0.08,
+        "detection_recall": 0.08,
+        "actionable_recall": 0.08
+      },
+      {
+        "threshold": 0.0027230319232774605,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.06557377049180328,
+        "test_fa_per_20_days": 0.26229508196721313,
+        "recall": 0.08,
+        "detection_recall": 0.08,
+        "actionable_recall": 0.08
+      },
+      {
+        "threshold": 0.005,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.06557377049180328,
+        "test_fa_per_20_days": 0.32786885245901637,
+        "recall": 0.1,
+        "detection_recall": 0.1,
+        "actionable_recall": 0.1
+      },
+      {
+        "threshold": 0.008428970847038045,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.06557377049180328,
+        "test_fa_per_20_days": 0.32786885245901637,
+        "recall": 0.1,
+        "detection_recall": 0.1,
+        "actionable_recall": 0.1
+      },
+      {
+        "threshold": 0.01,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.32786885245901637,
+        "test_fa_per_20_days": 0.5573770491803278,
+        "recall": 0.12,
+        "detection_recall": 0.12,
+        "actionable_recall": 0.12
+      },
+      {
+        "threshold": 0.015,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.45901639344262296,
+        "test_fa_per_20_days": 0.7868852459016393,
+        "recall": 0.15,
+        "detection_recall": 0.15,
+        "actionable_recall": 0.15
+      },
+      {
+        "threshold": 0.02,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.4918032786885246,
+        "test_fa_per_20_days": 1.0163934426229508,
+        "recall": 0.15,
+        "detection_recall": 0.15,
+        "actionable_recall": 0.15
+      },
+      {
+        "threshold": 0.025,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.5901639344262295,
+        "test_fa_per_20_days": 1.1147540983606556,
+        "recall": 0.15,
+        "detection_recall": 0.16,
+        "actionable_recall": 0.15
+      },
+      {
+        "threshold": 0.02609133919175796,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.5901639344262295,
+        "test_fa_per_20_days": 1.1147540983606556,
+        "recall": 0.15,
+        "detection_recall": 0.16,
+        "actionable_recall": 0.15
+      },
+      {
+        "threshold": 0.03,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.7540983606557377,
+        "test_fa_per_20_days": 1.180327868852459,
+        "recall": 0.15,
+        "detection_recall": 0.16,
+        "actionable_recall": 0.15
+      },
+      {
+        "threshold": 0.035,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.819672131147541,
+        "test_fa_per_20_days": 1.3442622950819672,
+        "recall": 0.16,
+        "detection_recall": 0.17,
+        "actionable_recall": 0.16
+      },
+      {
+        "threshold": 0.04,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.8852459016393442,
+        "test_fa_per_20_days": 1.540983606557377,
+        "recall": 0.18,
+        "detection_recall": 0.19,
+        "actionable_recall": 0.18
+      },
+      {
+        "threshold": 0.045,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.0163934426229508,
+        "test_fa_per_20_days": 1.639344262295082,
+        "recall": 0.19,
+        "detection_recall": 0.21,
+        "actionable_recall": 0.19
+      },
+      {
+        "threshold": [
+          0.045,
+          1.2589188554292037
+        ],
+        "calibrated": true,
+        "tune_null_fa_per_20_days": 0.9836065573770492,
+        "test_fa_per_20_days": 1.639344262295082,
+        "recall": 0.19,
+        "detection_recall": 0.21,
+        "actionable_recall": 0.19
+      },
+      {
+        "threshold": 0.05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.1147540983606556,
+        "test_fa_per_20_days": 1.8032786885245902,
+        "recall": 0.2,
+        "detection_recall": 0.22,
+        "actionable_recall": 0.2
+      },
+      {
+        "threshold": 0.055,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.2459016393442623,
+        "test_fa_per_20_days": 1.9344262295081966,
+        "recall": 0.2,
+        "detection_recall": 0.22,
+        "actionable_recall": 0.2
+      },
+      {
+        "threshold": 0.06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.4098360655737705,
+        "test_fa_per_20_days": 2.098360655737705,
+        "recall": 0.2,
+        "detection_recall": 0.22,
+        "actionable_recall": 0.2
+      },
+      {
+        "threshold": 0.065,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.639344262295082,
+        "test_fa_per_20_days": 2.3278688524590163,
+        "recall": 0.2,
+        "detection_recall": 0.22,
+        "actionable_recall": 0.2
+      },
+      {
+        "threshold": 0.07,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.7704918032786885,
+        "test_fa_per_20_days": 2.557377049180328,
+        "recall": 0.2,
+        "detection_recall": 0.23,
+        "actionable_recall": 0.2
+      },
+      {
+        "threshold": 0.075,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.9344262295081966,
+        "test_fa_per_20_days": 2.6557377049180326,
+        "recall": 0.2,
+        "detection_recall": 0.24,
+        "actionable_recall": 0.2
+      },
+      {
+        "threshold": 0.08,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.0327868852459017,
+        "test_fa_per_20_days": 2.8852459016393444,
+        "recall": 0.2,
+        "detection_recall": 0.24,
+        "actionable_recall": 0.2
+      },
+      {
+        "threshold": 0.08076406873071404,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.0327868852459017,
+        "test_fa_per_20_days": 2.8852459016393444,
+        "recall": 0.2,
+        "detection_recall": 0.24,
+        "actionable_recall": 0.2
+      },
+      {
+        "threshold": 0.085,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.1311475409836067,
+        "test_fa_per_20_days": 3.1147540983606556,
+        "recall": 0.2,
+        "detection_recall": 0.24,
+        "actionable_recall": 0.2
+      },
+      {
+        "threshold": 0.09,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.360655737704918,
+        "test_fa_per_20_days": 3.2459016393442623,
+        "recall": 0.21,
+        "detection_recall": 0.25,
+        "actionable_recall": 0.21
+      },
+      {
+        "threshold": 0.095,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.4918032786885247,
+        "test_fa_per_20_days": 3.442622950819672,
+        "recall": 0.22,
+        "detection_recall": 0.26,
+        "actionable_recall": 0.22
+      },
+      {
+        "threshold": 0.1,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.5901639344262297,
+        "test_fa_per_20_days": 3.5737704918032787,
+        "recall": 0.22,
+        "detection_recall": 0.27,
+        "actionable_recall": 0.22
+      },
+      {
+        "threshold": 0.25,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 5.278688524590164,
+        "test_fa_per_20_days": 8.459016393442623,
+        "recall": 0.35,
+        "detection_recall": 0.39,
+        "actionable_recall": 0.35
+      }
+    ],
+    "graph_only": [
+      {
+        "threshold": 1e-06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.12,
+        "detection_recall": 0.12,
+        "actionable_recall": 0.07
+      },
+      {
+        "threshold": 3.0954359274983764e-06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.15,
+        "detection_recall": 0.15,
+        "actionable_recall": 0.11
+      },
+      {
+        "threshold": 9.581723581247715e-06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.17,
+        "detection_recall": 0.17,
+        "actionable_recall": 0.12
+      },
+      {
+        "threshold": 2.9659611420752585e-05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.19,
+        "detection_recall": 0.19,
+        "actionable_recall": 0.13
+      },
+      {
+        "threshold": 9.180942678743853e-05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.23,
+        "detection_recall": 0.23,
+        "actionable_recall": 0.17
+      },
+      {
+        "threshold": 0.0002841901981608691,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.26,
+        "detection_recall": 0.26,
+        "actionable_recall": 0.19
+      },
+      {
+        "threshold": 0.0008796925496300363,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.28,
+        "detection_recall": 0.28,
+        "actionable_recall": 0.22
+      },
+      {
+        "threshold": 0.0027230319232774605,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.03278688524590164,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.33,
+        "detection_recall": 0.33,
+        "actionable_recall": 0.25
+      },
+      {
+        "threshold": 0.005,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.06557377049180328,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.36,
+        "detection_recall": 0.36,
+        "actionable_recall": 0.27
+      },
+      {
+        "threshold": 0.008428970847038045,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.06557377049180328,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.36,
+        "detection_recall": 0.36,
+        "actionable_recall": 0.27
+      },
+      {
+        "threshold": 0.01,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.22950819672131148,
+        "test_fa_per_20_days": 0.09836065573770492,
+        "recall": 0.39,
+        "detection_recall": 0.39,
+        "actionable_recall": 0.32
+      },
+      {
+        "threshold": 0.015,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.36065573770491804,
+        "test_fa_per_20_days": 0.19672131147540983,
+        "recall": 0.45,
+        "detection_recall": 0.45,
+        "actionable_recall": 0.35
+      },
+      {
+        "threshold": 0.02,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.5901639344262295,
+        "test_fa_per_20_days": 0.36065573770491804,
+        "recall": 0.52,
+        "detection_recall": 0.52,
+        "actionable_recall": 0.39
+      },
+      {
+        "threshold": 0.025,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.7540983606557377,
+        "test_fa_per_20_days": 0.45901639344262296,
+        "recall": 0.54,
+        "detection_recall": 0.54,
+        "actionable_recall": 0.4
+      },
+      {
+        "threshold": 0.02609133919175796,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.7540983606557377,
+        "test_fa_per_20_days": 0.45901639344262296,
+        "recall": 0.54,
+        "detection_recall": 0.54,
+        "actionable_recall": 0.4
+      },
+      {
+        "threshold": 0.03,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.9508196721311475,
+        "test_fa_per_20_days": 0.45901639344262296,
+        "recall": 0.56,
+        "detection_recall": 0.56,
+        "actionable_recall": 0.42
+      },
+      {
+        "threshold": 0.035,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.180327868852459,
+        "test_fa_per_20_days": 0.5245901639344263,
+        "recall": 0.59,
+        "detection_recall": 0.59,
+        "actionable_recall": 0.43
+      },
+      {
+        "threshold": [
+          0.035,
+          3.540819667638181
+        ],
+        "calibrated": true,
+        "tune_null_fa_per_20_days": 0.9836065573770492,
+        "test_fa_per_20_days": 0.45901639344262296,
+        "recall": 0.57,
+        "detection_recall": 0.57,
+        "actionable_recall": 0.42
+      },
+      {
+        "threshold": 0.04,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.3114754098360655,
+        "test_fa_per_20_days": 0.7540983606557377,
+        "recall": 0.63,
+        "detection_recall": 0.63,
+        "actionable_recall": 0.47
+      },
+      {
+        "threshold": 0.045,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.5081967213114753,
+        "test_fa_per_20_days": 0.819672131147541,
+        "recall": 0.63,
+        "detection_recall": 0.63,
+        "actionable_recall": 0.48
+      },
+      {
+        "threshold": 0.05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.5737704918032787,
+        "test_fa_per_20_days": 0.8524590163934426,
+        "recall": 0.64,
+        "detection_recall": 0.64,
+        "actionable_recall": 0.49
+      },
+      {
+        "threshold": 0.055,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.8360655737704918,
+        "test_fa_per_20_days": 0.9508196721311475,
+        "recall": 0.64,
+        "detection_recall": 0.64,
+        "actionable_recall": 0.49
+      },
+      {
+        "threshold": 0.06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.9672131147540983,
+        "test_fa_per_20_days": 0.9508196721311475,
+        "recall": 0.65,
+        "detection_recall": 0.65,
+        "actionable_recall": 0.51
+      },
+      {
+        "threshold": 0.065,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.0,
+        "test_fa_per_20_days": 1.1147540983606556,
+        "recall": 0.68,
+        "detection_recall": 0.68,
+        "actionable_recall": 0.54
+      },
+      {
+        "threshold": 0.07,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.1639344262295084,
+        "test_fa_per_20_days": 1.1475409836065573,
+        "recall": 0.68,
+        "detection_recall": 0.68,
+        "actionable_recall": 0.54
+      },
+      {
+        "threshold": 0.075,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.2950819672131146,
+        "test_fa_per_20_days": 1.278688524590164,
+        "recall": 0.69,
+        "detection_recall": 0.69,
+        "actionable_recall": 0.55
+      },
+      {
+        "threshold": 0.08,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.4262295081967213,
+        "test_fa_per_20_days": 1.3442622950819672,
+        "recall": 0.69,
+        "detection_recall": 0.69,
+        "actionable_recall": 0.55
+      },
+      {
+        "threshold": 0.08076406873071404,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.4262295081967213,
+        "test_fa_per_20_days": 1.3442622950819672,
+        "recall": 0.69,
+        "detection_recall": 0.69,
+        "actionable_recall": 0.55
+      },
+      {
+        "threshold": 0.085,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.557377049180328,
+        "test_fa_per_20_days": 1.4426229508196722,
+        "recall": 0.7,
+        "detection_recall": 0.7,
+        "actionable_recall": 0.56
+      },
+      {
+        "threshold": 0.09,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.6557377049180326,
+        "test_fa_per_20_days": 1.540983606557377,
+        "recall": 0.71,
+        "detection_recall": 0.71,
+        "actionable_recall": 0.58
+      },
+      {
+        "threshold": 0.095,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.7868852459016393,
+        "test_fa_per_20_days": 1.7049180327868851,
+        "recall": 0.71,
+        "detection_recall": 0.71,
+        "actionable_recall": 0.58
+      },
+      {
+        "threshold": 0.1,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.918032786885246,
+        "test_fa_per_20_days": 1.8688524590163935,
+        "recall": 0.72,
+        "detection_recall": 0.72,
+        "actionable_recall": 0.59
+      },
+      {
+        "threshold": 0.25,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 7.344262295081967,
+        "test_fa_per_20_days": 5.180327868852459,
+        "recall": 0.8,
+        "detection_recall": 0.8,
+        "actionable_recall": 0.67
+      }
+    ],
+    "combined": [
+      {
+        "threshold": 1e-06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.01,
+        "detection_recall": 0.01,
+        "actionable_recall": 0.01
+      },
+      {
+        "threshold": 3.0954359274983764e-06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.02,
+        "detection_recall": 0.02,
+        "actionable_recall": 0.02
+      },
+      {
+        "threshold": 9.581723581247715e-06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.03,
+        "detection_recall": 0.03,
+        "actionable_recall": 0.03
+      },
+      {
+        "threshold": 2.9659611420752585e-05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.05,
+        "detection_recall": 0.05,
+        "actionable_recall": 0.05
+      },
+      {
+        "threshold": 9.180942678743853e-05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.06,
+        "detection_recall": 0.06,
+        "actionable_recall": 0.06
+      },
+      {
+        "threshold": 0.0002841901981608691,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.03278688524590164,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.08,
+        "detection_recall": 0.08,
+        "actionable_recall": 0.08
+      },
+      {
+        "threshold": 0.0008796925496300363,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.13114754098360656,
+        "test_fa_per_20_days": 0.13114754098360656,
+        "recall": 0.1,
+        "detection_recall": 0.1,
+        "actionable_recall": 0.1
+      },
+      {
+        "threshold": 0.0027230319232774605,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.16393442622950818,
+        "test_fa_per_20_days": 0.16393442622950818,
+        "recall": 0.12,
+        "detection_recall": 0.12,
+        "actionable_recall": 0.12
+      },
+      {
+        "threshold": 0.005,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.26229508196721313,
+        "test_fa_per_20_days": 0.29508196721311475,
+        "recall": 0.18,
+        "detection_recall": 0.18,
+        "actionable_recall": 0.18
+      },
+      {
+        "threshold": 0.008428970847038045,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.26229508196721313,
+        "test_fa_per_20_days": 0.29508196721311475,
+        "recall": 0.18,
+        "detection_recall": 0.18,
+        "actionable_recall": 0.18
+      },
+      {
+        "threshold": 0.01,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.7213114754098361,
+        "test_fa_per_20_days": 0.4918032786885246,
+        "recall": 0.29,
+        "detection_recall": 0.3,
+        "actionable_recall": 0.29
+      },
+      {
+        "threshold": 0.015,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.9508196721311475,
+        "test_fa_per_20_days": 0.8852459016393442,
+        "recall": 0.31,
+        "detection_recall": 0.33,
+        "actionable_recall": 0.31
+      },
+      {
+        "threshold": 0.02,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.4098360655737705,
+        "test_fa_per_20_days": 1.2459016393442623,
+        "recall": 0.37,
+        "detection_recall": 0.39,
+        "actionable_recall": 0.37
+      },
+      {
+        "threshold": [
+          0.02,
+          3.0289306330664525
+        ],
+        "calibrated": true,
+        "tune_null_fa_per_20_days": 0.9836065573770492,
+        "test_fa_per_20_days": 0.9508196721311475,
+        "recall": 0.31,
+        "detection_recall": 0.33,
+        "actionable_recall": 0.31
+      },
+      {
+        "threshold": 0.025,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.8032786885245902,
+        "test_fa_per_20_days": 1.4426229508196722,
+        "recall": 0.42,
+        "detection_recall": 0.44,
+        "actionable_recall": 0.42
+      },
+      {
+        "threshold": 0.02609133919175796,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.8032786885245902,
+        "test_fa_per_20_days": 1.4426229508196722,
+        "recall": 0.42,
+        "detection_recall": 0.44,
+        "actionable_recall": 0.42
+      },
+      {
+        "threshold": 0.03,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.19672131147541,
+        "test_fa_per_20_days": 1.6065573770491803,
+        "recall": 0.43,
+        "detection_recall": 0.45,
+        "actionable_recall": 0.43
+      },
+      {
+        "threshold": 0.035,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.7868852459016393,
+        "test_fa_per_20_days": 1.7377049180327868,
+        "recall": 0.44,
+        "detection_recall": 0.46,
+        "actionable_recall": 0.44
+      },
+      {
+        "threshold": 0.04,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 3.1475409836065573,
+        "test_fa_per_20_days": 2.098360655737705,
+        "recall": 0.46,
+        "detection_recall": 0.48,
+        "actionable_recall": 0.46
+      },
+      {
+        "threshold": 0.045,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 3.639344262295082,
+        "test_fa_per_20_days": 2.459016393442623,
+        "recall": 0.47,
+        "detection_recall": 0.49,
+        "actionable_recall": 0.47
+      },
+      {
+        "threshold": 0.05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 4.19672131147541,
+        "test_fa_per_20_days": 2.819672131147541,
+        "recall": 0.49,
+        "detection_recall": 0.51,
+        "actionable_recall": 0.49
+      },
+      {
+        "threshold": 0.055,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 4.557377049180328,
+        "test_fa_per_20_days": 3.081967213114754,
+        "recall": 0.52,
+        "detection_recall": 0.54,
+        "actionable_recall": 0.52
+      },
+      {
+        "threshold": 0.06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 4.918032786885246,
+        "test_fa_per_20_days": 3.3442622950819674,
+        "recall": 0.54,
+        "detection_recall": 0.56,
+        "actionable_recall": 0.54
+      },
+      {
+        "threshold": 0.065,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 5.344262295081967,
+        "test_fa_per_20_days": 3.7049180327868854,
+        "recall": 0.55,
+        "detection_recall": 0.57,
+        "actionable_recall": 0.55
+      },
+      {
+        "threshold": 0.07,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 6.0,
+        "test_fa_per_20_days": 4.065573770491803,
+        "recall": 0.57,
+        "detection_recall": 0.59,
+        "actionable_recall": 0.57
+      },
+      {
+        "threshold": 0.075,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 6.295081967213115,
+        "test_fa_per_20_days": 4.39344262295082,
+        "recall": 0.57,
+        "detection_recall": 0.59,
+        "actionable_recall": 0.57
+      },
+      {
+        "threshold": 0.08,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 6.688524590163935,
+        "test_fa_per_20_days": 4.885245901639344,
+        "recall": 0.59,
+        "detection_recall": 0.63,
+        "actionable_recall": 0.59
+      },
+      {
+        "threshold": 0.08076406873071404,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 6.688524590163935,
+        "test_fa_per_20_days": 4.885245901639344,
+        "recall": 0.59,
+        "detection_recall": 0.63,
+        "actionable_recall": 0.59
+      },
+      {
+        "threshold": 0.085,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 7.016393442622951,
+        "test_fa_per_20_days": 5.147540983606557,
+        "recall": 0.6,
+        "detection_recall": 0.64,
+        "actionable_recall": 0.6
+      },
+      {
+        "threshold": 0.09,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 7.442622950819672,
+        "test_fa_per_20_days": 5.377049180327869,
+        "recall": 0.61,
+        "detection_recall": 0.65,
+        "actionable_recall": 0.61
+      },
+      {
+        "threshold": 0.095,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 7.934426229508197,
+        "test_fa_per_20_days": 5.672131147540983,
+        "recall": 0.61,
+        "detection_recall": 0.65,
+        "actionable_recall": 0.61
+      },
+      {
+        "threshold": 0.1,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 8.229508196721312,
+        "test_fa_per_20_days": 6.032786885245901,
+        "recall": 0.61,
+        "detection_recall": 0.66,
+        "actionable_recall": 0.61
+      },
+      {
+        "threshold": 0.25,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 17.737704918032787,
+        "test_fa_per_20_days": 14.78688524590164,
+        "recall": 0.72,
+        "detection_recall": 0.77,
+        "actionable_recall": 0.72
+      }
+    ],
+    "two_stage": [
+      {
+        "threshold": 1e-06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.12,
+        "detection_recall": 0.12,
+        "actionable_recall": 0.12
+      },
+      {
+        "threshold": 3.0954359274983764e-06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.15,
+        "detection_recall": 0.15,
+        "actionable_recall": 0.15
+      },
+      {
+        "threshold": 9.581723581247715e-06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.17,
+        "detection_recall": 0.17,
+        "actionable_recall": 0.17
+      },
+      {
+        "threshold": 2.9659611420752585e-05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.19,
+        "detection_recall": 0.19,
+        "actionable_recall": 0.19
+      },
+      {
+        "threshold": 9.180942678743853e-05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.23,
+        "detection_recall": 0.23,
+        "actionable_recall": 0.23
+      },
+      {
+        "threshold": 0.0002841901981608691,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.26,
+        "detection_recall": 0.26,
+        "actionable_recall": 0.26
+      },
+      {
+        "threshold": 0.0008796925496300363,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.28,
+        "detection_recall": 0.28,
+        "actionable_recall": 0.28
+      },
+      {
+        "threshold": 0.0027230319232774605,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.03278688524590164,
+        "test_fa_per_20_days": 0.03278688524590164,
+        "recall": 0.33,
+        "detection_recall": 0.33,
+        "actionable_recall": 0.33
+      },
+      {
+        "threshold": 0.005,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.06557377049180328,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.36,
+        "detection_recall": 0.36,
+        "actionable_recall": 0.36
+      },
+      {
+        "threshold": 0.008428970847038045,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.06557377049180328,
+        "test_fa_per_20_days": 0.0,
+        "recall": 0.36,
+        "detection_recall": 0.36,
+        "actionable_recall": 0.36
+      },
+      {
+        "threshold": 0.01,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.22950819672131148,
+        "test_fa_per_20_days": 0.09836065573770492,
+        "recall": 0.39,
+        "detection_recall": 0.39,
+        "actionable_recall": 0.39
+      },
+      {
+        "threshold": 0.015,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.36065573770491804,
+        "test_fa_per_20_days": 0.19672131147540983,
+        "recall": 0.45,
+        "detection_recall": 0.45,
+        "actionable_recall": 0.44
+      },
+      {
+        "threshold": 0.02,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.5901639344262295,
+        "test_fa_per_20_days": 0.36065573770491804,
+        "recall": 0.52,
+        "detection_recall": 0.52,
+        "actionable_recall": 0.49
+      },
+      {
+        "threshold": 0.025,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.7540983606557377,
+        "test_fa_per_20_days": 0.45901639344262296,
+        "recall": 0.54,
+        "detection_recall": 0.54,
+        "actionable_recall": 0.51
+      },
+      {
+        "threshold": 0.02609133919175796,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.7540983606557377,
+        "test_fa_per_20_days": 0.45901639344262296,
+        "recall": 0.54,
+        "detection_recall": 0.54,
+        "actionable_recall": 0.51
+      },
+      {
+        "threshold": 0.03,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 0.9508196721311475,
+        "test_fa_per_20_days": 0.45901639344262296,
+        "recall": 0.56,
+        "detection_recall": 0.56,
+        "actionable_recall": 0.53
+      },
+      {
+        "threshold": 0.035,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.180327868852459,
+        "test_fa_per_20_days": 0.5245901639344263,
+        "recall": 0.59,
+        "detection_recall": 0.59,
+        "actionable_recall": 0.55
+      },
+      {
+        "threshold": [
+          0.035,
+          3.540819667638181
+        ],
+        "calibrated": true,
+        "tune_null_fa_per_20_days": 0.9836065573770492,
+        "test_fa_per_20_days": 0.45901639344262296,
+        "recall": 0.57,
+        "detection_recall": 0.57,
+        "actionable_recall": 0.53
+      },
+      {
+        "threshold": 0.04,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.3114754098360655,
+        "test_fa_per_20_days": 0.7540983606557377,
+        "recall": 0.63,
+        "detection_recall": 0.63,
+        "actionable_recall": 0.59
+      },
+      {
+        "threshold": 0.045,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.5081967213114753,
+        "test_fa_per_20_days": 0.819672131147541,
+        "recall": 0.63,
+        "detection_recall": 0.63,
+        "actionable_recall": 0.59
+      },
+      {
+        "threshold": 0.05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.5737704918032787,
+        "test_fa_per_20_days": 0.8524590163934426,
+        "recall": 0.64,
+        "detection_recall": 0.64,
+        "actionable_recall": 0.6
+      },
+      {
+        "threshold": 0.055,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.8360655737704918,
+        "test_fa_per_20_days": 0.9508196721311475,
+        "recall": 0.64,
+        "detection_recall": 0.64,
+        "actionable_recall": 0.6
+      },
+      {
+        "threshold": 0.06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 1.9672131147540983,
+        "test_fa_per_20_days": 0.9508196721311475,
+        "recall": 0.65,
+        "detection_recall": 0.65,
+        "actionable_recall": 0.6
+      },
+      {
+        "threshold": 0.065,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.0,
+        "test_fa_per_20_days": 1.1147540983606556,
+        "recall": 0.68,
+        "detection_recall": 0.68,
+        "actionable_recall": 0.63
+      },
+      {
+        "threshold": 0.07,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.1639344262295084,
+        "test_fa_per_20_days": 1.1475409836065573,
+        "recall": 0.68,
+        "detection_recall": 0.68,
+        "actionable_recall": 0.63
+      },
+      {
+        "threshold": 0.075,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.2950819672131146,
+        "test_fa_per_20_days": 1.278688524590164,
+        "recall": 0.69,
+        "detection_recall": 0.69,
+        "actionable_recall": 0.65
+      },
+      {
+        "threshold": 0.08,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.4262295081967213,
+        "test_fa_per_20_days": 1.3442622950819672,
+        "recall": 0.69,
+        "detection_recall": 0.69,
+        "actionable_recall": 0.65
+      },
+      {
+        "threshold": 0.08076406873071404,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.4262295081967213,
+        "test_fa_per_20_days": 1.3442622950819672,
+        "recall": 0.69,
+        "detection_recall": 0.69,
+        "actionable_recall": 0.65
+      },
+      {
+        "threshold": 0.085,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.557377049180328,
+        "test_fa_per_20_days": 1.4426229508196722,
+        "recall": 0.7,
+        "detection_recall": 0.7,
+        "actionable_recall": 0.66
+      },
+      {
+        "threshold": 0.09,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.6557377049180326,
+        "test_fa_per_20_days": 1.540983606557377,
+        "recall": 0.71,
+        "detection_recall": 0.71,
+        "actionable_recall": 0.67
+      },
+      {
+        "threshold": 0.095,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.7868852459016393,
+        "test_fa_per_20_days": 1.7049180327868851,
+        "recall": 0.71,
+        "detection_recall": 0.71,
+        "actionable_recall": 0.67
+      },
+      {
+        "threshold": 0.1,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.918032786885246,
+        "test_fa_per_20_days": 1.8688524590163935,
+        "recall": 0.72,
+        "detection_recall": 0.72,
+        "actionable_recall": 0.68
+      },
+      {
+        "threshold": 0.25,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 7.344262295081967,
+        "test_fa_per_20_days": 5.180327868852459,
+        "recall": 0.8,
+        "detection_recall": 0.8,
+        "actionable_recall": 0.77
+      }
+    ]
+  },
+  "label_noise": [
+    {
+      "label_accuracy": 0.5,
+      "oracle": false,
+      "content_only": {
+        "recall": 0.1,
+        "fa_per_20_days": 1.7704918032786885,
+        "detection_recall": 0.16,
+        "actionable_recall": 0.1,
+        "attribution_accuracy_among_detected": 0.625,
+        "time_to_correct_attribution": {
+          "n": 10,
+          "median": 1.0,
+          "q1": 0.0,
+          "q3": 1.0
+        },
+        "pct_detected_by_onset_plus_2": 0.08,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 3,
+            "transportation": 0,
+            "other": 1,
+            "missed": 26
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 3,
+            "other": 3,
+            "missed": 34
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 0,
+            "other": 6,
+            "missed": 24
+          }
+        }
+      },
+      "combined": {
+        "recall": 0.21,
+        "fa_per_20_days": 1.639344262295082,
+        "detection_recall": 0.32,
+        "actionable_recall": 0.21,
+        "attribution_accuracy_among_detected": 0.65625,
+        "time_to_correct_attribution": {
+          "n": 21,
+          "median": 1.0,
+          "q1": 1.0,
+          "q3": 2.0
+        },
+        "pct_detected_by_onset_plus_2": 0.17,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 2,
+            "transportation": 1,
+            "other": 2,
+            "missed": 25
+          },
+          "transportation": {
+            "illness": 3,
+            "transportation": 11,
+            "other": 3,
+            "missed": 23
+          },
+          "other": {
+            "illness": 2,
+            "transportation": 0,
+            "other": 8,
+            "missed": 20
+          }
+        }
+      },
+      "two_stage": {
+        "recall": 0.57,
+        "fa_per_20_days": 0.45901639344262296,
+        "detection_recall": 0.57,
+        "actionable_recall": 0.47,
+        "attribution_accuracy_among_detected": 0.8245614035087719,
+        "time_to_correct_attribution": {
+          "n": 47,
+          "median": 0.0,
+          "q1": 0.0,
+          "q3": 1.0
+        },
+        "pct_detected_by_onset_plus_2": 0.53,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 3,
+            "transportation": 3,
+            "other": 1,
+            "missed": 23
+          },
+          "transportation": {
+            "illness": 2,
+            "transportation": 25,
+            "other": 8,
+            "missed": 5
+          },
+          "other": {
+            "illness": 2,
+            "transportation": 3,
+            "other": 10,
+            "missed": 15
+          }
+        }
+      }
+    },
+    {
+      "label_accuracy": 0.6,
+      "oracle": false,
+      "content_only": {
+        "recall": 0.14,
+        "fa_per_20_days": 1.9344262295081966,
+        "detection_recall": 0.18,
+        "actionable_recall": 0.14,
+        "attribution_accuracy_among_detected": 0.7777777777777778,
+        "time_to_correct_attribution": {
+          "n": 14,
+          "median": 1.0,
+          "q1": 0.0,
+          "q3": 1.0
+        },
+        "pct_detected_by_onset_plus_2": 0.13,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 2,
+            "transportation": 1,
+            "other": 1,
+            "missed": 26
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 7,
+            "other": 2,
+            "missed": 31
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 0,
+            "other": 5,
+            "missed": 25
+          }
+        }
+      },
+      "combined": {
+        "recall": 0.24,
+        "fa_per_20_days": 1.0163934426229508,
+        "detection_recall": 0.28,
+        "actionable_recall": 0.24,
+        "attribution_accuracy_among_detected": 0.8571428571428571,
+        "time_to_correct_attribution": {
+          "n": 24,
+          "median": 1.0,
+          "q1": 0.0,
+          "q3": 2.0
+        },
+        "pct_detected_by_onset_plus_2": 0.21,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 5,
+            "transportation": 1,
+            "other": 0,
+            "missed": 24
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 10,
+            "other": 3,
+            "missed": 27
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 1,
+            "other": 8,
+            "missed": 21
+          }
+        }
+      },
+      "two_stage": {
+        "recall": 0.57,
+        "fa_per_20_days": 0.45901639344262296,
+        "detection_recall": 0.57,
+        "actionable_recall": 0.5,
+        "attribution_accuracy_among_detected": 0.8771929824561403,
+        "time_to_correct_attribution": {
+          "n": 50,
+          "median": 0.0,
+          "q1": 0.0,
+          "q3": 0.0
+        },
+        "pct_detected_by_onset_plus_2": 0.53,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 3,
+            "transportation": 4,
+            "other": 0,
+            "missed": 23
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 33,
+            "other": 2,
+            "missed": 5
+          },
+          "other": {
+            "illness": 2,
+            "transportation": 2,
+            "other": 11,
+            "missed": 15
+          }
+        }
+      }
+    },
+    {
+      "label_accuracy": 0.7,
+      "oracle": false,
+      "content_only": {
+        "recall": 0.18,
+        "fa_per_20_days": 1.7377049180327868,
+        "detection_recall": 0.22,
+        "actionable_recall": 0.18,
+        "attribution_accuracy_among_detected": 0.8181818181818182,
+        "time_to_correct_attribution": {
+          "n": 18,
+          "median": 1.0,
+          "q1": 0.0,
+          "q3": 1.0
+        },
+        "pct_detected_by_onset_plus_2": 0.16,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 2,
+            "transportation": 1,
+            "other": 0,
+            "missed": 27
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 11,
+            "other": 3,
+            "missed": 26
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 1,
+            "other": 4,
+            "missed": 25
+          }
+        }
+      },
+      "combined": {
+        "recall": 0.26,
+        "fa_per_20_days": 1.0163934426229508,
+        "detection_recall": 0.29,
+        "actionable_recall": 0.26,
+        "attribution_accuracy_among_detected": 0.896551724137931,
+        "time_to_correct_attribution": {
+          "n": 26,
+          "median": 1.0,
+          "q1": 0.0,
+          "q3": 1.75
+        },
+        "pct_detected_by_onset_plus_2": 0.23,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 3,
+            "transportation": 1,
+            "other": 0,
+            "missed": 26
+          },
+          "transportation": {
+            "illness": 1,
+            "transportation": 18,
+            "other": 2,
+            "missed": 19
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 1,
+            "other": 3,
+            "missed": 26
+          }
+        }
+      },
+      "two_stage": {
+        "recall": 0.57,
+        "fa_per_20_days": 0.45901639344262296,
+        "detection_recall": 0.57,
+        "actionable_recall": 0.51,
+        "attribution_accuracy_among_detected": 0.8947368421052632,
+        "time_to_correct_attribution": {
+          "n": 51,
+          "median": 0.0,
+          "q1": 0.0,
+          "q3": 0.5
+        },
+        "pct_detected_by_onset_plus_2": 0.53,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 4,
+            "transportation": 3,
+            "other": 0,
+            "missed": 23
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 32,
+            "other": 3,
+            "missed": 5
+          },
+          "other": {
+            "illness": 1,
+            "transportation": 3,
+            "other": 11,
+            "missed": 15
+          }
+        }
+      }
+    },
+    {
+      "label_accuracy": 0.8,
+      "oracle": false,
+      "content_only": {
+        "recall": 0.15,
+        "fa_per_20_days": 1.9672131147540983,
+        "detection_recall": 0.19,
+        "actionable_recall": 0.15,
+        "attribution_accuracy_among_detected": 0.7894736842105263,
+        "time_to_correct_attribution": {
+          "n": 15,
+          "median": 1.0,
+          "q1": 0.0,
+          "q3": 1.0
+        },
+        "pct_detected_by_onset_plus_2": 0.14,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 2,
+            "transportation": 0,
+            "other": 2,
+            "missed": 26
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 8,
+            "other": 1,
+            "missed": 31
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 0,
+            "other": 6,
+            "missed": 24
+          }
+        }
+      },
+      "combined": {
+        "recall": 0.34,
+        "fa_per_20_days": 1.1475409836065573,
+        "detection_recall": 0.39,
+        "actionable_recall": 0.34,
+        "attribution_accuracy_among_detected": 0.8717948717948718,
+        "time_to_correct_attribution": {
+          "n": 34,
+          "median": 1.0,
+          "q1": 0.0,
+          "q3": 2.0
+        },
+        "pct_detected_by_onset_plus_2": 0.3,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 4,
+            "transportation": 0,
+            "other": 0,
+            "missed": 26
+          },
+          "transportation": {
+            "illness": 1,
+            "transportation": 21,
+            "other": 2,
+            "missed": 16
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 0,
+            "other": 11,
+            "missed": 19
+          }
+        }
+      },
+      "two_stage": {
+        "recall": 0.57,
+        "fa_per_20_days": 0.45901639344262296,
+        "detection_recall": 0.57,
+        "actionable_recall": 0.53,
+        "attribution_accuracy_among_detected": 0.9298245614035088,
+        "time_to_correct_attribution": {
+          "n": 53,
+          "median": 0.0,
+          "q1": 0.0,
+          "q3": 1.0
+        },
+        "pct_detected_by_onset_plus_2": 0.53,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 3,
+            "transportation": 3,
+            "other": 1,
+            "missed": 23
+          },
+          "transportation": {
+            "illness": 1,
+            "transportation": 32,
+            "other": 2,
+            "missed": 5
+          },
+          "other": {
+            "illness": 2,
+            "transportation": 2,
+            "other": 11,
+            "missed": 15
+          }
+        }
+      }
+    },
+    {
+      "label_accuracy": 0.9,
+      "oracle": false,
+      "content_only": {
+        "recall": 0.24,
+        "fa_per_20_days": 1.7377049180327868,
+        "detection_recall": 0.25,
+        "actionable_recall": 0.24,
+        "attribution_accuracy_among_detected": 0.96,
+        "time_to_correct_attribution": {
+          "n": 24,
+          "median": 0.5,
+          "q1": 0.0,
+          "q3": 1.0
+        },
+        "pct_detected_by_onset_plus_2": 0.22,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 3,
+            "transportation": 0,
+            "other": 0,
+            "missed": 27
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 15,
+            "other": 1,
+            "missed": 24
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 0,
+            "other": 6,
+            "missed": 24
+          }
+        }
+      },
+      "combined": {
+        "recall": 0.43,
+        "fa_per_20_days": 0.8852459016393442,
+        "detection_recall": 0.45,
+        "actionable_recall": 0.43,
+        "attribution_accuracy_among_detected": 0.9555555555555556,
+        "time_to_correct_attribution": {
+          "n": 43,
+          "median": 1.0,
+          "q1": 0.0,
+          "q3": 1.0
+        },
+        "pct_detected_by_onset_plus_2": 0.37,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 5,
+            "transportation": 0,
+            "other": 0,
+            "missed": 25
+          },
+          "transportation": {
+            "illness": 1,
+            "transportation": 26,
+            "other": 0,
+            "missed": 13
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 1,
+            "other": 12,
+            "missed": 17
+          }
+        }
+      },
+      "two_stage": {
+        "recall": 0.57,
+        "fa_per_20_days": 0.45901639344262296,
+        "detection_recall": 0.57,
+        "actionable_recall": 0.54,
+        "attribution_accuracy_among_detected": 0.9473684210526315,
+        "time_to_correct_attribution": {
+          "n": 54,
+          "median": 0.0,
+          "q1": 0.0,
+          "q3": 0.0
+        },
+        "pct_detected_by_onset_plus_2": 0.53,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 4,
+            "transportation": 3,
+            "other": 0,
+            "missed": 23
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 33,
+            "other": 2,
+            "missed": 5
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 1,
+            "other": 14,
+            "missed": 15
+          }
+        }
+      }
+    },
+    {
+      "label_accuracy": 1.0,
+      "oracle": true,
+      "content_only": {
+        "recall": 0.24,
+        "fa_per_20_days": 2.0327868852459017,
+        "detection_recall": 0.25,
+        "actionable_recall": 0.24,
+        "attribution_accuracy_among_detected": 0.96,
+        "time_to_correct_attribution": {
+          "n": 24,
+          "median": 0.0,
+          "q1": 0.0,
+          "q3": 1.0
+        },
+        "pct_detected_by_onset_plus_2": 0.23,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 2,
+            "transportation": 0,
+            "other": 0,
+            "missed": 28
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 16,
+            "other": 0,
+            "missed": 24
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 0,
+            "other": 7,
+            "missed": 23
+          }
+        }
+      },
+      "combined": {
+        "recall": 0.46,
+        "fa_per_20_days": 0.7540983606557377,
+        "detection_recall": 0.46,
+        "actionable_recall": 0.46,
+        "attribution_accuracy_among_detected": 1.0,
+        "time_to_correct_attribution": {
+          "n": 46,
+          "median": 1.0,
+          "q1": 0.0,
+          "q3": 1.0
+        },
+        "pct_detected_by_onset_plus_2": 0.42,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 5,
+            "transportation": 0,
+            "other": 0,
+            "missed": 25
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 29,
+            "other": 0,
+            "missed": 11
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 0,
+            "other": 12,
+            "missed": 18
+          }
+        }
+      },
+      "two_stage": {
+        "recall": 0.57,
+        "fa_per_20_days": 0.45901639344262296,
+        "detection_recall": 0.57,
+        "actionable_recall": 0.54,
+        "attribution_accuracy_among_detected": 0.9473684210526315,
+        "time_to_correct_attribution": {
+          "n": 54,
+          "median": 0.0,
+          "q1": 0.0,
+          "q3": 0.0
+        },
+        "pct_detected_by_onset_plus_2": 0.53,
+        "attribution_confusion": {
+          "illness": {
+            "illness": 4,
+            "transportation": 3,
+            "other": 0,
+            "missed": 23
+          },
+          "transportation": {
+            "illness": 0,
+            "transportation": 34,
+            "other": 1,
+            "missed": 5
+          },
+          "other": {
+            "illness": 0,
+            "transportation": 0,
+            "other": 15,
+            "missed": 15
+          }
+        }
+      }
+    }
+  ]
+}

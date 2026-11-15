@@ -71,7 +71,7 @@ When the `PHOTON_*` values are set in `.env`, the API polls Photon every 2 secon
 - `backend/scripts/photon_send.py` — sends one test message to your own phone to check outbound.
 - Shared lines cannot send the first message: the family phone must text the agent number once before anything can be sent to it.
 
-Not built yet: closing an escalation (suppression lasts until reset), quiet hours, SMS fallback, voice notes (Photon Beta iMessage carries text and images only), speech-to-text, language detection, persistence.
+Not built yet: closing an escalation (suppression lasts until reset), quiet hours, SMS fallback, voice notes (out of scope: Photon Beta iMessage carries text and images only), language detection, persistence.
 
 ## Design rules (from the PRD)
 

@@ -37,7 +37,7 @@
 | **School Nurse** | Own illness guidance and outbreak response. | Illness cluster notices |
 | **McKinney-Vento Liaison** | Handle housing-insecurity cases confidentially. | Liaison inbox |
 | **Teacher** | Know what an absent student missed and reteach it. | Missed-topics list |
-| **Family or Caregiver** | Report a reason quickly in their own language and get help with the barrier. | Text or voice conversation |
+| **Family or Caregiver** | Report a reason quickly in their own language and get help with the barrier. | Text conversation (iMessage / SMS) |
 
 * **Design Stance:** Families are treated as partners, not violators. Outreach asks what is getting in the way and offers support; nothing in the product frames an absence as punishment. When the school caused the absence, the message says so.
 
@@ -59,6 +59,7 @@
 * Recording immigration status or details of immigration-related fears.
 * Automating truancy referrals, discipline, or punitive decisions.
 * Using dollar value to prioritize which students receive help (**risk of harm sets priority; revenue justifies the program**).
+* Voice notes are out of scope this weekend: the Photon 2.0 beta iMessage channel carries text and images only. Revisit when the channel supports audio (a tested Gemini-audio + Whisper pipeline exists in git history, commit 52a9e7c).
 
 ---
 
@@ -67,7 +68,7 @@
 ### F1. Absence Tracking & Cause Capture (P0)
 * Ingest a daily absence CSV export from an SIS (including tardies and partial days) and maintain each student's absence history. If a call-in or note already gives a reason, record it and skip outreach.
 * Store one structured barrier per absence from the taxonomy: `illness`, `transportation`, `housing insecurity`, `food insecurity`, `caregiving or family obligation`, `mental health or school avoidance`, `safety or bullying`, `disengagement or academic struggle`, `appointment or travel`, `religious or cultural observance`, `late arrival`, `school-caused` (e.g., bus did not run), `community safety concern` (stores no free-text details), or `unknown`.
-* Display original reply text and voice transcripts alongside the classified label for clerk verification, and suggest an SIS attendance code for the clerk to post.
+* Display the original reply text alongside the classified label for clerk verification, and suggest an SIS attendance code for the clerk to post.
 * **Acceptance:** Every absence in the demo file shows status (`reason captured`, `awaiting reply`, or `unknown`), and the clerk can inspect the source message.
 
 ### F4. School Action Plan for Families (P0)
@@ -114,7 +115,7 @@
 
 ### User Flow
 1. **Absence Logged** $\rightarrow$ If no reason is on file, the system sends a supportive check-in.
-2. **Family Replies** (text or voice note in any language).
+2. **Family Replies** (text in any language, via iMessage).
 3. **Safety Gate:** If safety-critical $\rightarrow$ **counselor takes over**; all automated messages to that household stop until the counselor closes the case.
 4. **Classification & Pricing:** If non-safety $\rightarrow$ barrier labeled $\rightarrow$ suggested SIS code $\rightarrow$ aggregate dashboard updates.
 5. **Routing:** If part of a cluster $\rightarrow$ cluster-level actions drafted; otherwise $\rightarrow$ case-level actions drafted for the owning role.
@@ -124,7 +125,7 @@
 ### 3-Minute Demo Script
 * **0:00** — *"Monday, 9am. Maria is the only attendance clerk for 1,500 students. Five kids on Route 7 are marked unexcused. Their parents each told the school the same thing, in three languages: the bus never came. Nobody connected it."*
 * **0:20** — Morning briefing. Route 7 shows 2 of 3 matching replies, not a cluster yet.
-* **0:35** — A live Spanish voice reply arrives; label and evidence quote appear, and **the Route 7 cluster lights up** (the "ah-ha").
+* **0:35** — A live Spanish iMessage reply arrives; label and evidence quote appear, and **the Route 7 cluster lights up** (the "ah-ha").
 * **1:05** — Why both layers matter: the text-only detector misses it and the graph-only detector calls it illness. Flash the benchmark table.
 * **1:35** — The agent has drafted recode flags and an apology message to families. Maria approves both in one click.
 * **2:05** — Maria corrects one wrong label, and the next similar reply comes back right.
