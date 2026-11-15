@@ -42,6 +42,7 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Pattern, Sequence, Tuple
 
 from ..models import Barrier, Classification
+from . import demo
 
 log = logging.getLogger("uvicorn.error")
 
@@ -458,17 +459,22 @@ def api_key() -> Optional[str]:
 
 
 def enabled() -> bool:
-    """Gemini runs when a key is set, unless CLASSIFIER=keyword switches it off."""
-    return bool(api_key()) and os.environ.get("CLASSIFIER", "gemini").strip().lower() != "keyword"
+    """Gemini runs when a key is set, unless CLASSIFIER=keyword switches it off.
+    In demo mode it runs from recorded answers, with or without a key."""
+    if os.environ.get("CLASSIFIER", "gemini").strip().lower() == "keyword":
+        return False
+    return bool(demo.recording()["answers"]) if demo.enabled() else bool(api_key())
 
 
 def model_name() -> str:
+    if demo.enabled():
+        return demo.recording().get("model") or DEFAULT_MODEL
     return os.environ.get("GEMINI_MODEL") or DEFAULT_MODEL
 
 
 def status() -> dict:
     return {"engine": "gemini" if enabled() else "keywords", "model": model_name() if enabled() else None,
-            "timeout_s": TIMEOUT_S}
+            "timeout_s": TIMEOUT_S, "recorded": demo.enabled() and enabled()}
 
 
 def _get_client():
@@ -508,7 +514,17 @@ def _generate(redacted: str) -> str:
 
 
 def _ask(redacted: str) -> dict:
-    """Cached Gemini answer for this text. Raises on timeout, API error or unreadable output."""
+    """Cached Gemini answer for this text. Raises on timeout, API error or unreadable output.
+    In demo mode, the recorded answer only (demo.NotRecorded if there is none); never the network."""
+    demo_key = demo.answer_key(PROMPT_VERSION, _examples.get(), redacted)
+    if demo.enabled():
+        return demo.recorded_answer(demo_key)
+    data = _ask_gemini(redacted)
+    demo.remember(demo_key, data)  # no-op unless `python -m app.services.demo record` is running
+    return data
+
+
+def _ask_gemini(redacted: str) -> dict:
     digest = hashlib.sha256(f"{PROMPT_VERSION}|{model_name()}|{_examples.get()}|{redacted}".encode()).hexdigest()
     path = CACHE_DIR / f"{digest}.json"
     try:
@@ -566,6 +582,8 @@ def classify(text: str, names: Iterable[str] = (), language: Optional[str] = Non
         data = _ask(redacted)
         barrier = Barrier(data["label"])
         confidence = min(max(float(data.get("confidence", 0.0)), 0.0), 1.0)
+    except demo.NotRecorded:  # demo mode, a text off the script: the keyword label, and no network
+        return base
     except Exception as error:  # timeout, API error, off-schema answer: never block the reply on the model
         log.warning("gemini classify failed, using keywords: %s %s", type(error).__name__, getattr(error, "code", ""))
         return base.model_copy(update={"source": "keywords_fallback"})

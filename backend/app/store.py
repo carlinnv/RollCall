@@ -93,6 +93,7 @@ class Store:
         self.case_reports: Dict[str, List[CaseReport]] = {}  # escalation_id -> saved versions, oldest first
         self.plans: Dict[str, ActionPlan] = {}
         self.messages: List[Message] = []  # every inbound and outbound text, oldest first
+        self.demo_seen: Set[str] = set()  # demo mode: "view" steps the presenter has shown (services/demo.py)
         self._held_keys: Dict[str, str] = {}  # message_id -> idempotency key, for messages held for quiet hours
         self.completed_learning: Dict[str, int] = {}  # student_id -> days recovered
         self.settings: RevenueSettings = revenue.STATE_DEFAULTS["CA"].model_copy()
@@ -483,8 +484,9 @@ class Store:
 
     @property
     def outbox(self) -> List[dict]:
-        """Outbound messages in the shape the Plans page reads."""
-        return [self._outbox_entry(m) for m in self.messages if m.direction == "outbound"]
+        """Outbound messages to families, in the shape the Plans page reads. Staff pages are not
+        family messages: they show on the escalation card and in the message log."""
+        return [self._outbox_entry(m) for m in self.messages if m.direction == "outbound" and m.kind != "page"]
 
     @staticmethod
     def _outbox_entry(m: Message) -> dict:
