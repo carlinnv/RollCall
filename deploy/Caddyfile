@@ -2,7 +2,7 @@
 {$SITE_ADDRESS::80} {
 	encode gzip
 	handle /api/* {
-		reverse_proxy backend:8000
+		reverse_proxy {$BACKEND_ADDR:backend:8000}
 	}
 	handle {
 		root * /srv
