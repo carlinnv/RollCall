@@ -23,7 +23,7 @@ const ROUTE_TEXT = {
 };
 
 const KIND = { reply: "Family", check_in: "Check-in", plan: "Plan message", ack: "Automatic reply", crisis: "Crisis resources (988/911)", page: "Staff page" };
-const CHANNEL = { imessage: "iMessage", sms: "SMS", simulated: "simulated", seed: "sample data" };
+const CHANNEL = { imessage: "iMessage", sms: "SMS", simulated: "simulated", seed: "sample data", replay: "demo replay" };
 
 /** One line under a message: who, channel, time, and how long it took. */
 function meta(m: Message) {

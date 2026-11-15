@@ -86,7 +86,7 @@ export interface Message {
   absence_id: string | null;
   student_id: string | null;
   direction: "inbound" | "outbound";
-  channel: "imessage" | "sms" | "simulated" | "seed" | null;
+  channel: "imessage" | "sms" | "simulated" | "seed" | "replay" | null;
   language: string;
   raw_text_or_transcript: string;
   timestamp: string;
@@ -302,6 +302,32 @@ export interface RevenueSummary {
   by_root_cause: { barrier: Barrier; absences: number; dollars: number }[];
 }
 
+export interface DemoStep {
+  id: string;
+  kind: "reply" | "correct" | "view";
+  say: string;
+  student_id?: string;
+  student_name: string | null;
+  guardian_name: string | null;
+  language?: string;
+  text?: string;
+  step?: string; // correct: the reply step whose label it changes
+  label?: Barrier;
+  show?: string; // page to open after the step: a path, or "case" for the case it changed
+  done: boolean;
+  outcome: { absence_id: string; barrier: Barrier | null; source: string | null; escalated: boolean } | null;
+}
+
+export interface DemoState {
+  enabled: boolean;
+  title: string | null;
+  steps: DemoStep[];
+  next: number | null;
+  recorded_model: string | null;
+  recorded_at: string | null;
+  recorded_answers: number;
+}
+
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, {
     ...init,
@@ -332,6 +358,8 @@ export const api = {
   acknowledgeEscalation: (id: string, by: string) => post<Escalation>(`/escalations/${id}/acknowledge`, { by }),
   reportEscalation: (id: string, by: string, decision: "report_filed" | "not_required") =>
     post<Escalation>(`/escalations/${id}/report`, { by, decision }),
+  demo: () => req<DemoState>("/demo"),
+  demoNext: () => post<DemoStep>("/demo/next"),
   oncall: () => req<OnCallStatus>("/oncall"),
   addStaff: (s: { name: string; role: StaffRole; phone: string; on_call: boolean }) => post<StaffMember>("/oncall/staff", s),
   updateStaff: (id: string, fields: Partial<StaffMember>) =>
