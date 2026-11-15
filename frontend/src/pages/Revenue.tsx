@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { api, fmtDate, money, type RevenueSettings, type RevenueSummary } from "../api";
 import { useLoad } from "../hooks";
-import { BarrierTag, ErrorNote, Page, Stat } from "../components/ui";
+import { ErrorNote, Page, Stat } from "../components/ui";
+import { BarList, Tip } from "../components/charts";
 
 export default function Revenue() {
   const { data: loaded, error } = useLoad(api.revenue);
@@ -36,17 +37,36 @@ export default function Revenue() {
       <div className="grid2">
         <div className="card">
           <h3>Root causes by dollar impact</h3>
-          {data.by_root_cause.map((r) => (
-            <div key={r.barrier} className="bar-row">
-              <span>
-                <BarrierTag barrier={r.barrier} /> <span className="muted small">{r.absences} day(s){r.barrier === "unknown" && " · no reason yet"}</span>
-              </span>
-              <span className="money">{money(r.dollars)}</span>
-              <div className="bar">
-                <div style={{ width: `${(r.dollars / max) * 100}%` }} />
-              </div>
-            </div>
-          ))}
+          <BarList
+            swatch
+            max={max}
+            ariaLabel="Dollars at risk this week by root cause"
+            rows={data.by_root_cause.map((r, i, all) => {
+              const none = r.barrier === "unknown";
+              const name = none ? "No reason yet" : r.barrier.replace(/^./, (c) => c.toUpperCase());
+              return {
+                key: r.barrier,
+                label: name,
+                sub: `${r.absences} day(s)`,
+                value: r.dollars,
+                display: money(r.dollars),
+                cls: `barrier-${r.barrier.split(" ")[0]}`,
+                dim: none,
+                rule: none && i > 0 && all.length > 1,
+                aria: `${none ? "No reason yet" : r.barrier}: ${money(r.dollars)} from ${r.absences} absence days`,
+                tip: (
+                  <Tip
+                    title={none ? "No reason yet" : r.barrier}
+                    rows={[
+                      { label: "At risk this week", value: money(r.dollars) },
+                      { label: "Absence days", value: r.absences },
+                      { label: "Share of the week", value: `${Math.round((r.dollars / Math.max(1, data.dollars_at_risk_week)) * 100)}%` },
+                    ]}
+                  />
+                ),
+              };
+            })}
+          />
         </div>
 
         <div className="card">
