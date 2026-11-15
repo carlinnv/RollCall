@@ -6,6 +6,14 @@ Princeton Hacks Fall 2026 Project: an app that helps school districts track stud
 
 > Synthetic data only. No real student records are used anywhere in this project.
 
+## Demo video
+
+A 73-second narrated walkthrough: a family replies in Spanish, the reason is labeled, the Route 7 cluster appears, the clerk approves the plan, and a safety message goes to a counselor.
+
+[![RollCall demo: a Spanish reply is labeled, the Route 7 cluster appears, the clerk approves the plan](documents/video-demo-preview.gif)](https://www.youtube.com/watch?v=o05Bm99OJmk)
+
+The preview above has no sound. To hear the audio, watch the demo on YouTube: https://www.youtube.com/watch?v=o05Bm99OJmk
+
 ## Stack
 
 | Part | Tech | Location |
