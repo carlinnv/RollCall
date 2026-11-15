@@ -110,6 +110,19 @@ On **Case queue**, the clerk or administrator clicks **Send check-ins (N)**. It 
 
 Run only one backend against a database at a time; two copies overwrite each other.
 
+### Start over with empty live data
+
+"Reset demo data" is disabled with live data. To erase the saved live data and start fresh (the on-call staff roster is kept):
+
+1. Stop the backend (Ctrl+C). A running backend would save parts of the old data back.
+2. Clear the data:
+   ```bash
+   cd backend
+   .venv/bin/python scripts/clear_live_data.py
+   ```
+   It lists what it will delete and asks you to type `yes`.
+3. Start the backend again (mode 4) and re-import the sample CSV.
+
 ## Tests
 
 ```bash
