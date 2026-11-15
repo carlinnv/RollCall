@@ -65,6 +65,8 @@ class Classification(BaseModel):
     # F8: the past staff correction that decided (or was shown as an example for) this label
     correction_ref: Optional[str] = None
     correction_similarity: Optional[float] = None
+    # Kinds of safety concern found: self_harm | imminent_danger | abuse_or_neglect | bullying | supervision | other
+    safety_types: List[str] = []
 
 
 class Correction(BaseModel):
@@ -78,6 +80,16 @@ class Correction(BaseModel):
     school_id: str = "demo"
     text: str = ""  # the reply the correction was made on (what later replies are compared with)
     language: str = "en"
+
+
+class CaseReport(BaseModel):
+    """One saved version of a counselor's internal case report for an escalation."""
+
+    escalation_id: str
+    version: int
+    text: str
+    saved_by: str
+    saved_at: str
 
 
 class Message(BaseModel):
@@ -94,7 +106,7 @@ class Message(BaseModel):
     # inbound: arrival -> classified and stored. outbound: time the send took, or for an
     # acknowledgement, family's message arrival -> reply accepted. None when not measured (seed data).
     latency_ms: Optional[int] = None
-    kind: str = "reply"  # inbound: reply. outbound: check_in | plan | ack
+    kind: str = "reply"  # inbound: reply. outbound: check_in | plan | ack | crisis
     status: str = "received"  # inbound: received. outbound: sent | queued | blocked | failed
     reason: Optional[str] = None  # outbound: why it was queued, blocked or failed. inbound: opt-out or opt-in note
     # inbound: cluster | case | unknown | escalated | opted_out | opted_in | unlinked | no_absence
@@ -103,6 +115,8 @@ class Message(BaseModel):
     phone: Optional[str] = None  # the family's number
     plan_id: Optional[str] = None
     external_id: Optional[str] = None  # the channel's own message id (Photon)
+    # Held for quiet hours: the earliest time (UTC) it may go. Cleared once it is sent or blocked.
+    deliver_after: Optional[str] = None
 
 
 class Absence(BaseModel):
@@ -211,13 +225,63 @@ class LearningPlan(BaseModel):
     flags: List[ClaimFlag] = Field(default_factory=list)
 
 
+class Staff(BaseModel):
+    """A staff member on the on-call roster."""
+
+    staff_id: str
+    name: str
+    role: str  # counselor | administrator | principal
+    phone: str
+    on_call: bool = True
+
+
+class Page(BaseModel):
+    """One page sent (or attempted) to a staff member about an escalation."""
+
+    staff_id: Optional[str] = None  # None when no one was on call
+    name: Optional[str] = None
+    role: Optional[str] = None
+    phone: Optional[str] = None
+    level: str = "first"  # first | escalated (unacknowledged after 15 minutes)
+    at: str
+    status: str  # sent | queued | blocked | failed
+    reason: Optional[str] = None
+
+
 class Escalation(BaseModel):
+    """A safety case handed to the counselor (PRD 3 sections 1 and 3).
+
+    While it is not closed, nothing automated is sent to the student's household, and the
+    absence keeps its safety label: only the counselor can downgrade it.
+    """
+
+    escalation_id: str
     absence_id: str
     student_id: str
+    household_id: str
     reason: str
     evidence: str
     assigned_to: str = "Counselor"
-    status: str = "open"
+    status: str = "open"  # open -> acknowledged -> closed
+    opened_at: str
+    acknowledged_at: Optional[str] = None
+    acknowledged_by: Optional[str] = None
+    # Mandated-reporting decision (CANRA). The system is not the reporter; staff record what they did.
+    report_status: Optional[str] = None  # report_filed | not_required
+    report_by: Optional[str] = None
+    report_at: Optional[str] = None
+    closed_at: Optional[str] = None
+    closed_by: Optional[str] = None
+    outcome: Optional[str] = None  # resolved (real concern, handled) | not_safety (false alarm, relabeled)
+    relabeled_to: Optional[Barrier] = None
+    note: Optional[str] = None
+    safety_types: List[str] = []  # every kind of concern seen in this case's messages
+    # The fixed crisis-resource message (PRD 3 section 3): sent at most once, only for self-harm or
+    # imminent danger, never when abuse is disclosed. None means it was not sent and is not due.
+    crisis_message_status: Optional[str] = None  # sent | queued | blocked | failed | withheld
+    crisis_message_reason: Optional[str] = None
+    crisis_message_at: Optional[str] = None
+    pages: List[Page] = []  # staff paged about this case, oldest first
 
 
 class RevenueSettings(BaseModel):

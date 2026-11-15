@@ -237,7 +237,8 @@ def test_agent_wiring_read_only(corpus):
     assert "M-A00005" not in ans.answer and "M-A07777" not in ans.answer
     assert ans.report_path == REPORT_PATH and "[M-A00001]" in ans.report and "M-A04242" not in ans.report
     assert ans.report_dropped_citations == [{"id": "M-A04242", "reason": "unknown_id"}]
-    assert [c["tool"] for c in ans.tool_calls][:2] == ["search_messages", "get_cluster"]
+    # The first two calls run in parallel, so their order is not defined.
+    assert sorted(c["tool"] for c in ans.tool_calls[:2]) == ["get_cluster", "search_messages"]
     assert ans.safety_flags == {}
 
 

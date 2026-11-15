@@ -341,7 +341,9 @@ def test_escalation_suppresses_household(fresh):
 def test_closed_escalation_resumes_messages(fresh):
     s = fresh
     _escalate(s, "A018")
-    s.escalations["A018"].status = "closed"
+    case = s.open_escalation("A018")  # escalations are keyed by ID; the counselor closes them in steps
+    s.record_report_decision(case.escalation_id, "Counselor", "not_required")
+    s.close_escalation(case.escalation_id, "Counselor", "resolved")
     assert s.check_in_message(s.absences["A019"]) != COUNSELOR_ONLY_NOTE
     assert s.draft_plan(absence_id="A019").recipient_student_ids == ["S021"]
 

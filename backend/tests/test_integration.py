@@ -235,10 +235,17 @@ def test_only_counselor_downgrades_safety_and_upgrade_escalates():
     assert any(e["absence_id"] == "A035" for e in client.get("/api/escalations").json())
     r = client.post("/api/absences/A035/correct", json={"label": "illness", "corrected_by": "clerk"})
     assert r.status_code == 403
+    # While the case is open, even a counselor closes it on the Escalations page, so the
+    # mandated-reporting decision is recorded first (PRD 3 section 3).
     r = client.post("/api/absences/A035/correct", json={"label": "illness", "corrected_by": "Ms. Ruiz (counselor)"})
-    assert r.status_code == 200 and r.json()["escalated"] is False
+    assert r.status_code == 403 and "Escalations page" in r.json()["detail"]
+    eid = next(e for e in client.get("/api/escalations").json() if e["absence_id"] == "A035")["escalation_id"]
+    client.post(f"/api/escalations/{eid}/report", json={"decision": "not_required", "by": "Ms. Ruiz (counselor)"})
+    client.post(f"/api/escalations/{eid}/close", json={"outcome": "not_safety", "relabel_to": "illness",
+                                                       "by": "Ms. Ruiz (counselor)"})
     esc = next(e for e in client.get("/api/escalations").json() if e["absence_id"] == "A035")
-    assert esc["status"].startswith("closed")
+    assert esc["status"] == "closed" and store.absences["A035"].classification.barrier == "illness"
+    assert any(c.absence_id == "A035" and c.new_label == "illness" for c in store.corrections.all())  # F8 learns
 
     # a clerk may ADD a safety label: it opens a counselor case and pauses the household
     r = client.post("/api/absences/A030/correct", json={"label": "safety or bullying", "corrected_by": "clerk"})

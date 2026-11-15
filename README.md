@@ -49,7 +49,7 @@ cd backend && .venv/bin/pytest -q
 
 The logic behind each feature is a deliberately simple stub with a stable interface, so the model-backed versions can replace it without touching the API or UI:
 
-- `backend/app/services/classifier.py` — `classify(text) -> Classification` (barrier, confidence, evidence quote, safety flag). Safety check runs first and always wins.
+- `backend/app/services/classifier.py` — `classify(text, names) -> Classification` (barrier, confidence, evidence quote, safety flag, language, source). Uses Gemini when `GEMINI_API_KEY` is set, with structured JSON output, a 6-second timeout and a disk cache in `backend/.cache/gemini`. Falls back to keyword rules when Gemini is not configured, slow or failing; seed data always uses the keyword rules. The keyword safety check always runs and Gemini can add a safety flag but never clear one. Known names are replaced with placeholders before the text is sent, and an evidence quote that is not an exact substring of the reply is replaced by the whole reply.
 - `backend/app/services/clustering.py` — `detect_clusters(...) -> List[Cluster]`. Uses only school-recorded links (never inferred friendships).
 - `backend/app/services/action_plan.py` — plan and message generation. Only `en` and `es` templates; other languages fall back to English (TODO translation).
 - `backend/app/services/learning_plan.py` — `build(...) -> LearningPlan`. Never emits a topic that is not in the pacing guide.
@@ -71,7 +71,14 @@ When the `PHOTON_*` values are set in `.env`, the API polls Photon every 2 secon
 - `backend/scripts/photon_send.py` — sends one test message to your own phone to check outbound.
 - Shared lines cannot send the first message: the family phone must text the agent number once before anything can be sent to it.
 
-Not built yet: closing an escalation (suppression lasts until reset), quiet hours, SMS fallback, voice notes (out of scope: Photon Beta iMessage carries text and images only), language detection, persistence.
+- Safety escalations (`/escalations`): the counselor acknowledges a case, records the mandated-reporting decision, and closes it as a handled concern or a false alarm (relabeled). Messages to the household resume when its last open case closes. `POST /api/escalations/{id}/acknowledge`, `/report`, `/close`. The counselor can also generate an internal case report from the record, edit it, save versions and download it (`/case-report/draft`, `/case-reports`).
+
+- Quiet hours: check-ins and plan messages are held between 8pm and 8am school time (`SCHOOL_TIMEZONE`, default `America/Los_Angeles`) and sent at 8am. Set `QUIET_HOURS=off` to test or demo outside those hours.
+- Crisis-resource message: after a self-harm or imminent-danger flag, one fixed 988/911 message goes to the family, never when abuse is disclosed. The wording is a placeholder until the district approves it.
+
+- On-call paging (`/oncall`): a roster of counselors, administrators and the principal, saved to `backend/.data/oncall.json` (kept across restarts and resets). A new safety case texts the on-call counselor during school hours (`SCHOOL_HOURS`, `SCHOOL_DAYS`) or the on-call administrator otherwise; if nobody acknowledges in 15 minutes the principal is paged. Staff reply `ACK` to acknowledge. Pages contain only the case ID and grade.
+
+Not built yet: SMS fallback, voice notes (out of scope: Photon Beta iMessage carries text and images only), persistence (everything except the on-call roster is in memory).
 
 ## Design rules (from the PRD)
 

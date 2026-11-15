@@ -10,7 +10,7 @@ Owners follow PRD 3 §5: **A** Messaging & Photon (me), **B** ML & Graph, **C** 
 
 - [x] Message log with latency (A)
 - [x] Live dashboard refresh (C)
-- [ ] Gemini classifier (B)
+- [x] Gemini classifier (B)
 - [x] Photon-off path (the "Simulate family reply" box)
 
 **Gate 2:** the combined detector beats the content-only and graph-only baselines on held-out runs.
@@ -22,20 +22,24 @@ Owners follow PRD 3 §5: **A** Messaging & Photon (me), **B** ML & Graph, **C** 
 
 - [x] Message log: one record per inbound and outbound text, many per absence, with real timestamps and `latency_ms`. Needed for Gate 1.
 - [x] Plain-language opt-outs in English, Spanish and Vietnamese ("no más mensajes"). Today only exact keywords work.
-- [ ] Closing an escalation, so household suppression can be lifted.
-- [ ] Counselor acknowledgement and the 15-minute timer on safety flags.
-- [ ] Fixed crisis-resource message (988/911) for self-harm or imminent danger. Never for abuse disclosures.
-- [ ] Quiet hours, 8am–8pm; queue messages outside them.
+- [x] Closing an escalation, so household suppression can be lifted.
+- [x] Counselor acknowledgement and the 15-minute timer on safety flags. (Acknowledge button and an overdue flag after 15 minutes.)
+- [x] Paging the on-call counselor when a case opens, and the after-hours path (on-call administrator, then principal). On the On-call page.
+- [x] Fixed crisis-resource message (988/911) for self-harm or imminent danger. Never for abuse disclosures.
+- [ ] Get the crisis-message wording approved by the district, and the Spanish reviewed by a fluent speaker. The text in `outreach.py` is a placeholder.
+- [x] Quiet hours, 8am–8pm; queue messages outside them.
 - [ ] Voice notes through Gemini audio. Blocked on Photon Beta; needs an in-app upload. See `CARLINNOTES.md`.
 - [ ] SMS fallback. Architecture only for now. See `CARLINNOTES.md`.
 - [ ] Demo mode with a replayable message fixture. "Never cut" in the PRD.
 - [x] Update `.env.example`: it still says "ask Carlin for these", which contradicts `PHOTON_SETUP.md`.
 
+- [ ] Persist case reports (and the rest of the data). Saved case reports live in memory and are lost on restart or reset.
+
 ## B. ML & Graph
 
-- [ ] Gemini classifier replacing the keyword stub: structured JSON output, evidence quote must be an exact substring, 6-second timeout with keyword fallback, response cache.
+- [x] Gemini classifier replacing the keyword stub: structured JSON output, evidence quote must be an exact substring, 6-second timeout with keyword fallback, response cache.
 - [ ] Taxonomy: the code has 8 barrier labels; PRD 1 lists 14 (adds `school-caused`, `mental health or school avoidance`, `late arrival`, `community safety concern`, `religious or cultural observance`, and splits housing and food).
-- [ ] Safety classifier: Vietnamese terms, indirect phrasings, whole-word matching; the model may add a flag but never clear one; fail closed.
+- [x] Safety classifier: Vietnamese terms, indirect phrasings, whole-word matching; the model may add a flag but never clear one; fail closed. (Vietnamese terms still need a native speaker's review.)
 - [ ] Confidence from agreement across 5 samples, with an auto-accept threshold.
 - [ ] Cluster detection: permutation scan statistic with p-values, replacing the rule-based stub.
 - [ ] Three detectors and the held-out ablation (`eval/ablation.json`).
@@ -77,7 +81,7 @@ Owners follow PRD 3 §5: **A** Messaging & Photon (me), **B** ML & Graph, **C** 
 - [ ] Deploy to Vultr with HTTPS and a domain.
 - [ ] Connect ChatOverflow.
 - [ ] Hash-chained audit log.
-- [ ] Replace names with placeholders before any model call.
+- [x] Replace names with placeholders before any model call. (Student, guardian and teacher names; done in `classifier.py`.)
 - [ ] Disable `/api/reset` in the public build.
 - [ ] Decide on renaming the product to "Here".
 - [ ] Three timed demo rehearsals and a backup video.

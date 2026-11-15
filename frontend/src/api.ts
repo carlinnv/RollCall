@@ -39,10 +39,19 @@ export interface Classification {
   confidence: number;
   evidence: string;
   safety_critical: boolean;
-  // keyword | gemini | correction_override | staff_correction
-  source?: string;
+  // Where the label came from (backend Classification.source).
+  source:
+    | "gemini"
+    | "keywords"
+    | "keywords_fallback"
+    | "safety_keywords"
+    | "counselor"
+    | "correction_override"
+    | "staff_correction";
+  language: string | null;
   correction_ref?: string | null;
   correction_similarity?: number | null;
+  safety_types?: string[];
 }
 
 export interface Correction {
@@ -82,7 +91,8 @@ export interface Message {
   raw_text_or_transcript: string;
   timestamp: string;
   latency_ms: number | null;
-  kind: "reply" | "check_in" | "plan" | "ack";
+  kind: "reply" | "check_in" | "plan" | "ack" | "crisis" | "page";
+  deliver_after: string | null;
   status: "received" | "sent" | "queued" | "blocked" | "failed";
   reason: string | null;
   route: string | null;
@@ -153,7 +163,7 @@ export interface ActionPlan {
 }
 
 export interface OutboxMessage {
-  kind: "plan" | "check_in" | "ack";
+  kind: "plan" | "check_in" | "ack" | "crisis" | "page";
   plan_id?: string;
   absence_id?: string;
   to: string;
@@ -200,13 +210,79 @@ export interface RecoveryResult {
 }
 
 export interface Escalation {
+  escalation_id: string;
   absence_id: string;
   student_id: string;
+  household_id: string;
   reason: string;
   evidence: string;
   assigned_to: string;
-  status: string;
+  status: "open" | "acknowledged" | "closed";
+  opened_at: string;
+  acknowledged_at: string | null;
+  acknowledged_by: string | null;
+  report_status: "report_filed" | "not_required" | null;
+  report_by: string | null;
+  report_at: string | null;
+  closed_at: string | null;
+  closed_by: string | null;
+  outcome: "resolved" | "not_safety" | null;
+  relabeled_to: Barrier | null;
+  note: string | null;
+  safety_types: string[];
+  crisis_message_status: "sent" | "queued" | "blocked" | "failed" | "withheld" | null;
+  crisis_message_reason: string | null;
+  crisis_message_at: string | null;
+  pages: Page[];
+  minutes_open: number;
+  overdue: boolean;
+  case_report_versions: number;
+  case_report_saved_at: string | null;
   student: Student;
+}
+
+export type StaffRole = "counselor" | "administrator" | "principal";
+
+export interface StaffMember {
+  staff_id: string;
+  name: string;
+  role: StaffRole;
+  phone: string;
+  on_call: boolean;
+  reachable: boolean;
+}
+
+export interface OnCallStatus {
+  staff: StaffMember[];
+  school_time: string;
+  timezone: string;
+  school_hours: string;
+  school_days: string;
+  in_school_hours: boolean;
+  first_role_now: StaffRole;
+  would_page_now: string[];
+  escalate_after_minutes: number;
+  agent_handle: string | null;
+  channel_listening: boolean;
+}
+
+export interface Page {
+  staff_id: string | null;
+  name: string | null;
+  role: StaffRole | null;
+  phone: string | null;
+  level: "first" | "escalated";
+  at: string;
+  status: "sent" | "queued" | "blocked" | "failed";
+  reason: string | null;
+}
+
+export interface CaseReport {
+  escalation_id: string;
+  version: number;
+  text: string;
+  saved_by: string;
+  saved_at: string;
 }
 
 export interface RevenueSettings {
@@ -253,6 +329,20 @@ export const api = {
       language,
     }),
   escalations: () => req<Escalation[]>("/escalations"),
+  acknowledgeEscalation: (id: string, by: string) => post<Escalation>(`/escalations/${id}/acknowledge`, { by }),
+  reportEscalation: (id: string, by: string, decision: "report_filed" | "not_required") =>
+    post<Escalation>(`/escalations/${id}/report`, { by, decision }),
+  oncall: () => req<OnCallStatus>("/oncall"),
+  addStaff: (s: { name: string; role: StaffRole; phone: string; on_call: boolean }) => post<StaffMember>("/oncall/staff", s),
+  updateStaff: (id: string, fields: Partial<StaffMember>) =>
+    req<StaffMember>(`/oncall/staff/${id}`, { method: "PATCH", body: JSON.stringify(fields) }),
+  removeStaff: (id: string) => req<{ ok: boolean }>(`/oncall/staff/${id}`, { method: "DELETE" }),
+  testPage: (id: string) => post<{ status: string; reason: string | null }>(`/oncall/staff/${id}/test`),
+  draftCaseReport: (id: string, by: string) => post<{ text: string }>(`/escalations/${id}/case-report/draft`, { by }),
+  caseReports: (id: string) => req<CaseReport[]>(`/escalations/${id}/case-reports`),
+  saveCaseReport: (id: string, by: string, text: string) => post<CaseReport>(`/escalations/${id}/case-reports`, { by, text }),
+  closeEscalation: (id: string, by: string, outcome: "resolved" | "not_safety", relabel_to?: Barrier, note?: string) =>
+    post<Escalation>(`/escalations/${id}/close`, { by, outcome, relabel_to, note }),
   clusters: () => req<Cluster[]>("/clusters"),
   clusterMeta: () => req<ClusterMeta>("/clusters/meta"),
   correct: (id: string, label: Barrier, corrected_by: string) =>

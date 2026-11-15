@@ -11,3 +11,4 @@ backend/data_raw/
 backend/eval/cache/
 CARLINNOTES.md
 .cache/
+.data/

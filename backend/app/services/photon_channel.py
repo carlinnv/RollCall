@@ -76,6 +76,12 @@ def handle_inbound(sender: str, text: str, received_at: str, message_id: str = "
     a safety disclosure is never dropped. Opting out only stops what we send.
     """
     result = {"route": "ignored", "absence_id": None, "student_id": None, "reply": None}
+    staff_reply = store.staff_command(sender, text)
+    if staff_reply is not None:  # "ACK" from a staff phone: never classified as a family reply
+        store.log_message(direction="inbound", channel="imessage", raw_text_or_transcript=text,
+                          timestamp=iso(_parse(received_at)), route="staff", phone=sender,
+                          external_id=message_id or None)
+        return {**result, "route": "staff", "reply": staff_reply}
     key = _digits(sender)
     received = _parse(received_at)
     logged = False
@@ -143,7 +149,7 @@ def send_text(student: Student, phone: str, text: str, key: str) -> dict:
     contact = contacts.get(_digits(phone))
     if contact is None:
         return {"status": "queued", "channel": None,
-                "reason": "family has not texted the agent line yet (a shared line cannot send first)"}
+                "reason": "this number has not texted the agent line yet (a shared line cannot send first)"}
 
     from photon_api.generated.models import SendMessageRequest, SendTextContent
     from photon_api.rpc_generated import SendMessageHeader, SendMessageInput, SendMessagePath
@@ -237,6 +243,8 @@ def _loop(cfg: dict) -> None:
         while not _stop.is_set():
             try:
                 since = _poll(photon, cfg, since)
+                store.flush_due()  # release messages held overnight for quiet hours
+                store.check_paging()  # page the principal about cases unacknowledged for 15 minutes
             except Exception as error:  # keep the loop alive through API or network errors
                 log.warning("photon poll failed: %s", type(error).__name__)
             _stop.wait(POLL_SECONDS)
@@ -256,6 +264,7 @@ def start() -> bool:
                                name="photon-channel", daemon=True)
     _thread.start()
     store.sender = send_text
+    store.staff_sender = lambda phone, text, key: send_text(None, phone, text, key)
     return True
 
 

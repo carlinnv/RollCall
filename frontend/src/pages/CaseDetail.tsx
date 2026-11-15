@@ -12,6 +12,7 @@ const SOURCE_TEXT: Record<string, string> = {
   gemini: "Gemini",
   correction_override: "a similar past staff correction",
   staff_correction: "staff correction",
+  counselor: "the counselor (closed as not a safety concern)",
 };
 
 const ROUTE_TEXT = {
@@ -21,7 +22,7 @@ const ROUTE_TEXT = {
   unknown: "Barrier unclear. Follow up with the family by phone.",
 };
 
-const KIND = { reply: "Family", check_in: "Check-in", plan: "Plan message", ack: "Automatic reply" };
+const KIND = { reply: "Family", check_in: "Check-in", plan: "Plan message", ack: "Automatic reply", crisis: "Crisis resources (988/911)", page: "Staff page" };
 const CHANNEL = { imessage: "iMessage", sms: "SMS", simulated: "simulated", seed: "sample data" };
 
 /** One line under a message: who, channel, time, and how long it took. */

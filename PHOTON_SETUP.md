@@ -106,6 +106,9 @@ To play a different student, add `PHOTON_DEMO_STUDENT_ID=S014` (or any student I
 - **You must text first.** The agent cannot message a number that has not texted it. Send one message before testing anything outbound.
 - **The page updates by itself.** A new text appears within a few seconds; no need to refresh.
 - **Text only.** Photos and voice notes are ignored.
+- **Check-ins wait overnight.** Between 8pm and 8am Pacific, check-ins and plan messages are held and sent at 8am; the outbox says "quiet hours". Add `QUIET_HOURS=off` to `.env` to test at night. Replies to your own texts are never held.
+- **Self-harm messages get a crisis reply.** A text like "she doesn't want to live" sends one fixed 988/911 message, even at night, unless it also mentions abuse.
+- **To get paged about safety cases,** add your name and number on the **On-call** page. Your phone must have texted the agent once (step 4 covers this). Reply `ACK` to a page to acknowledge it; your other texts are still treated as a parent's, so one phone can play both. On a weekend, set `SCHOOL_DAYS=all` or only administrators are paged.
 - **Opt-outs work.** If you text `STOP`, or something like "no more messages" or "no más mensajes", the agent goes silent for your number. Text `START` to undo it.
 - **A safety message silences the agent.** After a text about bullying or feeling unsafe, you get no more automatic replies until you click **Reset demo data**.
 - **Restarting the API resets the data.** Everything is in memory. Saving a backend file triggers a restart.

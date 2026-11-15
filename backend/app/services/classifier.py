@@ -48,7 +48,7 @@ log = logging.getLogger("uvicorn.error")
 DEFAULT_MODEL = "gemini-3.5-flash-lite"  # fastest reliable option on Nov 14, 2026; override with GEMINI_MODEL
 TIMEOUT_S = 6.0  # our budget per reply; enforced on the worker future in _ask()
 MIN_HTTP_DEADLINE_S = 10.0  # the API rejects a manually set request deadline under 10 s (400 INVALID_ARGUMENT)
-PROMPT_VERSION = "v1"  # bump when the prompt or schema changes, so old cache entries are not reused
+PROMPT_VERSION = "v2"  # bump when the prompt or schema changes, so old cache entries are not reused
 CACHE_DIR = Path(__file__).resolve().parents[2] / ".cache" / "gemini"
 
 # ---------- keyword baseline ----------
@@ -145,6 +145,7 @@ SAFETY_STRONG: List[Term] = (
            r"(?:quiere|quiero|queria) morir\w*", r"(?:matarse|matarme|suicidarse|cortarse)",
            r"(?:ya )?no (?:quiere|quiero|queria|quieren) (?:vivir|estar viv[oa]|seguir viviendo)",
            r"(?:lo|la|me|nos) (?:van|va) a matar",
+           r"(?:se|me) (?:quiere|quiero|queria|va a|voy a|iba a) matar", r"quitarme la vida", r"hacerme dano",
            # Vietnamese (accented, plus common unaccented typing)
            r"bắt nạt", r"bị bắt nạt", r"ăn hiếp", r"sợ", r"đánh", r"bị đánh", r"đe dọa", r"đe doạ", r"dọa", r"doạ",
            r"xâm hại", r"lạm dụng", r"quấy rối", r"sờ mó", r"ngược đãi", r"không an toàn", r"ở nhà một mình",
@@ -209,6 +210,49 @@ def safety_check(text: str) -> Optional[SafetyHit]:
                 continue
             return SafetyHit(sentence, term.pattern, "contextual")
     return None
+
+
+# ---------- kind of safety concern ----------
+# Decides whether the fixed crisis-resource message may be sent (PRD 3 section 3): yes for self-harm
+# or imminent danger, never when abuse or neglect is disclosed (the guardian's phone may not be safe).
+SAFETY_TYPES = ("self_harm", "imminent_danger", "abuse_or_neglect", "bullying", "supervision", "other")
+SAFETY_TYPE_TERMS: Dict[str, List[Term]] = {
+    "self_harm": _terms(
+        3, r"suicid\w*", r"self[ -]?harm\w*", r"cut(?:s|ting)? (?:himself|herself|myself|themselves)",
+        r"(?:hurt|hurts|hurting|harm|harms|harming|kill|kills|killing) (?:himself|herself|myself|themselves)",
+        r"(?:want|wants|wanted|wanting|wanna) to (?:die|be dead|disappear|end it)", r"wanna die",
+        r"(?:wish(?:es|ed)?|says?) (?:he|she|i|they) (?:was|were|is) dead", r"better off dead",
+        r"end (?:his|her|my|their) life", r"no reason to live", r"(?:not|no) (?:want(?:s|ing)? )?to live",
+        r"(?:doesn't|doesnt|does not|don't|dont|do not|didn't|didnt|did not|no longer|never) wants? to (?:live|be alive|be here anymore|wake up)",
+        r"quitarse la vida", r"quitarme la vida", r"hacerse dano", r"hacerme dano", r"(?:se|me) (?:quiere|quiero|queria) morir\w*",
+        r"(?:quiere|quiero|queria) morir\w*", r"(?:matarse|matarme|suicidarse|cortarse)",
+        r"(?:se|me) (?:quiere|quiero|queria|va a|voy a|iba a) matar",
+        r"(?:ya )?no (?:quiere|quiero|queria|quieren) (?:vivir|estar viv[oa]|seguir viviendo)",
+        r"tự tử", r"tự sát", r"tự làm hại", r"tự hại", r"muốn chết", r"không muốn sống", r"chẳng muốn sống",
+        r"muon chet", r"khong muon song", r"tu sat"),
+    "abuse_or_neglect": _terms(
+        3, r"abus\w*", r"molest\w*", r"neglect\w*", r"inappropriate\w*", r"touch\w* (?:him|her|me|them)",
+        r"(?:hit|hits|hitting|beat|beats|beating|slap\w*|chok\w*) (?:him|her|me|them)",
+        r"abus(?:o|an|aron|a|ando)\w*", r"maltrat\w*", r"(?:le|la|lo|me|nos|les|los|las) peg(?:a|an|o|aron|aba|aban|ue|uen|ando)",
+        r"(?:lo|la|le|me|los|las) golpe(?:a|an|o|aron|aba|aban)",
+        r"xâm hại", r"lạm dụng", r"sờ mó", r"ngược đãi", r"bị đánh", r"bi danh"),
+    "bullying": _terms(
+        3, r"bull(?:y|ies|ied|ying)", r"cyber ?bull\w*", r"harass\w*", r"pick(?:s|ed|ing)? on (?:him|her|them|me)",
+        r"mak(?:e|es|ing) fun of", r"acos\w*", r"se burlan", r"bắt nạt", r"bị bắt nạt", r"ăn hiếp", r"bat nat"),
+    "supervision": _terms(
+        3, r"home alone", r"left alone", r"(?:nobody|no one|no adult) (?:is )?(?:at )?home",
+        r"sol[oa]s? en (?:la )?casa", r"(?:lo|la) dejan sol[oa]", r"ở nhà một mình"),
+}
+
+
+def keyword_safety_types(text: str) -> List[str]:
+    """Kinds of concern the keyword rules find, in SAFETY_TYPES order. [] when the safety check does
+    not fire; ["other"] when it fires on something none of the kinds above cover (fear, threats)."""
+    if safety_check(text) is None:
+        return []
+    views = _Views(text)
+    found = {kind for kind, terms in SAFETY_TYPE_TERMS.items() if any(views.search(t) for t in terms)}
+    return [t for t in SAFETY_TYPES if t in found] or ["other"]
 
 
 def is_safety_critical(text: str) -> Optional[str]:
@@ -335,7 +379,7 @@ def keyword_classify(text: str, language: Optional[str] = None) -> Classificatio
     if hit:
         confidence = 0.95 if hit.strength == "strong" else 0.8
         return Classification(barrier=Barrier.SAFETY, confidence=confidence, evidence=hit.evidence,
-                              safety_critical=True)
+                              safety_critical=True, safety_types=keyword_safety_types(text))
 
     if not language_supported(language):
         # Fail closed: a person reads replies in languages we cannot check.
@@ -381,6 +425,8 @@ Return:
 - language: the ISO 639-1 code of the message language, for example "en", "es", "vi", "zh", "ar".
 - safety_concern: true if anything in the message suggests a child may be unsafe (bullying, threats, violence, abuse, neglect, a young child left alone or caring for an infant, self-harm), even when another label is the main reason. Otherwise false.
 
+- safety_type: when safety_concern is true, the kind of concern: "self_harm" (the child may hurt or kill themselves), "imminent_danger" (someone is in danger right now), "abuse_or_neglect" (an adult harms or neglects the child, at home or elsewhere), "bullying", "supervision" (a young child left alone or caring for an infant), or "other". When safety_concern is false, "none".
+
 Names in the message are replaced with placeholders such as [NAME1]. Keep the placeholders unchanged in evidence_quote."""
 
 RESPONSE_SCHEMA = {
@@ -391,8 +437,9 @@ RESPONSE_SCHEMA = {
         "confidence": {"type": "number"},
         "language": {"type": "string"},
         "safety_concern": {"type": "boolean"},
+        "safety_type": {"type": "string", "enum": ["none", *SAFETY_TYPES]},
     },
-    "required": ["label", "evidence_quote", "confidence", "language", "safety_concern"],
+    "required": ["label", "evidence_quote", "confidence", "language", "safety_concern", "safety_type"],
 }
 
 # F8: similar past staff corrections, as a few-shot block placed before the message tags. A context
@@ -530,11 +577,16 @@ def classify(text: str, names: Iterable[str] = (), language: Optional[str] = Non
     if not evidence or evidence not in text:
         evidence = text.strip()  # never show staff words the family did not write
 
+    # The model can add a kind of concern (an abuse disclosure the keywords missed) but never remove one.
+    model_type = data.get("safety_type") if data.get("safety_type") in SAFETY_TYPES else None
+    types = [t for t in SAFETY_TYPES if t in set(base.safety_types) | ({model_type} if model_type else set())]
+
     if base.safety_critical:  # the keyword check always wins; the model can never clear a safety flag
-        return base.model_copy(update={"source": "safety_keywords", "language": language})
+        return base.model_copy(update={"source": "safety_keywords", "language": language, "safety_types": types})
     if barrier == Barrier.SAFETY or data.get("safety_concern") is True:
         return Classification(barrier=Barrier.SAFETY, confidence=round(confidence, 2), evidence=evidence,
-                              safety_critical=True, source="gemini", language=language)
+                              safety_critical=True, source="gemini", language=language,
+                              safety_types=types or ["other"])
     if barrier == Barrier.UNKNOWN:
         evidence = text.strip()
     return Classification(barrier=barrier, confidence=round(confidence, 2), evidence=evidence,
