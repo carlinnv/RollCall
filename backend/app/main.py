@@ -20,8 +20,8 @@ from .services import demo  # noqa: E402
 demo.apply_settings()  # DEMO_MODE fixes the story and quiet hours before the store loads the seed
 
 from .models import Barrier, FamilyReply, RevenueSettings  # noqa: E402
-from .services import classifier, oncall, outreach, photon_channel  # noqa: E402
-from .store import RECOVERY_SESSION, TODAY, iso, store, utc_now  # noqa: E402
+from .services import classifier, oncall, outreach, persist, photon_channel, timeseries  # noqa: E402
+from .store import RECOVERY_SESSION, TODAY, data_source, iso, store, utc_now  # noqa: E402
 
 EVAL_DIR = Path(__file__).resolve().parents[1] / "eval"
 
@@ -32,9 +32,11 @@ async def lifespan(_: FastAPI):
     load_dotenv(Path(__file__).resolve().parents[2] / ".env")
     if demo.enabled():  # no Photon: outbound texts are logged on the replay channel
         store.sender, store.staff_sender = demo.replay_sender, demo.replay_staff_sender
+    persist.start(store)  # load saved data from TigerData before anything can change the store
     photon_channel.start()
     yield
     photon_channel.stop()
+    persist.stop(store)
 
 
 app = FastAPI(title="Why Absent API", version="0.1.0", lifespan=lifespan)
@@ -110,7 +112,8 @@ class CloseIn(StaffIn):
 @app.get("/api/health")
 def health():
     return {"ok": True, "today": TODAY, "classifier": classifier.status(), "quiet_hours": outreach.quiet_status(),
-            "demo_mode": demo.enabled()}
+            "demo_mode": demo.enabled(), "data_source": data_source(),
+            "saving": persist.active()}
 
 
 @app.get("/api/taxonomy")
@@ -120,6 +123,9 @@ def taxonomy():
 
 @app.post("/api/reset")
 def reset():
+    # Reset reloads the synthetic demo school. With live data it would erase real records.
+    if data_source() == "live":
+        raise HTTPException(403, "Reset is only available with demo data (DATA_SOURCE=demo).")
     store.reset()
     return {"ok": True}
 
@@ -144,8 +150,8 @@ def absence(absence_id: str):
 
 @app.post("/api/absences/import")
 def import_absences(body: CsvIn):
-    added, errors = store.import_csv(body.csv)
-    return {"added": added, "errors": errors}
+    added, errors, students_added = store.import_csv(body.csv)
+    return {"added": added, "errors": errors, "students_added": students_added}
 
 
 @app.post("/api/absences/{absence_id}/reply")
@@ -489,18 +495,10 @@ def put_settings(settings: RevenueSettings):
 
 
 # ---------- TigerData timeline (optional sidecar) ----------
-from .services import timeseries  # noqa: E402
-
-
-@app.middleware("http")
-async def _tiger_sync(request, call_next):
-    response = await call_next(request)
-    if request.method != "GET" and request.url.path.startswith("/api/"):
-        timeseries.sync_async(store)
-    return response
-
-
 @app.get("/api/timeline")
 def timeline(group: str = "bus_route"):
-    timeseries.sync(store)
+    # While data is being saved to TigerData, the saver keeps absence_events current.
+    # If saving is off (load failed at startup), bring it up to date here instead.
+    if not persist.active():
+        timeseries.sync(store)
     return {"enabled": timeseries.enabled(), "group": group, "rows": timeseries.daily(group)}

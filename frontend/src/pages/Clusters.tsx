@@ -4,6 +4,7 @@ import type { Cluster } from "../api";
 import { useChanged, useLoad } from "../hooks";
 import { BarrierTag, ErrorNote, Page } from "../components/ui";
 import Timeline from "../components/Timeline";
+import { Bullet } from "../components/charts";
 
 const LINK: Record<string, string> = {
   bus_route: "Shared bus route",
@@ -27,6 +28,16 @@ function fmtP(p: number | null) {
 }
 
 function Stats({ c }: { c: Cluster }) {
+  if (c.observed !== null && c.expected !== null) {
+    return (
+      <div className="cluster-stat">
+        <Bullet observed={c.observed} expected={c.expected} cls={`barrier-${(c.likely_cause ?? c.barrier).split(" ")[0]}`} unit="students absent" />
+        <p className="small muted" style={{ margin: 0 }}>
+          p-value <b className="pv">{fmtP(c.p_value)}</b> · the chance of a group this size seeing this many by luck
+        </p>
+      </div>
+    );
+  }
   return (
     <div className="ablation">
       <div>

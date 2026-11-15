@@ -6,7 +6,9 @@ import os
 
 for key, value in {"DEMO_STORY": "full", "CLUSTER_METHOD": "auto", "DATASET": "demo", "DEMO_MODE": "0",
                    "CLAIM_CHECK_NLI": "0", "GEMINI_API_KEY": "", "GEMINI_KEY": "", "GOOGLE_API_KEY": "",
-                   "PHOTON_API_KEY": ""}.items():
+                   "PHOTON_API_KEY": "",
+                   # Never touch a real TigerData database. Empty (not unset) so .env cannot fill it in.
+                   "TIGER_DATABASE_URL": ""}.items():
     os.environ[key] = value
 os.environ.pop("CLASSIFIER", None)
 

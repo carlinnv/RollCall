@@ -347,7 +347,7 @@ export const api = {
   queue: () => req<QueueRow[]>("/absences"),
   absence: (id: string) => req<AbsenceDetail>(`/absences/${id}`),
   students: () => req<Student[]>("/students"),
-  importCsv: (csv: string) => post<{ added: number; errors: string[] }>("/absences/import", { csv }),
+  importCsv: (csv: string) => post<{ added: number; errors: string[]; students_added: number }>("/absences/import", { csv }),
   reply: (id: string, text: string, channel: "text", language: string) =>
     post<{ route: "escalated" | "cluster" | "case" | "unknown"; absence: Absence }>(`/absences/${id}/reply`, {
       text,

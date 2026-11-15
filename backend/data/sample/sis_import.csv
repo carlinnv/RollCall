@@ -1,0 +1,33 @@
+student_id,first_name,last_name,grade,classroom,teacher,bus_route,household_id,preferred_language,guardian_name,guardian_phone,date,sis_code
+LU1001,Mateo,Alvarez,3,Room 3B,Ms. Okafor,Route 5,H101,es,Rosa Alvarez,+1-555-0150,2026-11-10,unexcused
+LU1002,Lucia,Alvarez,5,Room 5A,Mr. Brandt,Route 5,H101,es,Rosa Alvarez,+1-555-0150,2026-11-10,unexcused
+LU1003,Owen,Fitzgerald,3,Room 3B,Ms. Okafor,Route 5,H102,en,Claire Fitzgerald,+1-555-0152,2026-11-10,unverified
+LU1004,Linh,Tran,4,Room 4A,Mrs. Delgado,Route 5,H103,vi,Thu Tran,+1-555-0153,2026-11-10,unverified
+LU1005,Isaiah,Brooks,4,Room 4A,Mrs. Delgado,Route 5,H104,en,Dana Brooks,+1-555-0154,2026-11-10,unexcused
+LU1001,Mateo,Alvarez,3,Room 3B,Ms. Okafor,Route 5,H101,es,Rosa Alvarez,+1-555-0150,2026-11-11,unexcused
+LU1002,Lucia,Alvarez,5,Room 5A,Mr. Brandt,Route 5,H101,es,Rosa Alvarez,+1-555-0150,2026-11-11,unexcused
+LU1004,Linh,Tran,4,Room 4A,Mrs. Delgado,Route 5,H103,vi,Thu Tran,+1-555-0153,2026-11-11,unverified
+LU1006,Sofia,Reyes,2,Room 2C,Ms. Hwang,Route 5,H105,es,Elena Reyes,+1-555-0155,2026-11-11,unverified
+LU1007,Noah,Bennett,3,Room 3B,Ms. Okafor,Route 3,H106,en,Paul Bennett,+1-555-0156,2026-11-12,excused
+LU1008,Mei,Chen,3,Room 3B,Ms. Okafor,,H107,zh,Wei Chen,+1-555-0157,2026-11-12,unverified
+LU1009,Ava,Kowalski,3,Room 3B,Ms. Okafor,Route 3,H108,en,Anna Kowalski,+1-555-0158,2026-11-12,excused
+LU1010,Elijah,Grant,3,Room 3B,Ms. Okafor,,H109,en,Marcus Grant,+1-555-0159,2026-11-13,unverified
+LU1011,Zoe,Patel,3,Room 3B,Ms. Okafor,Route 8,H110,en,Nina Patel,+1-555-0160,2026-11-13,excused
+LU1007,Noah,Bennett,3,Room 3B,Ms. Okafor,Route 3,H106,en,Paul Bennett,+1-555-0156,2026-11-13,excused
+LU1023,Nora,Lindqvist,3,Room 3B,Ms. Okafor,Route 8,H121,en,Erik Lindqvist,+1-555-0172,2026-11-13,unverified
+LU1012,Diego,Morales,2,Room 2C,Ms. Hwang,Route 3,H111,es,Luis Morales,+1-555-0161,2026-11-09,unverified
+LU1013,Camila,Morales,4,Room 4A,Mrs. Delgado,Route 3,H111,es,Luis Morales,+1-555-0161,2026-11-09,unverified
+LU1012,Diego,Morales,2,Room 2C,Ms. Hwang,Route 3,H111,es,Luis Morales,+1-555-0161,2026-11-10,unverified
+LU1013,Camila,Morales,4,Room 4A,Mrs. Delgado,Route 3,H111,es,Luis Morales,+1-555-0161,2026-11-10,unverified
+LU1014,Henry,Walsh,5,Room 5A,Mr. Brandt,Route 8,H112,en,Grace Walsh,+1-555-0163,2026-11-09,excused
+LU1016,Bao,Nguyen,2,Room 2C,Ms. Hwang,Route 8,H114,vi,Hoa Nguyen,+1-555-0165,2026-11-11,unverified
+LU1018,Ethan,Shah,4,Room 4A,Mrs. Delgado,Route 8,H116,en,Ravi Shah,+1-555-0167,2026-11-12,unexcused
+LU1020,Jayden,Price,4,Room 4A,Mrs. Delgado,,H118,en,Tasha Price,+1-555-0169,2026-11-09,unexcused
+LU1020,Jayden,Price,4,Room 4A,Mrs. Delgado,,H118,en,Tasha Price,+1-555-0169,2026-11-12,unexcused
+LU1020,Jayden,Price,4,Room 4A,Mrs. Delgado,,H118,en,Tasha Price,+1-555-0169,2026-11-13,unexcused
+LU1022,Leo,Haddad,5,Room 5A,Mr. Brandt,Route 8,H120,en,Sami Haddad,+1-555-0171,2026-11-11,excused
+LU1024,Kai,Yamamoto,4,Room 4A,Mrs. Delgado,Route 3,H122,en,Aiko Yamamoto,+1-555-0173,2026-11-13,unverified
+LU1015,Amara,Okeke,5,Room 5A,Mr. Brandt,,H113,en,Ifeoma Okeke,+1-555-0164,,
+LU1017,Lily,Foster,2,Room 2C,Ms. Hwang,,H115,en,Jenna Foster,+1-555-0166,,
+LU1019,Grace,Kim,5,Room 5A,Mr. Brandt,Route 3,H117,en,Joon Kim,+1-555-0168,,
+LU1021,Valentina,Cruz,2,Room 2C,Ms. Hwang,Route 3,H119,es,Ana Cruz,+1-555-0170,,

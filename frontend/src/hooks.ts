@@ -152,3 +152,34 @@ export function useStableOrder<T>(items: T[] | null | undefined, idOf: (item: T)
 
   return { ...result, resort };
 }
+
+export interface Health {
+  /** Which classifier labels replies, for the pill in the top bar. */
+  engine: { label: string; live: boolean };
+  /** True for the synthetic demo school, false for live data imported from an SIS. */
+  demoData: boolean;
+  /** Live data is being saved to the database. */
+  saving: boolean;
+}
+
+/** The API's /health, read once. Null until it answers. */
+export function useHealth() {
+  const [health, setHealth] = useState<Health | null>(null);
+  useEffect(() => {
+    fetch("/api/health")
+      .then((r) => r.json())
+      .then((h) =>
+        setHealth({
+          engine: h.demo_mode
+            ? { label: "Demo mode · recorded answers", live: false }
+            : h.classifier?.engine === "gemini"
+              ? { label: "Gemini live", live: true }
+              : { label: "Keyword rules", live: false },
+          demoData: h.data_source !== "live",
+          saving: !!h.saving,
+        }),
+      )
+      .catch(() => setHealth({ engine: { label: "API offline", live: false }, demoData: true, saving: false }));
+  }, []);
+  return health;
+}

@@ -24,7 +24,8 @@ export default function CaseQueue() {
 
   const onImport = async (file: File) => {
     const res = await api.importCsv(await file.text());
-    setImportMsg(`Imported ${res.added} absence(s)${res.errors.length ? `; ${res.errors.length} row(s) skipped: ${res.errors.join("; ")}` : "."}`);
+    const people = res.students_added ? ` and ${res.students_added} new student(s)` : "";
+    setImportMsg(`Imported ${res.added} absence(s)${people}${res.errors.length ? `; ${res.errors.length} row(s) skipped: ${res.errors.join("; ")}` : "."}`);
     reload();
   };
 
@@ -35,7 +36,7 @@ export default function CaseQueue() {
       actions={
         <>
           <input ref={fileRef} type="file" accept=".csv" hidden onChange={(e) => e.target.files?.[0] && onImport(e.target.files[0])} />
-          <button className="ghost" onClick={() => fileRef.current?.click()} title="CSV columns: student_id,date,sis_code">
+          <button className="ghost" onClick={() => fileRef.current?.click()} title="CSV columns: student_id, date, sis_code. Add first_name, last_name, grade, classroom, teacher, bus_route, household_id, preferred_language, guardian_name, guardian_phone to add or update students.">
             Import SIS CSV
           </button>
         </>
