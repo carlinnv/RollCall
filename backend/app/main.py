@@ -196,6 +196,13 @@ def eval_retrieval():
     return _eval_file("retrieval.json")
 
 
+@app.get("/api/eval/ablation-with-contacts")
+def eval_ablation_with_contacts():
+    """Comparison only: the same held-out test with research sensor contact circles added to the detector.
+    A real school cannot collect sensor data; the default detector uses school records only."""
+    return _eval_file("ablation_with_contacts.json")
+
+
 @app.get("/api/eval/scaling")
 def eval_scaling():
     return _eval_file("scaling.json")

@@ -29,6 +29,7 @@ graph-only and two-stage from one all-cause scan.
 from __future__ import annotations
 
 import dataclasses
+import os
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
@@ -42,14 +43,21 @@ DETECTORS: Tuple[str, ...] = ("content_only", "graph_only", "combined")
 ALL_DETECTORS: Tuple[str, ...] = DETECTORS + ("two_stage",)
 LABEL_DETECTORS: Tuple[str, ...] = ("content_only", "combined", "two_stage")
 ANY_DETECTORS: Tuple[str, ...] = ("graph_only", "two_stage")   # all-cause scan: detection ignores the cause
+# By default the detectors see only what a real school has: class rosters, bus routes, neighborhoods
+# (households are always collapsed). A real school cannot collect sensor proximity data, so the
+# SocioPatterns contact network is only "nature" in the simulator (illness spreads along it).
+# DETECTOR_USE_CONTACTS=1 adds sensor contact circles to the detector, for comparison only.
+RECORDS_ONLY = os.environ.get("DETECTOR_USE_CONTACTS", "0") != "1"
+DETECT_LAYERS: Tuple[str, ...] = tuple(l for l in SPATIAL_LAYERS if not (RECORDS_ONLY and l == "contact"))
+
 DETECTOR_LAYERS: Dict[str, Tuple[str, ...]] = {
     "content_only": ("school", "grade"),
-    "graph_only": SPATIAL_LAYERS,
-    "two_stage": SPATIAL_LAYERS,
+    "graph_only": DETECT_LAYERS,
+    "two_stage": DETECT_LAYERS,
     # All zones. The whole-school zone is left out: under the space-time permutation statistic its
     # LLR is identically 0 (c == mu), and the barrier-as-space substitute content-only uses would
     # re-admit school-wide flu waves, which the spatial scan is designed to condition out.
-    "combined": SPATIAL_LAYERS + ("grade",),
+    "combined": DETECT_LAYERS + ("grade",),
 }
 # Graph-only cause guess by zone type (PRD 2 section 4, detector 2).
 ZONE_ATTRIBUTION: Dict[str, str] = {
@@ -186,7 +194,7 @@ class Pipeline:
             for d in label_dets:
                 out[d] = self._result(d, as_of, [f for f in fams if f.layer in DETECTOR_LAYERS[d]])
         if any(d in detectors for d in ANY_DETECTORS):
-            fams = scan_day(self.obs, self.zones, as_of, "any", SPATIAL_LAYERS, self.params)
+            fams = scan_day(self.obs, self.zones, as_of, "any", DETECT_LAYERS, self.params)
             if "graph_only" in detectors:
                 out["graph_only"] = self._result("graph_only", as_of, fams)
             if "two_stage" in detectors:

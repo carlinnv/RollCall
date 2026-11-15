@@ -10,6 +10,8 @@
 
 **Insight to test and report honestly:** SocioPatterns contacts are mostly within a class. Measure what contact ego-nets add *beyond* class sections (e.g., cross-class contagion that section-level zones miss). A null result is still worth reporting.
 
+**Result:** they add nothing measurable. Held-out right-cause recall is 0.53 with school records only and 0.53 with sensor contact circles added (illness 0.13 vs 0.17, 4 vs 5 of 30 events). 83% (Lyon) and 94% (Marseille) of contact time is within a class, so class rosters capture most of it. The detector therefore uses school records only.
+
 ---
 
 ## 2. Data Sources & Synthetic Simulation
@@ -21,6 +23,7 @@
   * **Optional extra held-out graphs:** Utah Elem1 (339) and Mid1 (591) from *Toth et al., J. R. Soc. Interface 2015*, available via HypergraphX. License not stated there; check the paper's supplementary material before use.
   * **Do not merge schools into one graph.** They have no edges between them and come from different sensors and time resolutions.
 * **Daily graph construction:** `w_ij` = seconds of contact per day; keep each node's top-k edges by weight (rank-based, robust across sensors) rather than an absolute threshold. Cycle the recorded days across the simulated calendar.
+* **No sensors in production:** a real school cannot collect proximity data. The sensor network plays "nature" in the simulator (illness spreads along real contacts); the detector uses only records a school already keeps (class rosters, bus rosters, households, neighborhoods); this is the default. Held-out right-cause recall: 0.53 with records only (`eval/ablation.json`), the same as with sensor contact circles added (`DETECTOR_USE_CONTACTS=1`, comparison only, `eval/ablation_with_contacts.json`).
 * **Graph handling rules:** re-key node IDs and drop original class names; contact edges are used only for illness-spread scoring; never attach safety or housing labels to real-graph nodes.
 * **Logistics Layers (Synthetic):** Assign synthetic bus routes, household IDs, and neighborhoods to every student node.
 * **Scaling benchmark (synthetic):** a 10k–50k-student stochastic block model with class structure matched to the real graphs, used only for a runtime-vs-N chart (Arlequin "responsible compute").
@@ -63,13 +66,13 @@
 * **Learning From Corrections (F8):** staff-confirmed corrections are stored per school; the most similar past corrections are added to the prompt as examples. Corrections used as examples must come from a split that does not overlap the test set.
 
 ### 3.2 Root-Cause Cluster Detection (F3 — P0)
-* **Zones Z:** every group in each logistics layer (class section, route, neighborhood), plus k-nearest contact ego-nets for every student with k ∈ {5, 10, 20} ranked by contact weight. Households are collapsed to one unit (siblings out together is expected, not a cluster).
+* **Zones Z:** every group in each logistics layer (class section, route, neighborhood), (comparison only: k-nearest sensor-contact ego-nets, k ∈ {5, 10, 20}; a real school has no sensor data). Households are collapsed to one unit (siblings out together is expected, not a cluster).
 * **Windows W:** the last w ∈ {1, 2, 3} school days, run prospectively each day with an `as_of` date (needed for replay and lead time).
 * **Statistic:** for each barrier *b*, a Kulldorff space-time permutation scan. With `c` = b-absences in Z×W, `C_Z`, `C_W` the zone and window totals, `C` the total over a baseline of ≥ 40 simulated days, and `μ = C_Z · C_W / C` (which conditions out school-wide waves):
   `LLR = c · ln(c/μ) + (C − c) · ln((C − c)/(C − μ))` when `c > μ`, else 0.
 * **Null & multiple testing:** shuffle the dates of b-absences across students 999 times and take the max LLR over all (Z, W) in each (layer, barrier) family, giving a family-wise p-value. Apply Benjamini–Hochberg at q = 0.10 across families. Vectorized NumPy; runs on a laptop.
 * **Cause Attribution:**
-  * `illness` over contact ego-nets on consecutive days $\rightarrow$ **contagion-like illness cluster** (contact edges are used only here).
+  * `illness` concentrated in a class section over consecutive days $\rightarrow$ **contagion-like illness cluster**.
   * `transportation` concentrated on one route $\rightarrow$ **route failure (school-caused)**.
 * **Output:** rank clusters by p-value then size; attach cited source messages and weekly revenue at risk.
 * **Revenue at Risk:** `weekly_revenue_at_risk = (absence days by cluster members this school week) × daily_rate`, default $65, editable. Matches `backend/app/services/revenue.py`.
