@@ -10,9 +10,9 @@ Princeton Hacks Fall 2026 Project: an app that helps school districts track stud
 
 A 73-second narrated walkthrough: a family replies in Spanish, the reason is labeled, the Route 7 cluster appears, the clerk approves the plan, and a safety message goes to a counselor.
 
-[![RollCall demo: a Spanish reply is labeled, the Route 7 cluster appears, the clerk approves the plan](documents/video-demo-preview.gif)](documents/video-demo.mp4)
+[![RollCall demo: a Spanish reply is labeled, the Route 7 cluster appears, the clerk approves the plan](documents/video-demo-preview.gif)](https://www.youtube.com/watch?v=o05Bm99OJmk)
 
-Click the preview for the full video with sound.
+The preview above has no sound. To hear the audio, watch the demo on YouTube: https://www.youtube.com/watch?v=o05Bm99OJmk
 
 ## Stack
 
