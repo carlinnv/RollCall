@@ -191,8 +191,9 @@ def _poll(photon, cfg: dict, created_since: str, handle: bool = True) -> str:
             sender, agent, space = m.sentBy.root, m.receivedBy.root, m.space.root
             if sender.kind != "human" or agent.kind != "agent" or sender.id == agent.id or space.kind != "direct":
                 continue
-            if agent.handle != cfg["PHOTON_AGENT_HANDLE"]:
-                continue
+            # Any agent line in this project counts: on a shared line, Photon assigns each sender
+            # their own agent number, so a teammate's or staff member's phone texts a different line
+            # than PHOTON_AGENT_HANDLE. Replies and pages go back out on the line that person texted.
             contacts[_digits(sender.handle)] = {"space_id": space.id, "agent_id": agent.id}
             if not handle:
                 continue

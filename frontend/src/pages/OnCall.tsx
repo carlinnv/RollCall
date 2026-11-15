@@ -55,7 +55,7 @@ function StaffRow({ s, onChange }: { s: StaffMember; onChange: () => void }) {
         {s.reachable ? (
           <span className="tag">reachable</span>
         ) : (
-          <span className="muted small">Not yet: text the agent number from this phone once</span>
+          <span className="muted small">Not yet: from this phone, text its assigned agent number once</span>
         )}
       </td>
       <td>
@@ -139,8 +139,9 @@ export default function OnCall() {
       <div className="card">
         <h3>Roster</h3>
         <p className="muted small">
-          Pages come from the agent number{data?.agent_handle ? ` (${data.agent_handle})` : ""}. On the shared Photon line, each phone must
-          be added as a sender in the Photon dashboard and must text the agent number once before it can receive pages.
+          On the shared Photon line, add each phone as a sender in the Photon dashboard (iMessage page). Photon assigns that phone its own
+          agent number. Text that number once from the phone; pages then arrive from it. If a phone still shows "Not yet", check the number
+          here matches the phone exactly.
         </p>
         <table>
           <thead>

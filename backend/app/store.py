@@ -483,8 +483,9 @@ class Store:
 
     @property
     def outbox(self) -> List[dict]:
-        """Outbound messages in the shape the Plans page reads."""
-        return [self._outbox_entry(m) for m in self.messages if m.direction == "outbound"]
+        """Outbound messages to families, in the shape the Plans page reads. Staff pages are not
+        family messages: they show on the escalation card and in the message log."""
+        return [self._outbox_entry(m) for m in self.messages if m.direction == "outbound" and m.kind != "page"]
 
     @staticmethod
     def _outbox_entry(m: Message) -> dict:
