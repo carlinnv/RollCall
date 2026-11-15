@@ -130,3 +130,13 @@ dd { margin: 0; }
   .grid2 { grid-template-columns: 1fr; }
   main { padding: 20px 16px; }
 }
+
+/* Live updates: a changed row or card is highlighted, then fades over 6 s (FLASH_MS in hooks.ts). */
+@keyframes flash-row { from { background-color: #ffe58a; } to { background-color: transparent; } }
+@keyframes flash-card { from { background-color: #fff3bf; box-shadow: 0 0 0 3px #ffd43b; } to { background-color: var(--panel); box-shadow: 0 0 0 3px transparent; } }
+tr.flash td { animation: flash-row 6s ease-out; }
+.card.flash { animation: flash-card 6s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  tr.flash td, .card.flash { animation: none; background-color: #fff3bf; }
+}
+button.link { background: none; border: none; padding: 0; color: var(--brand); font: inherit; cursor: pointer; text-decoration: underline; }

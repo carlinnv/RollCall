@@ -7,18 +7,34 @@ State lives in memory for the hackathon demo; `reset()` reloads the seed.
 """
 import csv
 import io
-from datetime import date, datetime
+import statistics
+import threading
+from datetime import date, datetime, timezone
 from typing import Callable, Dict, List, Optional, Tuple
 
 from .data import seed
 from .models import (
     Absence, AbsenceStatus, ActionPlan, Barrier, Classification, Cluster, Escalation, FamilyReply,
-    LearningPlan, PlanStatus, RevenueSettings, RevenueSummary, Student,
+    LearningPlan, Message, PlanStatus, RevenueSettings, RevenueSummary, Student,
 )
 from .services import action_plan, classifier, clustering, learning_plan, outreach, revenue
 
 TODAY = date(2026, 11, 14)
 PRIOR_DAYS_RECOVERED = 14  # recovered through Attendance Recovery before this week (synthetic)
+LATENCY_TARGET_MS = 10_000  # PRD 3 F2: a reply is labeled within 10 seconds
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def iso(moment: datetime) -> str:
+    return moment.astimezone(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
+
+def elapsed_ms(start: datetime) -> int:
+    """Milliseconds since `start`. Never negative, in case the channel's clock runs ahead of ours."""
+    return max(0, round((utc_now() - start).total_seconds() * 1000))
 
 
 def _no_channel(student: Student, phone: str, text: str, key: str) -> dict:
@@ -31,6 +47,7 @@ class Store:
         # Delivery function, set by the Photon channel when it starts. Survives reset().
         # (student, phone, text, idempotency_key) -> {"status": sent | queued | failed, "reason", "channel"}
         self.sender: Callable[[Student, str, str, str], dict] = _no_channel
+        self._log_lock = threading.Lock()  # the Photon thread and API requests both append messages
         self.reset()
 
     # ---------- setup ----------
@@ -39,14 +56,14 @@ class Store:
         self.absences: Dict[str, Absence] = {}
         self.escalations: Dict[str, Escalation] = {}
         self.plans: Dict[str, ActionPlan] = {}
-        self.outbox: List[dict] = []
+        self.messages: List[Message] = []  # every inbound and outbound text, oldest first
         self.completed_learning: Dict[str, int] = {}  # student_id -> days recovered
         self.settings: RevenueSettings = revenue.STATE_DEFAULTS["CA"].model_copy()
         for rec in seed.absences():
             reply = rec.pop("reply")
             self.absences[rec["id"]] = Absence(**rec)
-            if reply:
-                self.record_reply(rec["id"], FamilyReply(**reply))
+            if reply:  # precomputed history: logged with no latency, and labeled without model calls
+                self.record_reply(rec["id"], FamilyReply(**reply), channel="seed", measure=False, use_model=False)
 
     # ---------- F1: absence tracking & cause capture ----------
     def import_csv(self, text: str) -> Tuple[int, List[str]]:
@@ -76,11 +93,36 @@ class Store:
             added += 1
         return added, errors
 
-    def record_reply(self, absence_id: str, reply: FamilyReply) -> str:
-        """Run the safety gate, classify, and return the route: escalated | cluster | case | unknown."""
+    def record_reply(self, absence_id: str, reply: FamilyReply, *, channel: str = "simulated",
+                     received: Optional[datetime] = None, external_id: Optional[str] = None,
+                     phone: Optional[str] = None, reason: Optional[str] = None, measure: bool = True,
+                     use_model: bool = True) -> str:
+        """Classify a family reply, log it, and return the route: escalated | cluster | case | unknown.
+
+        `received` is when the family's message arrived (defaults to now). Latency is measured
+        from then until the label is stored. The absence keeps its latest reply; the message
+        log keeps every one.
+        """
+        start = received or utc_now()
+        route = self._route_reply(absence_id, reply, use_model)
+        absence = self.absences[absence_id]
+        detected = absence.classification.language if absence.classification else None
+        self.log_message(
+            absence_id=absence_id, student_id=absence.student_id, direction="inbound", channel=channel,
+            language=detected or reply.language, raw_text_or_transcript=reply.text,
+            timestamp=iso(start) if measure else reply.received_at,
+            latency_ms=elapsed_ms(start) if measure else None,
+            route=route, classification=absence.classification, phone=phone, external_id=external_id,
+            reason=reason,
+        )
+        return route
+
+    def _route_reply(self, absence_id: str, reply: FamilyReply, use_model: bool = True) -> str:
+        """Run the safety gate and classify."""
         absence = self.absences[absence_id]
         absence.reply = reply
-        result: Classification = classifier.classify(reply.text)
+        result: Classification = (classifier.classify(reply.text, self.names_for(absence.student_id)) if use_model
+                                  else classifier.keyword_classify(reply.text))
         absence.classification = result
 
         if result.safety_critical:
@@ -100,8 +142,52 @@ class Store:
         in_cluster = any(absence_id in c.absence_ids for c in self.clusters())
         return "cluster" if in_cluster else "case"
 
+    def names_for(self, student_id: str) -> List[str]:
+        """Names to hide from the model for this student's messages: student, guardian, teacher."""
+        s = self.students[student_id]
+        return [s.first_name, s.last_name, *s.guardian_name.split(), s.teacher.split()[-1]]
+
     def absence_count(self, student_id: str) -> int:
         return sum(1 for a in self.absences.values() if a.student_id == student_id)
+
+    # ---------- message log ----------
+    def log_message(self, **fields) -> Message:
+        with self._log_lock:
+            message = Message(message_id=f"M{len(self.messages) + 1:04d}", **fields)
+            self.messages.append(message)
+        return message
+
+    def thread(self, absence_id: str) -> List[Message]:
+        """Every message tied to one absence, oldest first."""
+        return [m for m in self.messages if m.absence_id == absence_id]
+
+    def latency_summary(self, channel: Optional[str] = None) -> dict:
+        """How fast inbound replies were labeled, against the 10-second target."""
+        timed = [m.latency_ms for m in self.messages
+                 if m.direction == "inbound" and m.latency_ms is not None and channel in (None, m.channel)]
+        return {
+            "target_ms": LATENCY_TARGET_MS,
+            "measured": len(timed),
+            "within_target": sum(1 for ms in timed if ms <= LATENCY_TARGET_MS),
+            "median_ms": round(statistics.median(timed)) if timed else None,
+            "max_ms": max(timed) if timed else None,
+        }
+
+    @property
+    def outbox(self) -> List[dict]:
+        """Outbound messages in the shape the Plans page reads."""
+        return [self._outbox_entry(m) for m in self.messages if m.direction == "outbound"]
+
+    @staticmethod
+    def _outbox_entry(m: Message) -> dict:
+        entry = {"message_id": m.message_id, "kind": m.kind, "to": m.phone, "student_id": m.student_id,
+                 "text": m.raw_text_or_transcript, "sent_at": m.timestamp, "status": m.status,
+                 "reason": m.reason, "channel": m.channel, "latency_ms": m.latency_ms}
+        if m.plan_id:
+            entry["plan_id"] = m.plan_id
+        if m.absence_id:
+            entry["absence_id"] = m.absence_id
+        return entry
 
     def check_in_message(self, absence: Absence) -> str:
         return outreach.check_in_text(self.students[absence.student_id], absence.date)
@@ -113,8 +199,9 @@ class Store:
         return any(e.status == "open" and self.students[e.student_id].household_id == household
                    for e in self.escalations.values())
 
-    def send_to_family(self, student_id: str, text: str, kind: str, key: str, **meta) -> dict:
-        """Apply the outreach rules, deliver if allowed, and record the outcome in the outbox.
+    def send_to_family(self, student_id: str, text: str, kind: str, key: str,
+                       absence_id: Optional[str] = None, plan_id: Optional[str] = None) -> dict:
+        """Apply the outreach rules, deliver if allowed, and record the outcome in the message log.
 
         status: sent (accepted by the channel) | queued (allowed, not deliverable yet) |
                 blocked (a rule forbids it) | failed (the channel rejected it).
@@ -122,14 +209,18 @@ class Store:
         student = self.students[student_id]
         phone = outreach.phone_for(student)
         reason = outreach.blocked_reason(phone, text, self.household_suppressed(student_id))
+        start = utc_now()
         if reason:
             outcome = {"status": "blocked", "reason": reason, "channel": None}
         else:
             outcome = self.sender(student, phone, text, key)
-        entry = {**meta, "kind": kind, "to": phone, "student_id": student_id, "text": text,
-                 "sent_at": datetime.now().isoformat(timespec="seconds"), **outcome}
-        self.outbox.append(entry)
-        return entry
+        message = self.log_message(
+            absence_id=absence_id, student_id=student_id, direction="outbound", kind=kind,
+            language=student.preferred_language, raw_text_or_transcript=text, timestamp=iso(start),
+            latency_ms=elapsed_ms(start) if outcome["status"] == "sent" else None,
+            phone=phone, plan_id=plan_id, **outcome,
+        )
+        return self._outbox_entry(message)
 
     def send_check_in(self, absence_id: str) -> dict:
         """Send the supportive first check-in for an absence that has no reason on file."""

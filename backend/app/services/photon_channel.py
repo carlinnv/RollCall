@@ -9,12 +9,15 @@ API contract: https://photon.codes/docs/beta/get-started/imessage
 Guardrails (PRD 3 section 3):
 - Inbound text is data only. It goes to the classifier and is never executed.
 - Safety-critical replies get no automated answer; the counselor takes over.
-- STOP is honored immediately: the sender is opted out and nothing is sent.
+- Opt-outs are honored immediately, as a keyword (STOP) or in plain language
+  ("no más mensajes"): nothing more is sent to that number. Texts from an
+  opted-out family are still classified, so a safety disclosure is never dropped.
 - Every outbound message passes `outreach.blocked_reason` first (household
   safety suppression, opt-out, no links).
 - A shared line cannot send first: a family is reachable only after it has
   texted the agent line. Until then outbound messages stay queued.
-- Every inbound and outbound message is appended to `audit`.
+- Every inbound and outbound message is written to the store's message log,
+  with the time from arrival to label (`latency_ms`).
 
 The channel is off unless the PHOTON_* variables are set, so tests never touch it.
 """
@@ -22,18 +25,17 @@ import logging
 import os
 import threading
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
-from ..models import AbsenceStatus, FamilyReply, Student
-from ..store import store
-from . import outreach
+from ..models import AbsenceStatus, Barrier, FamilyReply, Student
+from ..store import elapsed_ms, iso, store, utc_now
+from . import classifier, outreach
 
 log = logging.getLogger("uvicorn.error")
 
 REQUIRED = ("PHOTON_API_KEY", "PHOTON_PROJECT_ID", "PHOTON_AGENT_HANDLE", "PHOTON_TEST_SENDER")
 POLL_SECONDS = 2.0
 CONTACT_LOOKBACK_DAYS = 3  # on startup, relearn which families have already texted the agent line
-STOP_WORDS = {"stop", "stopall", "unsubscribe", "cancel", "end", "quit", "alto", "parar"}
 
 ACK = {
     "en": "Thank you for letting us know. The school office has your message and will follow up.",
@@ -41,7 +43,6 @@ ACK = {
 }
 NOT_LINKED = "This number is not linked to a student record. Please call the school office."
 
-audit: List[dict] = []
 opted_out = outreach.opted_out
 contacts: Dict[str, dict] = {}  # phone digits -> {"space_id", "agent_id"} of the conversation that family opened
 _seen: set = set()
@@ -62,24 +63,43 @@ def _links() -> Dict[str, str]:
     return links
 
 
-def _record(direction: str, handle: str, text: str, **extra) -> None:
-    audit.append({"direction": direction, "channel": "imessage", "handle": handle, "text": text,
-                  "at": datetime.now(timezone.utc).isoformat(timespec="seconds"), **extra})
+def _parse(received_at: str) -> datetime:
+    moment = datetime.fromisoformat(received_at.replace("Z", "+00:00"))
+    return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
 
 
 def handle_inbound(sender: str, text: str, received_at: str, message_id: str = "") -> dict:
-    """Process one inbound text. Returns {"route", "absence_id", "reply"}; reply None means send nothing."""
-    result = {"route": "ignored", "absence_id": None, "reply": None}
-    key = _digits(sender)
+    """Process one inbound text and log it.
 
-    if text.strip().lower() in STOP_WORDS:
-        opted_out.add(key)
-        result["route"] = "opted_out"
-    elif key in opted_out:
-        result["route"] = "opted_out"
+    Returns {"route", "absence_id", "student_id", "reply"}; reply None means send nothing.
+    Every text from a known family is classified, including after an opt-out, so a reason or
+    a safety disclosure is never dropped. Opting out only stops what we send.
+    """
+    result = {"route": "ignored", "absence_id": None, "student_id": None, "reply": None}
+    key = _digits(sender)
+    received = _parse(received_at)
+    logged = False
+    note = None
+
+    student = store.students.get(_links().get(key, ""))
+    if student is not None:
+        result["student_id"] = student.id
+
+    if outreach.is_opt_in(text):
+        opted_out.discard(key)
+        result["route"], note = "opted_in", "family opted back in to messages"
     else:
-        student = store.students.get(_links().get(key, ""))
-        if student is None:
+        if outreach.is_opt_out(text):
+            opted_out.add(key)
+            note = "family opted out of messages"
+        # "STOP" or "no más mensajes" on its own says nothing about an absence, so it is not attached
+        # to one (it would overwrite a real reason with "unknown"). A longer message that also gives
+        # a reason, e.g. "no more texts, she has a fever", is still classified below.
+        only_a_request = note is not None and classifier.classify(
+            text, store.names_for(student.id) if student else ()).barrier == Barrier.UNKNOWN
+        if only_a_request:
+            result["route"] = "opted_out"
+        elif student is None:
             result.update(route="unlinked", reply=NOT_LINKED)
         else:
             mine = sorted((a for a in store.absences.values() if a.student_id == student.id), key=lambda a: a.date)
@@ -88,16 +108,30 @@ def handle_inbound(sender: str, text: str, received_at: str, message_id: str = "
             if target is None:
                 result.update(route="no_absence", reply=ACK.get(student.preferred_language, ACK["en"]))
             else:
-                route = store.record_reply(target.id, FamilyReply(
-                    text=text, channel="text", language=student.preferred_language, received_at=received_at))
+                route = store.record_reply(
+                    target.id,
+                    FamilyReply(text=text, channel="text", language=student.preferred_language,
+                                received_at=received_at),
+                    channel="imessage", received=received, external_id=message_id or None, phone=sender,
+                    reason=note)
+                logged = True
+                # Answer in the language the family wrote in when we have a template for it.
+                label = store.absences[target.id].classification
+                lang = label.language if label and label.language in ACK else student.preferred_language
                 # The acknowledgement obeys the same rules as any outbound message. In particular,
                 # an open safety escalation in the household means the counselor answers, never the bot.
-                reply = ACK.get(student.preferred_language, ACK["en"])
+                reply = ACK.get(lang, ACK["en"])
                 if outreach.blocked_reason(sender, reply, store.household_suppressed(student.id)):
                     reply = None
                 result.update(route=route, absence_id=target.id, reply=reply)
 
-    _record("inbound", sender, text, message_id=message_id, route=result["route"], absence_id=result["absence_id"])
+    if key in opted_out:
+        result["reply"] = None  # an opted-out number gets nothing back, not even a confirmation
+
+    if not logged:  # texts that are not attached to an absence are still on the record
+        store.log_message(direction="inbound", channel="imessage", student_id=result["student_id"],
+                          raw_text_or_transcript=text, timestamp=iso(received), route=result["route"],
+                          phone=sender, external_id=message_id or None, reason=note)
     return result
 
 
@@ -125,7 +159,6 @@ def send_text(student: Student, phone: str, text: str, key: str) -> dict:
         detail = f"{type(error).__name__} {getattr(error, 'status', '')}".strip()
         log.warning("photon send failed: %s", detail)
         return {"status": "failed", "reason": f"Photon rejected the send ({detail})", "channel": "imessage"}
-    _record("outbound", phone, text, key=key)
     # Accepted for asynchronous dispatch; Photon does not confirm delivery here.
     return {"status": "sent", "reason": None, "channel": "imessage"}
 
@@ -170,7 +203,14 @@ def _poll(photon, cfg: dict, created_since: str, handle: bool = True) -> str:
                         spaceId=space.id, senderId=agent.id, parentMessageId=m.id,
                         content=SendTextContent(type="text", format="plain", text=result["reply"])),
                 ))
-                _record("outbound", sender.handle, result["reply"], in_reply_to=m.id)
+                student = store.students.get(result["student_id"] or "")
+                store.log_message(
+                    direction="outbound", kind="ack", status="sent", channel="imessage",
+                    absence_id=result["absence_id"], student_id=result["student_id"],
+                    language=student.preferred_language if student else "en",
+                    raw_text_or_transcript=result["reply"], timestamp=iso(utc_now()),
+                    latency_ms=elapsed_ms(_parse(m.createdAt)),  # family's text arrived -> our reply accepted
+                    phone=sender.handle)
         token = page.nextPageToken
         if not isinstance(token, str):
             return newest
@@ -227,4 +267,5 @@ def status() -> dict:
     return {"enabled": enabled(), "listening": bool(_thread and _thread.is_alive()),
             "agent_handle": os.environ.get("PHOTON_AGENT_HANDLE"),
             "demo_student_id": outreach.demo_student_id(), "reachable_families": len(contacts),
-            "opted_out": len(opted_out), "messages": audit[-50:]}
+            "opted_out": len(opted_out), "latency": store.latency_summary("imessage"),
+            "messages": [m for m in store.messages if m.channel == "imessage"][-50:]}

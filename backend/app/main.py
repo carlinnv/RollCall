@@ -9,8 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from .models import Barrier, FamilyReply, RevenueSettings
-from .services import photon_channel
-from .store import TODAY, store
+from .services import classifier, photon_channel
+from .store import TODAY, iso, store, utc_now
 
 
 @asynccontextmanager
@@ -59,7 +59,7 @@ class ApproveIn(BaseModel):
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "today": TODAY}
+    return {"ok": True, "today": TODAY, "classifier": classifier.status()}
 
 
 @app.get("/api/taxonomy")
@@ -88,7 +88,7 @@ def absences():
 def absence(absence_id: str):
     a = _get(store.absences, absence_id, "absence")
     return {**a.model_dump(), "student": store.students[a.student_id], "check_in_message": store.check_in_message(a),
-            "escalated": absence_id in store.escalations}
+            "escalated": absence_id in store.escalations, "messages": store.thread(absence_id)}
 
 
 @app.post("/api/absences/import")
@@ -102,7 +102,7 @@ def reply(absence_id: str, body: ReplyIn):
     _get(store.absences, absence_id, "absence")
     route = store.record_reply(absence_id, FamilyReply(
         text=body.text, channel=body.channel, language=body.language,
-        received_at=TODAY.isoformat() + "T12:00:00",
+        received_at=iso(utc_now()),
     ))
     return {"route": route, "absence": store.absences[absence_id]}
 
@@ -117,6 +117,21 @@ def check_in(absence_id: str):
 @app.get("/api/escalations")
 def escalations():
     return [{**e.model_dump(), "student": store.students[e.student_id]} for e in store.escalations.values()]
+
+
+# ---------- F2: message log ----------
+@app.get("/api/messages")
+def messages(absence_id: Optional[str] = None, student_id: Optional[str] = None, direction: Optional[str] = None):
+    """Every inbound and outbound text, oldest first. Filters combine."""
+    return [m for m in store.messages
+            if absence_id in (None, m.absence_id) and student_id in (None, m.student_id)
+            and direction in (None, m.direction)]
+
+
+@app.get("/api/messages/latency")
+def message_latency(channel: Optional[str] = None):
+    """How fast replies were labeled, against the 10-second target. Optional channel, e.g. imessage."""
+    return store.latency_summary(channel)
 
 
 # ---------- F2: messaging channel ----------

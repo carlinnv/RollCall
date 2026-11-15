@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { api, fmtDate } from "../api";
+import { api, fmtDate, Message } from "../api";
 import { useLoad } from "../hooks";
 import { BarrierTag, ErrorNote, Page, StatusTag } from "../components/ui";
 
@@ -10,6 +10,23 @@ const ROUTE_TEXT = {
   case: "Individual case. You can draft a case-level action plan.",
   unknown: "Barrier unclear. Follow up with the family by phone.",
 };
+
+const KIND = { reply: "Family", check_in: "Check-in", plan: "Plan message", ack: "Automatic reply" };
+const CHANNEL = { imessage: "iMessage", sms: "SMS", simulated: "simulated", seed: "sample data" };
+
+/** One line under a message: who, channel, time, and how long it took. */
+function meta(m: Message) {
+  const parts: string[] = [KIND[m.kind]];
+  if (m.channel) parts.push(CHANNEL[m.channel]);
+  const at = new Date(m.timestamp.endsWith("Z") ? m.timestamp : m.timestamp + "Z");
+  if (!isNaN(at.getTime())) parts.push(at.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }));
+  if (m.latency_ms !== null) {
+    const seconds = (m.latency_ms / 1000).toFixed(1);
+    parts.push(m.direction === "inbound" ? `labeled in ${seconds} s` : m.kind === "ack" ? `replied in ${seconds} s` : `sent in ${seconds} s`);
+  }
+  if (m.direction === "outbound" && m.status !== "sent") parts.push(m.reason ? `${m.status}: ${m.reason}` : m.status);
+  return parts.join(" · ");
+}
 
 export default function CaseDetail() {
   const { id = "" } = useParams();
@@ -44,21 +61,25 @@ export default function CaseDetail() {
       <ErrorNote error={error ?? err} />
       <div className="grid2">
         <div className="card">
-          <h3>Check-in sent to family</h3>
+          <h3>Conversation</h3>
           <p className="muted small">
-            To {s.guardian_name} · {s.guardian_phone} · language: {s.preferred_language}
+            With {s.guardian_name} · {s.guardian_phone} · language: {s.preferred_language}
           </p>
-          <p className="bubble out">{a.check_in_message}</p>
-          {a.reply ? (
+          {!a.messages.some((m) => m.kind === "check_in") && (
             <>
-              <p className="muted small">
-                Family reply ({a.reply.channel === "voice" ? "voice note transcript" : "text"}, {a.reply.language})
-              </p>
-              <p className="bubble in">{a.reply.text}</p>
+              <p className="bubble out">{a.check_in_message}</p>
+              <p className="muted small" style={{ textAlign: "right" }}>Check-in · not sent through a channel yet</p>
             </>
-          ) : (
-            <p className="muted">No reply yet.</p>
           )}
+          {a.messages.map((m) => (
+            <div key={m.message_id}>
+              <p className={`bubble ${m.direction === "inbound" ? "in" : "out"}`}>{m.raw_text_or_transcript}</p>
+              <p className="muted small" style={{ textAlign: m.direction === "inbound" ? "left" : "right" }}>
+                {meta(m)} {m.classification && <BarrierTag barrier={m.classification.barrier} />}
+              </p>
+            </div>
+          ))}
+          {!a.messages.some((m) => m.direction === "inbound") && <p className="muted">No reply yet.</p>}
         </div>
 
         <div className="card">
