@@ -153,3 +153,29 @@ button.link { background: none; border: none; padding: 0; color: var(--brand); f
 
 /* Pages sent about an escalation */
 .pages { margin: 8px 0 0; padding-left: 18px; }
+
+/* Demo mode presenter bar (DEMO_MODE=1) */
+.demobar {
+  position: fixed; left: 230px; right: 0; bottom: 0; z-index: 10;
+  background: #111a2e; color: #e6eaf2; border-top: 3px solid var(--brand);
+  box-shadow: 0 -4px 16px rgba(17, 26, 46, 0.18);
+}
+.demobar .muted { color: #a9b3c7; }
+.demobar a { color: #9db4ff; }
+.demobar button.ghost { color: #e6eaf2; border-color: #2c3854; }
+.demobar-main { display: flex; align-items: center; gap: 14px; padding: 10px 24px; }
+.demobar-text { flex: 1; min-width: 0; font-size: 14px; }
+.demobar-badge {
+  background: var(--brand); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; padding: 3px 8px; border-radius: 999px;
+}
+.demobar-steps { margin: 0; padding: 12px 24px 4px 44px; max-height: 45vh; overflow: auto; border-bottom: 1px solid #2c3854; font-size: 14px; }
+.demobar-steps li { margin-bottom: 10px; }
+.demobar-steps li.done { opacity: 0.6; }
+.demobar-steps li.current { font-weight: 600; }
+main:has(+ .demobar) { padding-bottom: 140px; }
+@media (max-width: 900px) {
+  .demobar { left: 0; }
+  .demobar-main { flex-wrap: wrap; padding: 10px 16px; }
+}
+.demobar-next { margin-top: 4px; padding-top: 4px; border-top: 1px solid #2c3854; }

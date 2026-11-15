@@ -97,3 +97,24 @@ Not built yet: SMS fallback, voice notes (out of scope: Photon Beta iMessage car
 6. `/revenue`: total at risk and recovered; change the daily rate to see every figure update.
 
 Use **Reset demo data** in the sidebar to start over.
+
+### Offline demo mode (the backup)
+
+If the Wi-Fi, Photon or Gemini fails during the demo, restart the API with `DEMO_MODE=1`:
+
+```bash
+cd backend && DEMO_MODE=1 SCHOOL_DAYS=all .venv/bin/uvicorn app.main:app --reload --port 8000
+```
+
+`SCHOOL_DAYS=all` means the on-call counselor is paged on any day, not only Monday to Friday. Before 8am or after 3:30pm, the administrator is still paged instead.
+
+A **Demo** bar appears at the bottom of every page. **Play next message** sends the next scripted family text through the same path as a real iMessage:
+
+1. Sofia's dad, in Spanish: the bus never came. Opens her case with the label and evidence quote.
+2. Opens Root causes, where the Route 7 cluster has just appeared.
+3. A custody-hearing reply, labeled an appointment. Opens that case.
+4. The clerk corrects it to a family obligation (or do it by hand on the case page).
+5. A similar reply comes back right, citing the correction. Opens that case.
+6. A bullying disclosure goes to the counselor and pages the on-call staff. Opens Escalations.
+
+Nothing leaves the laptop: Gemini's answers come from `backend/app/data/demo_answers.json`, and outbound texts are logged on a "demo replay" channel. After changing the script (`backend/app/data/demo_script.json`) or the classifier prompt, record the answers again with a Gemini key: `cd backend && .venv/bin/python -m app.services.demo record`.

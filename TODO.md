@@ -30,7 +30,7 @@ Owners follow PRD 3 §5: **A** Messaging & Photon (me), **B** ML & Graph, **C** 
 - [x] Quiet hours, 8am–8pm; queue messages outside them.
 - [ ] Voice notes through Gemini audio. Blocked on Photon Beta; needs an in-app upload. See `CARLINNOTES.md`.
 - [ ] SMS fallback. Architecture only for now. See `CARLINNOTES.md`.
-- [ ] Demo mode with a replayable message fixture. "Never cut" in the PRD.
+- [x] Demo mode with a replayable message fixture. "Never cut" in the PRD. (`DEMO_MODE=1`; script in `backend/app/data/demo_script.json`.)
 - [x] Update `.env.example`: it still says "ask Carlin for these", which contradicts `PHOTON_SETUP.md`.
 
 - [ ] Persist case reports (and the rest of the data). Saved case reports live in memory and are lost on restart or reset.

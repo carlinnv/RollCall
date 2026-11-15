@@ -10,6 +10,7 @@ import Revenue from "./pages/Revenue";
 import OnCall from "./pages/OnCall";
 import Evidence from "./pages/Evidence";
 import Assistant from "./pages/Assistant";
+import DemoBar from "./components/DemoBar";
 
 const NAV = [
   { to: "/", label: "Case queue", who: "Clerk" },
@@ -61,6 +62,7 @@ export default function App() {
           <Route path="/evidence" element={<Evidence />} />
         </Routes>
       </main>
+      <DemoBar />
     </div>
   );
 }

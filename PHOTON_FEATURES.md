@@ -331,6 +331,32 @@ Who is told when a case opens, and how they acknowledge it.
 
 ---
 
+## 13. Demo mode
+
+The backup for the live demo: the scripted story runs with no network.
+
+**Files**
+
+- `backend/app/services/demo.py`: settings, replay, recorded answers, the `record` command
+- `backend/app/data/demo_script.json`: the scripted family messages, in demo order
+- `backend/app/data/demo_answers.json`: Gemini's recorded answers for those messages
+- `backend/app/services/classifier.py`: `_ask` reads recorded answers in demo mode
+- `backend/app/services/photon_channel.py`: `handle_inbound(..., channel=)`; Photon stays off in demo mode
+- `backend/app/main.py`: `GET /api/demo`, `POST /api/demo/next`
+- `frontend/src/components/DemoBar.tsx`: the presenter bar
+
+**Rules**
+
+- `DEMO_MODE=1` turns it on. It also sets `DEMO_STORY=live` (no Route 7 cluster at 9am) and `QUIET_HOURS=off`, so the run is the same at any hour.
+- The classifier never calls Gemini. It uses the answer recorded for the same prompt version, correction examples and redacted text. A text that is not in the recording gets the keyword label. No key is needed.
+- Photon does not start, even with its settings present. Check-ins, plan messages, acknowledgements and pages are logged as sent on the `replay` channel and reach no phone.
+- Each scripted reply goes through `handle_inbound`, the same path as a real iMessage: phone lookup, opt-outs, classification, safety gate, acknowledgement.
+- A step is done when its message is in the log, so **Reset demo data** rewinds the script. A correction step also counts as done if the clerk made the same correction by hand.
+- Paging in demo mode still follows the roster and school hours. Outside school hours only administrators are paged; set `SCHOOL_DAYS=all` for a weekend run.
+- `record` runs the script against live Gemini and saves only if every step gets its expected label from Gemini.
+
+---
+
 ## Not on this branch
 
 - A check-in button in the UI
