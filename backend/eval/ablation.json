@@ -158,13 +158,13 @@
     },
     "label_noise_model": "observed = true w.p. accuracy, else a uniformly drawn other barrier (evaluate.relabel; the default rows use the simulator's own noise model)",
     "timings_s": {
-      "total": 10.23,
-      "simulate_and_scan_wall": 8.45,
-      "simulate_cpu": 8.44,
-      "scan_cpu": 54.75,
-      "evaluate": 1.78,
+      "total": 24.36,
+      "simulate_and_scan_wall": 22.37,
+      "simulate_cpu": 10.4,
+      "scan_cpu": 160.69,
+      "evaluate": 1.99,
       "n_runs_scanned": 90,
-      "scan_ms_per_run_day": 9.97,
+      "scan_ms_per_run_day": 29.27,
       "jobs": 8
     },
     "n_events_test": 100,
@@ -193,33 +193,33 @@
     },
     "graph_only": {
       "threshold": [
-        0.035,
-        3.540819667638181
+        0.03,
+        6.7951485454332765
       ],
-      "p_threshold": 0.035,
-      "llr_tiebreak": 3.540819667638181,
+      "p_threshold": 0.03,
+      "llr_tiebreak": 6.7951485454332765,
       "null_false_alarms": 30,
       "null_days": 610,
       "null_fa_per_20_days": 0.9836065573770492
     },
     "combined": {
       "threshold": [
-        0.02,
-        3.0289306330664525
+        0.01,
+        1.6223760934165177
       ],
-      "p_threshold": 0.02,
-      "llr_tiebreak": 3.0289306330664525,
+      "p_threshold": 0.01,
+      "llr_tiebreak": 1.6223760934165177,
       "null_false_alarms": 30,
       "null_days": 610,
       "null_fa_per_20_days": 0.9836065573770492
     },
     "two_stage": {
       "threshold": [
-        0.035,
-        3.540819667638181
+        0.03,
+        6.7951485454332765
       ],
-      "p_threshold": 0.035,
-      "llr_tiebreak": 3.540819667638181,
+      "p_threshold": 0.03,
+      "llr_tiebreak": 6.7951485454332765,
       "null_false_alarms": 30,
       "null_days": 610,
       "null_fa_per_20_days": 0.9836065573770492
@@ -479,11 +479,11 @@
       "test_null_fa_per_20_days": 1.180327868852459
     },
     "graph_only": {
-      "detection_recall": 0.57,
+      "detection_recall": 0.56,
       "actionable_recall": 0.42,
-      "attribution_accuracy_among_detected": 0.7368421052631579,
-      "attribution_accuracy_first_alarm": 0.6140350877192983,
-      "pct_actionable_by_onset_plus_2": 0.41,
+      "attribution_accuracy_among_detected": 0.75,
+      "attribution_accuracy_first_alarm": 0.625,
+      "pct_actionable_by_onset_plus_2": 0.4,
       "time_to_correct_attribution": {
         "n": 42,
         "median": 0.0,
@@ -501,20 +501,20 @@
         "bus_illness": {
           "n": 10,
           "detected": 3,
-          "actionable": 1,
+          "actionable": 2,
           "detection_recall": 0.3,
-          "actionable_recall": 0.1,
-          "attribution_accuracy_among_detected": 0.3333333333333333,
-          "attribution_accuracy_first_alarm": 0.3333333333333333,
+          "actionable_recall": 0.2,
+          "attribution_accuracy_among_detected": 0.6666666666666666,
+          "attribution_accuracy_first_alarm": 0.6666666666666666,
           "pct_actionable_by_onset_plus_2": 0.0,
           "time_to_correct_attribution": {
-            "n": 1,
-            "median": 4.0,
-            "q1": 4.0,
-            "q3": 4.0
+            "n": 2,
+            "median": 3.0,
+            "q1": 3.0,
+            "q3": 3.0
           },
           "detection_to_correct_attribution": {
-            "n": 1,
+            "n": 2,
             "median": 0.0,
             "q1": 0.0,
             "q3": 0.0
@@ -596,27 +596,27 @@
         },
         "route_failure": {
           "n": 30,
-          "detected": 26,
-          "actionable": 26,
-          "detection_recall": 0.8666666666666667,
-          "actionable_recall": 0.8666666666666667,
+          "detected": 25,
+          "actionable": 25,
+          "detection_recall": 0.8333333333333334,
+          "actionable_recall": 0.8333333333333334,
           "attribution_accuracy_among_detected": 1.0,
-          "attribution_accuracy_first_alarm": 0.9230769230769231,
-          "pct_actionable_by_onset_plus_2": 0.8666666666666667,
+          "attribution_accuracy_first_alarm": 0.92,
+          "pct_actionable_by_onset_plus_2": 0.8333333333333334,
           "time_to_correct_attribution": {
-            "n": 26,
+            "n": 25,
             "median": 0.0,
             "q1": 0.0,
             "q3": 0.0
           },
           "detection_to_correct_attribution": {
-            "n": 26,
+            "n": 25,
             "median": 0.0,
             "q1": 0.0,
             "q3": 0.0
           },
           "provisional_at_first_alarm": 0.0,
-          "recall": 0.8666666666666667
+          "recall": 0.8333333333333334
         },
         "section_caregiving": {
           "n": 10,
@@ -645,7 +645,7 @@
       },
       "n_events": 100,
       "n_events_excluded": 0,
-      "recall": 0.57,
+      "recall": 0.56,
       "recall_by_kind": {
         "caregiving_spike": {
           "n": 20,
@@ -659,8 +659,8 @@
         },
         "route_failure": {
           "n": 30,
-          "detected": 26,
-          "recall": 0.8666666666666667
+          "detected": 25,
+          "recall": 0.8333333333333334
         },
         "bus_illness": {
           "n": 10,
@@ -678,28 +678,28 @@
           "recall": 0.9
         }
       },
-      "pct_detected_by_onset_plus_2": 0.53,
+      "pct_detected_by_onset_plus_2": 0.52,
       "delay": {
-        "n": 57,
+        "n": 56,
         "median": 0.0,
         "q1": 0.0,
         "q3": 0.0
       },
-      "false_alarms": 14,
+      "false_alarms": 16,
       "days": 610,
-      "fa_per_20_days": 0.45901639344262296,
+      "fa_per_20_days": 0.5245901639344263,
       "attribution_confusion": {
         "illness": {
-          "illness": 4,
-          "transportation": 3,
+          "illness": 5,
+          "transportation": 2,
           "other": 0,
           "missed": 23
         },
         "transportation": {
           "illness": 0,
-          "transportation": 26,
+          "transportation": 25,
           "other": 9,
-          "missed": 5
+          "missed": 6
         },
         "other": {
           "illness": 6,
@@ -710,13 +710,14 @@
       },
       "first_tp_layer": {
         "neighborhood": 14,
-        "route": 33,
-        "section": 10
+        "route": 31,
+        "section": 7,
+        "contact": 4
       },
       "contagion_tp_via": {
-        "contact_only": 0,
-        "section_only": 3,
-        "both": 0
+        "contact_only": 1,
+        "section_only": 1,
+        "both": 1
       },
       "lead_vs_ears_c1": {
         "lead": {
@@ -725,26 +726,26 @@
           "q1": 0.0,
           "q3": 0.0
         },
-        "only_ours": 24,
+        "only_ours": 23,
         "only_baseline": 29,
-        "neither": 14
+        "neither": 15
       },
-      "test_null_fa_per_20_days": 0.7540983606557377
+      "test_null_fa_per_20_days": 0.5573770491803278
     },
     "combined": {
-      "detection_recall": 0.33,
-      "actionable_recall": 0.31,
-      "attribution_accuracy_among_detected": 0.9393939393939394,
-      "attribution_accuracy_first_alarm": 0.9393939393939394,
-      "pct_actionable_by_onset_plus_2": 0.28,
+      "detection_recall": 0.31,
+      "actionable_recall": 0.3,
+      "attribution_accuracy_among_detected": 0.967741935483871,
+      "attribution_accuracy_first_alarm": 0.967741935483871,
+      "pct_actionable_by_onset_plus_2": 0.27,
       "time_to_correct_attribution": {
-        "n": 31,
+        "n": 30,
         "median": 1.0,
-        "q1": 0.0,
-        "q3": 1.0
+        "q1": 0.25,
+        "q3": 1.75
       },
       "detection_to_correct_attribution": {
-        "n": 31,
+        "n": 30,
         "median": 0.0,
         "q1": 0.0,
         "q3": 0.0
@@ -762,9 +763,9 @@
           "pct_actionable_by_onset_plus_2": 0.0,
           "time_to_correct_attribution": {
             "n": 2,
-            "median": 8.5,
-            "q1": 7.25,
-            "q3": 9.75
+            "median": 4.5,
+            "q1": 3.75,
+            "q3": 5.25
           },
           "detection_to_correct_attribution": {
             "n": 2,
@@ -786,9 +787,9 @@
           "pct_actionable_by_onset_plus_2": 0.15,
           "time_to_correct_attribution": {
             "n": 3,
-            "median": 0.0,
-            "q1": 0.0,
-            "q3": 0.5
+            "median": 1.0,
+            "q1": 0.5,
+            "q3": 1.5
           },
           "detection_to_correct_attribution": {
             "n": 3,
@@ -812,7 +813,7 @@
             "n": 4,
             "median": 2.0,
             "q1": 1.75,
-            "q3": 2.25
+            "q3": 2.5
           },
           "detection_to_correct_attribution": {
             "n": 4,
@@ -836,7 +837,7 @@
             "n": 5,
             "median": 1.0,
             "q1": 1.0,
-            "q3": 1.0
+            "q3": 2.0
           },
           "detection_to_correct_attribution": {
             "n": 5,
@@ -849,27 +850,27 @@
         },
         "route_failure": {
           "n": 30,
-          "detected": 15,
-          "actionable": 14,
-          "detection_recall": 0.5,
-          "actionable_recall": 0.4666666666666667,
-          "attribution_accuracy_among_detected": 0.9333333333333333,
-          "attribution_accuracy_first_alarm": 0.9333333333333333,
-          "pct_actionable_by_onset_plus_2": 0.4666666666666667,
+          "detected": 13,
+          "actionable": 13,
+          "detection_recall": 0.43333333333333335,
+          "actionable_recall": 0.43333333333333335,
+          "attribution_accuracy_among_detected": 1.0,
+          "attribution_accuracy_first_alarm": 1.0,
+          "pct_actionable_by_onset_plus_2": 0.43333333333333335,
           "time_to_correct_attribution": {
-            "n": 14,
-            "median": 0.5,
+            "n": 13,
+            "median": 1.0,
             "q1": 0.0,
             "q3": 1.0
           },
           "detection_to_correct_attribution": {
-            "n": 14,
+            "n": 13,
             "median": 0.0,
             "q1": 0.0,
             "q3": 0.0
           },
           "provisional_at_first_alarm": 0.0,
-          "recall": 0.4666666666666667
+          "recall": 0.43333333333333335
         },
         "section_caregiving": {
           "n": 10,
@@ -882,9 +883,9 @@
           "pct_actionable_by_onset_plus_2": 0.3,
           "time_to_correct_attribution": {
             "n": 3,
-            "median": 0.0,
-            "q1": 0.0,
-            "q3": 0.5
+            "median": 1.0,
+            "q1": 0.5,
+            "q3": 1.0
           },
           "detection_to_correct_attribution": {
             "n": 3,
@@ -898,7 +899,7 @@
       },
       "n_events": 100,
       "n_events_excluded": 0,
-      "recall": 0.31,
+      "recall": 0.3,
       "recall_by_kind": {
         "caregiving_spike": {
           "n": 20,
@@ -912,8 +913,8 @@
         },
         "route_failure": {
           "n": 30,
-          "detected": 14,
-          "recall": 0.4666666666666667
+          "detected": 13,
+          "recall": 0.43333333333333335
         },
         "bus_illness": {
           "n": 10,
@@ -931,16 +932,16 @@
           "recall": 0.3
         }
       },
-      "pct_detected_by_onset_plus_2": 0.28,
+      "pct_detected_by_onset_plus_2": 0.27,
       "delay": {
-        "n": 31,
+        "n": 30,
         "median": 1.0,
-        "q1": 0.0,
-        "q3": 1.0
+        "q1": 0.25,
+        "q3": 1.75
       },
-      "false_alarms": 29,
+      "false_alarms": 23,
       "days": 610,
-      "fa_per_20_days": 0.9508196721311475,
+      "fa_per_20_days": 0.7540983606557377,
       "attribution_confusion": {
         "illness": {
           "illness": 6,
@@ -950,9 +951,9 @@
         },
         "transportation": {
           "illness": 0,
-          "transportation": 19,
-          "other": 1,
-          "missed": 20
+          "transportation": 18,
+          "other": 0,
+          "missed": 22
         },
         "other": {
           "illness": 0,
@@ -962,9 +963,10 @@
         }
       },
       "first_tp_layer": {
-        "route": 16,
-        "section": 6,
+        "route": 14,
         "neighborhood": 8,
+        "contact": 4,
+        "section": 3,
         "grade": 1
       },
       "contagion_tp_via": {
@@ -974,23 +976,23 @@
       },
       "lead_vs_ears_c1": {
         "lead": {
-          "n": 19,
+          "n": 18,
           "median": 0.0,
           "q1": -1.0,
           "q3": 0.0
         },
         "only_ours": 12,
-        "only_baseline": 43,
+        "only_baseline": 44,
         "neither": 26
       },
-      "test_null_fa_per_20_days": 0.8524590163934426
+      "test_null_fa_per_20_days": 0.45901639344262296
     },
     "two_stage": {
-      "detection_recall": 0.57,
+      "detection_recall": 0.56,
       "actionable_recall": 0.53,
-      "attribution_accuracy_among_detected": 0.9298245614035088,
-      "attribution_accuracy_first_alarm": 0.8771929824561403,
-      "pct_actionable_by_onset_plus_2": 0.51,
+      "attribution_accuracy_among_detected": 0.9464285714285714,
+      "attribution_accuracy_first_alarm": 0.8928571428571429,
+      "pct_actionable_by_onset_plus_2": 0.5,
       "time_to_correct_attribution": {
         "n": 53,
         "median": 0.0,
@@ -1003,30 +1005,30 @@
         "q1": 0.0,
         "q3": 0.0
       },
-      "provisional_at_first_alarm": 0.21052631578947367,
+      "provisional_at_first_alarm": 0.17857142857142858,
       "by_event_type": {
         "bus_illness": {
           "n": 10,
           "detected": 3,
-          "actionable": 1,
+          "actionable": 2,
           "detection_recall": 0.3,
-          "actionable_recall": 0.1,
-          "attribution_accuracy_among_detected": 0.3333333333333333,
-          "attribution_accuracy_first_alarm": 0.3333333333333333,
+          "actionable_recall": 0.2,
+          "attribution_accuracy_among_detected": 0.6666666666666666,
+          "attribution_accuracy_first_alarm": 0.6666666666666666,
           "pct_actionable_by_onset_plus_2": 0.0,
           "time_to_correct_attribution": {
-            "n": 1,
-            "median": 4.0,
-            "q1": 4.0,
-            "q3": 4.0
+            "n": 2,
+            "median": 3.0,
+            "q1": 3.0,
+            "q3": 3.0
           },
           "detection_to_correct_attribution": {
-            "n": 1,
+            "n": 2,
             "median": 0.0,
             "q1": 0.0,
             "q3": 0.0
           },
-          "provisional_at_first_alarm": 0.6666666666666666,
+          "provisional_at_first_alarm": 0.3333333333333333,
           "recall": 0.3
         },
         "caregiving_spike": {
@@ -1103,27 +1105,27 @@
         },
         "route_failure": {
           "n": 30,
-          "detected": 26,
-          "actionable": 26,
-          "detection_recall": 0.8666666666666667,
-          "actionable_recall": 0.8666666666666667,
+          "detected": 25,
+          "actionable": 25,
+          "detection_recall": 0.8333333333333334,
+          "actionable_recall": 0.8333333333333334,
           "attribution_accuracy_among_detected": 1.0,
-          "attribution_accuracy_first_alarm": 0.9615384615384616,
-          "pct_actionable_by_onset_plus_2": 0.8666666666666667,
+          "attribution_accuracy_first_alarm": 0.96,
+          "pct_actionable_by_onset_plus_2": 0.8333333333333334,
           "time_to_correct_attribution": {
-            "n": 26,
+            "n": 25,
             "median": 0.0,
             "q1": 0.0,
             "q3": 0.0
           },
           "detection_to_correct_attribution": {
-            "n": 26,
+            "n": 25,
             "median": 0.0,
             "q1": 0.0,
             "q3": 0.0
           },
-          "provisional_at_first_alarm": 0.15384615384615385,
-          "recall": 0.8666666666666667
+          "provisional_at_first_alarm": 0.12,
+          "recall": 0.8333333333333334
         },
         "section_caregiving": {
           "n": 10,
@@ -1152,7 +1154,7 @@
       },
       "n_events": 100,
       "n_events_excluded": 0,
-      "recall": 0.57,
+      "recall": 0.56,
       "recall_by_kind": {
         "caregiving_spike": {
           "n": 20,
@@ -1166,8 +1168,8 @@
         },
         "route_failure": {
           "n": 30,
-          "detected": 26,
-          "recall": 0.8666666666666667
+          "detected": 25,
+          "recall": 0.8333333333333334
         },
         "bus_illness": {
           "n": 10,
@@ -1185,28 +1187,28 @@
           "recall": 0.9
         }
       },
-      "pct_detected_by_onset_plus_2": 0.53,
+      "pct_detected_by_onset_plus_2": 0.52,
       "delay": {
-        "n": 57,
+        "n": 56,
         "median": 0.0,
         "q1": 0.0,
         "q3": 0.0
       },
-      "false_alarms": 14,
+      "false_alarms": 16,
       "days": 610,
-      "fa_per_20_days": 0.45901639344262296,
+      "fa_per_20_days": 0.5245901639344263,
       "attribution_confusion": {
         "illness": {
-          "illness": 4,
-          "transportation": 3,
+          "illness": 5,
+          "transportation": 2,
           "other": 0,
           "missed": 23
         },
         "transportation": {
           "illness": 1,
-          "transportation": 32,
+          "transportation": 31,
           "other": 2,
-          "missed": 5
+          "missed": 6
         },
         "other": {
           "illness": 1,
@@ -1217,13 +1219,14 @@
       },
       "first_tp_layer": {
         "neighborhood": 14,
-        "route": 33,
-        "section": 10
+        "route": 31,
+        "section": 7,
+        "contact": 4
       },
       "contagion_tp_via": {
-        "contact_only": 0,
-        "section_only": 3,
-        "both": 0
+        "contact_only": 1,
+        "section_only": 1,
+        "both": 1
       },
       "lead_vs_ears_c1": {
         "lead": {
@@ -1232,11 +1235,11 @@
           "q1": 0.0,
           "q3": 0.0
         },
-        "only_ours": 24,
+        "only_ours": 23,
         "only_baseline": 29,
-        "neither": 14
+        "neither": 15
       },
-      "test_null_fa_per_20_days": 0.7540983606557377
+      "test_null_fa_per_20_days": 0.5573770491803278
     }
   },
   "bh_q_0.10": {
@@ -1250,31 +1253,31 @@
       "test_null_fa_per_20_days": 0.8852459016393442
     },
     "graph_only": {
-      "recall": 0.59,
-      "fa_per_20_days": 0.6229508196721312,
-      "detection_recall": 0.59,
-      "actionable_recall": 0.46,
-      "pct_detected_by_onset_plus_2": 0.55,
-      "tune_null_fa_per_20_days": 0.9836065573770492,
-      "test_null_fa_per_20_days": 0.7868852459016393
+      "recall": 0.57,
+      "fa_per_20_days": 0.819672131147541,
+      "detection_recall": 0.57,
+      "actionable_recall": 0.44,
+      "pct_detected_by_onset_plus_2": 0.53,
+      "tune_null_fa_per_20_days": 1.180327868852459,
+      "test_null_fa_per_20_days": 0.5901639344262295
     },
     "combined": {
-      "recall": 0.25,
-      "fa_per_20_days": 0.6557377049180327,
-      "detection_recall": 0.25,
-      "actionable_recall": 0.25,
-      "pct_detected_by_onset_plus_2": 0.24,
-      "tune_null_fa_per_20_days": 0.39344262295081966,
-      "test_null_fa_per_20_days": 0.7868852459016393
+      "recall": 0.28,
+      "fa_per_20_days": 1.0163934426229508,
+      "detection_recall": 0.28,
+      "actionable_recall": 0.28,
+      "pct_detected_by_onset_plus_2": 0.23,
+      "tune_null_fa_per_20_days": 0.6229508196721312,
+      "test_null_fa_per_20_days": 1.0163934426229508
     },
     "two_stage": {
-      "recall": 0.59,
-      "fa_per_20_days": 0.6229508196721312,
-      "detection_recall": 0.59,
-      "actionable_recall": 0.55,
-      "pct_detected_by_onset_plus_2": 0.55,
-      "tune_null_fa_per_20_days": 0.9836065573770492,
-      "test_null_fa_per_20_days": 0.7868852459016393
+      "recall": 0.57,
+      "fa_per_20_days": 0.819672131147541,
+      "detection_recall": 0.57,
+      "actionable_recall": 0.54,
+      "pct_detected_by_onset_plus_2": 0.53,
+      "tune_null_fa_per_20_days": 1.180327868852459,
+      "test_null_fa_per_20_days": 0.5901639344262295
     }
   },
   "ears_c1": {
@@ -1697,7 +1700,7 @@
         "threshold": 0.0027230319232774605,
         "calibrated": false,
         "tune_null_fa_per_20_days": 0.03278688524590164,
-        "test_fa_per_20_days": 0.03278688524590164,
+        "test_fa_per_20_days": 0.06557377049180328,
         "recall": 0.33,
         "detection_recall": 0.33,
         "actionable_recall": 0.25
@@ -1706,7 +1709,7 @@
         "threshold": 0.005,
         "calibrated": false,
         "tune_null_fa_per_20_days": 0.06557377049180328,
-        "test_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
         "recall": 0.36,
         "detection_recall": 0.36,
         "actionable_recall": 0.27
@@ -1715,7 +1718,7 @@
         "threshold": 0.008428970847038045,
         "calibrated": false,
         "tune_null_fa_per_20_days": 0.06557377049180328,
-        "test_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
         "recall": 0.36,
         "detection_recall": 0.36,
         "actionable_recall": 0.27
@@ -1723,53 +1726,65 @@
       {
         "threshold": 0.01,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 0.22950819672131148,
-        "test_fa_per_20_days": 0.09836065573770492,
-        "recall": 0.39,
-        "detection_recall": 0.39,
-        "actionable_recall": 0.32
+        "tune_null_fa_per_20_days": 0.26229508196721313,
+        "test_fa_per_20_days": 0.13114754098360656,
+        "recall": 0.41,
+        "detection_recall": 0.41,
+        "actionable_recall": 0.34
       },
       {
         "threshold": 0.015,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 0.36065573770491804,
-        "test_fa_per_20_days": 0.19672131147540983,
-        "recall": 0.45,
-        "detection_recall": 0.45,
-        "actionable_recall": 0.35
+        "tune_null_fa_per_20_days": 0.4262295081967213,
+        "test_fa_per_20_days": 0.26229508196721313,
+        "recall": 0.48,
+        "detection_recall": 0.48,
+        "actionable_recall": 0.37
       },
       {
         "threshold": 0.02,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 0.5901639344262295,
-        "test_fa_per_20_days": 0.36065573770491804,
-        "recall": 0.52,
-        "detection_recall": 0.52,
-        "actionable_recall": 0.39
+        "tune_null_fa_per_20_days": 0.7213114754098361,
+        "test_fa_per_20_days": 0.4262295081967213,
+        "recall": 0.54,
+        "detection_recall": 0.54,
+        "actionable_recall": 0.41
       },
       {
         "threshold": 0.025,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 0.7540983606557377,
-        "test_fa_per_20_days": 0.45901639344262296,
-        "recall": 0.54,
-        "detection_recall": 0.54,
-        "actionable_recall": 0.4
+        "tune_null_fa_per_20_days": 0.9508196721311475,
+        "test_fa_per_20_days": 0.5245901639344263,
+        "recall": 0.56,
+        "detection_recall": 0.56,
+        "actionable_recall": 0.42
       },
       {
         "threshold": 0.02609133919175796,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 0.7540983606557377,
-        "test_fa_per_20_days": 0.45901639344262296,
-        "recall": 0.54,
-        "detection_recall": 0.54,
-        "actionable_recall": 0.4
+        "tune_null_fa_per_20_days": 0.9508196721311475,
+        "test_fa_per_20_days": 0.5245901639344263,
+        "recall": 0.56,
+        "detection_recall": 0.56,
+        "actionable_recall": 0.42
       },
       {
         "threshold": 0.03,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 0.9508196721311475,
-        "test_fa_per_20_days": 0.45901639344262296,
+        "tune_null_fa_per_20_days": 1.2131147540983607,
+        "test_fa_per_20_days": 0.5245901639344263,
+        "recall": 0.57,
+        "detection_recall": 0.57,
+        "actionable_recall": 0.43
+      },
+      {
+        "threshold": [
+          0.03,
+          6.7951485454332765
+        ],
+        "calibrated": true,
+        "tune_null_fa_per_20_days": 0.9836065573770492,
+        "test_fa_per_20_days": 0.5245901639344263,
         "recall": 0.56,
         "detection_recall": 0.56,
         "actionable_recall": 0.42
@@ -1777,158 +1792,146 @@
       {
         "threshold": 0.035,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 1.180327868852459,
-        "test_fa_per_20_days": 0.5245901639344263,
-        "recall": 0.59,
-        "detection_recall": 0.59,
-        "actionable_recall": 0.43
-      },
-      {
-        "threshold": [
-          0.035,
-          3.540819667638181
-        ],
-        "calibrated": true,
-        "tune_null_fa_per_20_days": 0.9836065573770492,
-        "test_fa_per_20_days": 0.45901639344262296,
-        "recall": 0.57,
-        "detection_recall": 0.57,
-        "actionable_recall": 0.42
+        "tune_null_fa_per_20_days": 1.4754098360655739,
+        "test_fa_per_20_days": 0.5901639344262295,
+        "recall": 0.6,
+        "detection_recall": 0.6,
+        "actionable_recall": 0.44
       },
       {
         "threshold": 0.04,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 1.3114754098360655,
-        "test_fa_per_20_days": 0.7540983606557377,
-        "recall": 0.63,
-        "detection_recall": 0.63,
-        "actionable_recall": 0.47
+        "tune_null_fa_per_20_days": 1.7049180327868851,
+        "test_fa_per_20_days": 0.8852459016393442,
+        "recall": 0.64,
+        "detection_recall": 0.64,
+        "actionable_recall": 0.48
       },
       {
         "threshold": 0.045,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 1.5081967213114753,
-        "test_fa_per_20_days": 0.819672131147541,
-        "recall": 0.63,
-        "detection_recall": 0.63,
-        "actionable_recall": 0.48
+        "tune_null_fa_per_20_days": 1.9344262295081966,
+        "test_fa_per_20_days": 0.9836065573770492,
+        "recall": 0.64,
+        "detection_recall": 0.64,
+        "actionable_recall": 0.49
       },
       {
         "threshold": 0.05,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 1.5737704918032787,
-        "test_fa_per_20_days": 0.8524590163934426,
-        "recall": 0.64,
-        "detection_recall": 0.64,
-        "actionable_recall": 0.49
-      },
-      {
-        "threshold": 0.055,
-        "calibrated": false,
-        "tune_null_fa_per_20_days": 1.8360655737704918,
-        "test_fa_per_20_days": 0.9508196721311475,
-        "recall": 0.64,
-        "detection_recall": 0.64,
-        "actionable_recall": 0.49
-      },
-      {
-        "threshold": 0.06,
-        "calibrated": false,
-        "tune_null_fa_per_20_days": 1.9672131147540983,
-        "test_fa_per_20_days": 0.9508196721311475,
+        "tune_null_fa_per_20_days": 2.0655737704918034,
+        "test_fa_per_20_days": 1.0819672131147542,
         "recall": 0.65,
         "detection_recall": 0.65,
         "actionable_recall": 0.51
       },
       {
+        "threshold": 0.055,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.3934426229508197,
+        "test_fa_per_20_days": 1.2131147540983607,
+        "recall": 0.65,
+        "detection_recall": 0.65,
+        "actionable_recall": 0.51
+      },
+      {
+        "threshold": 0.06,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 2.5901639344262297,
+        "test_fa_per_20_days": 1.2131147540983607,
+        "recall": 0.67,
+        "detection_recall": 0.67,
+        "actionable_recall": 0.53
+      },
+      {
         "threshold": 0.065,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 2.0,
-        "test_fa_per_20_days": 1.1147540983606556,
-        "recall": 0.68,
-        "detection_recall": 0.68,
-        "actionable_recall": 0.54
+        "tune_null_fa_per_20_days": 2.721311475409836,
+        "test_fa_per_20_days": 1.4098360655737705,
+        "recall": 0.69,
+        "detection_recall": 0.69,
+        "actionable_recall": 0.56
       },
       {
         "threshold": 0.07,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 2.1639344262295084,
-        "test_fa_per_20_days": 1.1475409836065573,
-        "recall": 0.68,
-        "detection_recall": 0.68,
-        "actionable_recall": 0.54
+        "tune_null_fa_per_20_days": 2.8524590163934427,
+        "test_fa_per_20_days": 1.5081967213114753,
+        "recall": 0.69,
+        "detection_recall": 0.69,
+        "actionable_recall": 0.56
       },
       {
         "threshold": 0.075,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 2.2950819672131146,
-        "test_fa_per_20_days": 1.278688524590164,
-        "recall": 0.69,
-        "detection_recall": 0.69,
-        "actionable_recall": 0.55
+        "tune_null_fa_per_20_days": 3.0163934426229506,
+        "test_fa_per_20_days": 1.7377049180327868,
+        "recall": 0.7,
+        "detection_recall": 0.7,
+        "actionable_recall": 0.57
       },
       {
         "threshold": 0.08,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 2.4262295081967213,
-        "test_fa_per_20_days": 1.3442622950819672,
-        "recall": 0.69,
-        "detection_recall": 0.69,
-        "actionable_recall": 0.55
+        "tune_null_fa_per_20_days": 3.2459016393442623,
+        "test_fa_per_20_days": 1.8032786885245902,
+        "recall": 0.7,
+        "detection_recall": 0.7,
+        "actionable_recall": 0.57
       },
       {
         "threshold": 0.08076406873071404,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 2.4262295081967213,
-        "test_fa_per_20_days": 1.3442622950819672,
-        "recall": 0.69,
-        "detection_recall": 0.69,
-        "actionable_recall": 0.55
+        "tune_null_fa_per_20_days": 3.2459016393442623,
+        "test_fa_per_20_days": 1.8032786885245902,
+        "recall": 0.7,
+        "detection_recall": 0.7,
+        "actionable_recall": 0.57
       },
       {
         "threshold": 0.085,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 2.557377049180328,
-        "test_fa_per_20_days": 1.4426229508196722,
-        "recall": 0.7,
-        "detection_recall": 0.7,
-        "actionable_recall": 0.56
+        "tune_null_fa_per_20_days": 3.377049180327869,
+        "test_fa_per_20_days": 1.9344262295081966,
+        "recall": 0.71,
+        "detection_recall": 0.71,
+        "actionable_recall": 0.58
       },
       {
         "threshold": 0.09,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 2.6557377049180326,
-        "test_fa_per_20_days": 1.540983606557377,
-        "recall": 0.71,
-        "detection_recall": 0.71,
-        "actionable_recall": 0.58
+        "tune_null_fa_per_20_days": 3.5081967213114753,
+        "test_fa_per_20_days": 2.0655737704918034,
+        "recall": 0.72,
+        "detection_recall": 0.72,
+        "actionable_recall": 0.6
       },
       {
         "threshold": 0.095,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 2.7868852459016393,
-        "test_fa_per_20_days": 1.7049180327868851,
-        "recall": 0.71,
-        "detection_recall": 0.71,
-        "actionable_recall": 0.58
+        "tune_null_fa_per_20_days": 3.7049180327868854,
+        "test_fa_per_20_days": 2.2295081967213113,
+        "recall": 0.72,
+        "detection_recall": 0.72,
+        "actionable_recall": 0.6
       },
       {
         "threshold": 0.1,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 2.918032786885246,
-        "test_fa_per_20_days": 1.8688524590163935,
+        "tune_null_fa_per_20_days": 3.901639344262295,
+        "test_fa_per_20_days": 2.3934426229508197,
         "recall": 0.72,
         "detection_recall": 0.72,
-        "actionable_recall": 0.59
+        "actionable_recall": 0.6
       },
       {
         "threshold": 0.25,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 7.344262295081967,
-        "test_fa_per_20_days": 5.180327868852459,
-        "recall": 0.8,
-        "detection_recall": 0.8,
-        "actionable_recall": 0.67
+        "tune_null_fa_per_20_days": 10.032786885245901,
+        "test_fa_per_20_days": 7.60655737704918,
+        "recall": 0.83,
+        "detection_recall": 0.83,
+        "actionable_recall": 0.71
       }
     ],
     "combined": [
@@ -2000,237 +2003,237 @@
         "calibrated": false,
         "tune_null_fa_per_20_days": 0.16393442622950818,
         "test_fa_per_20_days": 0.16393442622950818,
-        "recall": 0.12,
-        "detection_recall": 0.12,
-        "actionable_recall": 0.12
+        "recall": 0.13,
+        "detection_recall": 0.13,
+        "actionable_recall": 0.13
       },
       {
         "threshold": 0.005,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 0.26229508196721313,
-        "test_fa_per_20_days": 0.29508196721311475,
-        "recall": 0.18,
-        "detection_recall": 0.18,
-        "actionable_recall": 0.18
+        "tune_null_fa_per_20_days": 0.4262295081967213,
+        "test_fa_per_20_days": 0.4262295081967213,
+        "recall": 0.21,
+        "detection_recall": 0.21,
+        "actionable_recall": 0.21
       },
       {
         "threshold": 0.008428970847038045,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 0.26229508196721313,
-        "test_fa_per_20_days": 0.29508196721311475,
-        "recall": 0.18,
-        "detection_recall": 0.18,
-        "actionable_recall": 0.18
+        "tune_null_fa_per_20_days": 0.4262295081967213,
+        "test_fa_per_20_days": 0.4262295081967213,
+        "recall": 0.21,
+        "detection_recall": 0.21,
+        "actionable_recall": 0.21
       },
       {
         "threshold": 0.01,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 0.7213114754098361,
-        "test_fa_per_20_days": 0.4918032786885246,
-        "recall": 0.29,
-        "detection_recall": 0.3,
-        "actionable_recall": 0.29
+        "tune_null_fa_per_20_days": 1.0163934426229508,
+        "test_fa_per_20_days": 0.7540983606557377,
+        "recall": 0.31,
+        "detection_recall": 0.32,
+        "actionable_recall": 0.31
+      },
+      {
+        "threshold": [
+          0.01,
+          1.6223760934165177
+        ],
+        "calibrated": true,
+        "tune_null_fa_per_20_days": 0.9836065573770492,
+        "test_fa_per_20_days": 0.7540983606557377,
+        "recall": 0.3,
+        "detection_recall": 0.31,
+        "actionable_recall": 0.3
       },
       {
         "threshold": 0.015,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 0.9508196721311475,
-        "test_fa_per_20_days": 0.8852459016393442,
-        "recall": 0.31,
-        "detection_recall": 0.33,
-        "actionable_recall": 0.31
+        "tune_null_fa_per_20_days": 1.5737704918032787,
+        "test_fa_per_20_days": 1.180327868852459,
+        "recall": 0.34,
+        "detection_recall": 0.35,
+        "actionable_recall": 0.34
       },
       {
         "threshold": 0.02,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 1.4098360655737705,
-        "test_fa_per_20_days": 1.2459016393442623,
-        "recall": 0.37,
-        "detection_recall": 0.39,
-        "actionable_recall": 0.37
-      },
-      {
-        "threshold": [
-          0.02,
-          3.0289306330664525
-        ],
-        "calibrated": true,
-        "tune_null_fa_per_20_days": 0.9836065573770492,
-        "test_fa_per_20_days": 0.9508196721311475,
-        "recall": 0.31,
-        "detection_recall": 0.33,
-        "actionable_recall": 0.31
+        "tune_null_fa_per_20_days": 2.0655737704918034,
+        "test_fa_per_20_days": 1.639344262295082,
+        "recall": 0.4,
+        "detection_recall": 0.42,
+        "actionable_recall": 0.4
       },
       {
         "threshold": 0.025,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 1.8032786885245902,
-        "test_fa_per_20_days": 1.4426229508196722,
-        "recall": 0.42,
-        "detection_recall": 0.44,
-        "actionable_recall": 0.42
+        "tune_null_fa_per_20_days": 2.6557377049180326,
+        "test_fa_per_20_days": 1.8688524590163935,
+        "recall": 0.45,
+        "detection_recall": 0.47,
+        "actionable_recall": 0.45
       },
       {
         "threshold": 0.02609133919175796,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 1.8032786885245902,
-        "test_fa_per_20_days": 1.4426229508196722,
-        "recall": 0.42,
-        "detection_recall": 0.44,
-        "actionable_recall": 0.42
+        "tune_null_fa_per_20_days": 2.6557377049180326,
+        "test_fa_per_20_days": 1.8688524590163935,
+        "recall": 0.45,
+        "detection_recall": 0.47,
+        "actionable_recall": 0.45
       },
       {
         "threshold": 0.03,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 2.19672131147541,
-        "test_fa_per_20_days": 1.6065573770491803,
-        "recall": 0.43,
-        "detection_recall": 0.45,
-        "actionable_recall": 0.43
-      },
-      {
-        "threshold": 0.035,
-        "calibrated": false,
-        "tune_null_fa_per_20_days": 2.7868852459016393,
-        "test_fa_per_20_days": 1.7377049180327868,
-        "recall": 0.44,
-        "detection_recall": 0.46,
-        "actionable_recall": 0.44
-      },
-      {
-        "threshold": 0.04,
-        "calibrated": false,
-        "tune_null_fa_per_20_days": 3.1475409836065573,
-        "test_fa_per_20_days": 2.098360655737705,
+        "tune_null_fa_per_20_days": 3.442622950819672,
+        "test_fa_per_20_days": 2.0327868852459017,
         "recall": 0.46,
         "detection_recall": 0.48,
         "actionable_recall": 0.46
       },
       {
-        "threshold": 0.045,
+        "threshold": 0.035,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 3.639344262295082,
-        "test_fa_per_20_days": 2.459016393442623,
+        "tune_null_fa_per_20_days": 4.131147540983607,
+        "test_fa_per_20_days": 2.262295081967213,
         "recall": 0.47,
         "detection_recall": 0.49,
         "actionable_recall": 0.47
       },
       {
-        "threshold": 0.05,
+        "threshold": 0.04,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 4.19672131147541,
-        "test_fa_per_20_days": 2.819672131147541,
-        "recall": 0.49,
-        "detection_recall": 0.51,
-        "actionable_recall": 0.49
+        "tune_null_fa_per_20_days": 4.622950819672131,
+        "test_fa_per_20_days": 2.622950819672131,
+        "recall": 0.5,
+        "detection_recall": 0.52,
+        "actionable_recall": 0.5
       },
       {
-        "threshold": 0.055,
+        "threshold": 0.045,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 4.557377049180328,
-        "test_fa_per_20_days": 3.081967213114754,
+        "tune_null_fa_per_20_days": 5.213114754098361,
+        "test_fa_per_20_days": 3.1147540983606556,
+        "recall": 0.5,
+        "detection_recall": 0.52,
+        "actionable_recall": 0.5
+      },
+      {
+        "threshold": 0.05,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 5.967213114754099,
+        "test_fa_per_20_days": 3.4754098360655736,
         "recall": 0.52,
         "detection_recall": 0.54,
         "actionable_recall": 0.52
       },
       {
-        "threshold": 0.06,
+        "threshold": 0.055,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 4.918032786885246,
-        "test_fa_per_20_days": 3.3442622950819674,
-        "recall": 0.54,
-        "detection_recall": 0.56,
-        "actionable_recall": 0.54
-      },
-      {
-        "threshold": 0.065,
-        "calibrated": false,
-        "tune_null_fa_per_20_days": 5.344262295081967,
+        "tune_null_fa_per_20_days": 6.622950819672131,
         "test_fa_per_20_days": 3.7049180327868854,
         "recall": 0.55,
         "detection_recall": 0.57,
         "actionable_recall": 0.55
       },
       {
-        "threshold": 0.07,
+        "threshold": 0.06,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 6.0,
-        "test_fa_per_20_days": 4.065573770491803,
+        "tune_null_fa_per_20_days": 7.278688524590164,
+        "test_fa_per_20_days": 4.19672131147541,
+        "recall": 0.56,
+        "detection_recall": 0.58,
+        "actionable_recall": 0.56
+      },
+      {
+        "threshold": 0.065,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 7.868852459016393,
+        "test_fa_per_20_days": 4.622950819672131,
         "recall": 0.57,
         "detection_recall": 0.59,
         "actionable_recall": 0.57
+      },
+      {
+        "threshold": 0.07,
+        "calibrated": false,
+        "tune_null_fa_per_20_days": 8.655737704918034,
+        "test_fa_per_20_days": 5.081967213114754,
+        "recall": 0.59,
+        "detection_recall": 0.61,
+        "actionable_recall": 0.59
       },
       {
         "threshold": 0.075,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 6.295081967213115,
-        "test_fa_per_20_days": 4.39344262295082,
-        "recall": 0.57,
-        "detection_recall": 0.59,
-        "actionable_recall": 0.57
+        "tune_null_fa_per_20_days": 9.180327868852459,
+        "test_fa_per_20_days": 5.475409836065574,
+        "recall": 0.6,
+        "detection_recall": 0.62,
+        "actionable_recall": 0.6
       },
       {
         "threshold": 0.08,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 6.688524590163935,
-        "test_fa_per_20_days": 4.885245901639344,
-        "recall": 0.59,
-        "detection_recall": 0.63,
-        "actionable_recall": 0.59
+        "tune_null_fa_per_20_days": 9.672131147540984,
+        "test_fa_per_20_days": 6.0,
+        "recall": 0.61,
+        "detection_recall": 0.65,
+        "actionable_recall": 0.61
       },
       {
         "threshold": 0.08076406873071404,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 6.688524590163935,
-        "test_fa_per_20_days": 4.885245901639344,
-        "recall": 0.59,
-        "detection_recall": 0.63,
-        "actionable_recall": 0.59
+        "tune_null_fa_per_20_days": 9.672131147540984,
+        "test_fa_per_20_days": 6.0,
+        "recall": 0.61,
+        "detection_recall": 0.65,
+        "actionable_recall": 0.61
       },
       {
         "threshold": 0.085,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 7.016393442622951,
-        "test_fa_per_20_days": 5.147540983606557,
-        "recall": 0.6,
-        "detection_recall": 0.64,
-        "actionable_recall": 0.6
+        "tune_null_fa_per_20_days": 10.19672131147541,
+        "test_fa_per_20_days": 6.524590163934426,
+        "recall": 0.62,
+        "detection_recall": 0.66,
+        "actionable_recall": 0.62
       },
       {
         "threshold": 0.09,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 7.442622950819672,
-        "test_fa_per_20_days": 5.377049180327869,
-        "recall": 0.61,
-        "detection_recall": 0.65,
-        "actionable_recall": 0.61
+        "tune_null_fa_per_20_days": 11.049180327868852,
+        "test_fa_per_20_days": 7.081967213114754,
+        "recall": 0.63,
+        "detection_recall": 0.67,
+        "actionable_recall": 0.63
       },
       {
         "threshold": 0.095,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 7.934426229508197,
-        "test_fa_per_20_days": 5.672131147540983,
-        "recall": 0.61,
-        "detection_recall": 0.65,
-        "actionable_recall": 0.61
+        "tune_null_fa_per_20_days": 11.737704918032787,
+        "test_fa_per_20_days": 7.409836065573771,
+        "recall": 0.63,
+        "detection_recall": 0.67,
+        "actionable_recall": 0.63
       },
       {
         "threshold": 0.1,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 8.229508196721312,
-        "test_fa_per_20_days": 6.032786885245901,
-        "recall": 0.61,
-        "detection_recall": 0.66,
-        "actionable_recall": 0.61
+        "tune_null_fa_per_20_days": 12.459016393442623,
+        "test_fa_per_20_days": 7.934426229508197,
+        "recall": 0.63,
+        "detection_recall": 0.67,
+        "actionable_recall": 0.63
       },
       {
         "threshold": 0.25,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 17.737704918032787,
-        "test_fa_per_20_days": 14.78688524590164,
-        "recall": 0.72,
-        "detection_recall": 0.77,
-        "actionable_recall": 0.72
+        "tune_null_fa_per_20_days": 36.19672131147541,
+        "test_fa_per_20_days": 25.278688524590162,
+        "recall": 0.76,
+        "detection_recall": 0.8,
+        "actionable_recall": 0.76
       }
     ],
     "two_stage": [
@@ -2301,7 +2304,7 @@
         "threshold": 0.0027230319232774605,
         "calibrated": false,
         "tune_null_fa_per_20_days": 0.03278688524590164,
-        "test_fa_per_20_days": 0.03278688524590164,
+        "test_fa_per_20_days": 0.06557377049180328,
         "recall": 0.33,
         "detection_recall": 0.33,
         "actionable_recall": 0.33
@@ -2310,7 +2313,7 @@
         "threshold": 0.005,
         "calibrated": false,
         "tune_null_fa_per_20_days": 0.06557377049180328,
-        "test_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
         "recall": 0.36,
         "detection_recall": 0.36,
         "actionable_recall": 0.36
@@ -2319,7 +2322,7 @@
         "threshold": 0.008428970847038045,
         "calibrated": false,
         "tune_null_fa_per_20_days": 0.06557377049180328,
-        "test_fa_per_20_days": 0.0,
+        "test_fa_per_20_days": 0.03278688524590164,
         "recall": 0.36,
         "detection_recall": 0.36,
         "actionable_recall": 0.36
@@ -2327,53 +2330,65 @@
       {
         "threshold": 0.01,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 0.22950819672131148,
-        "test_fa_per_20_days": 0.09836065573770492,
-        "recall": 0.39,
-        "detection_recall": 0.39,
-        "actionable_recall": 0.39
+        "tune_null_fa_per_20_days": 0.26229508196721313,
+        "test_fa_per_20_days": 0.13114754098360656,
+        "recall": 0.41,
+        "detection_recall": 0.41,
+        "actionable_recall": 0.41
       },
       {
         "threshold": 0.015,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 0.36065573770491804,
-        "test_fa_per_20_days": 0.19672131147540983,
-        "recall": 0.45,
-        "detection_recall": 0.45,
-        "actionable_recall": 0.44
+        "tune_null_fa_per_20_days": 0.4262295081967213,
+        "test_fa_per_20_days": 0.26229508196721313,
+        "recall": 0.48,
+        "detection_recall": 0.48,
+        "actionable_recall": 0.47
       },
       {
         "threshold": 0.02,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 0.5901639344262295,
-        "test_fa_per_20_days": 0.36065573770491804,
-        "recall": 0.52,
-        "detection_recall": 0.52,
-        "actionable_recall": 0.49
+        "tune_null_fa_per_20_days": 0.7213114754098361,
+        "test_fa_per_20_days": 0.4262295081967213,
+        "recall": 0.54,
+        "detection_recall": 0.54,
+        "actionable_recall": 0.51
       },
       {
         "threshold": 0.025,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 0.7540983606557377,
-        "test_fa_per_20_days": 0.45901639344262296,
-        "recall": 0.54,
-        "detection_recall": 0.54,
-        "actionable_recall": 0.51
+        "tune_null_fa_per_20_days": 0.9508196721311475,
+        "test_fa_per_20_days": 0.5245901639344263,
+        "recall": 0.56,
+        "detection_recall": 0.56,
+        "actionable_recall": 0.53
       },
       {
         "threshold": 0.02609133919175796,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 0.7540983606557377,
-        "test_fa_per_20_days": 0.45901639344262296,
-        "recall": 0.54,
-        "detection_recall": 0.54,
-        "actionable_recall": 0.51
+        "tune_null_fa_per_20_days": 0.9508196721311475,
+        "test_fa_per_20_days": 0.5245901639344263,
+        "recall": 0.56,
+        "detection_recall": 0.56,
+        "actionable_recall": 0.53
       },
       {
         "threshold": 0.03,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 0.9508196721311475,
-        "test_fa_per_20_days": 0.45901639344262296,
+        "tune_null_fa_per_20_days": 1.2131147540983607,
+        "test_fa_per_20_days": 0.5245901639344263,
+        "recall": 0.57,
+        "detection_recall": 0.57,
+        "actionable_recall": 0.54
+      },
+      {
+        "threshold": [
+          0.03,
+          6.7951485454332765
+        ],
+        "calibrated": true,
+        "tune_null_fa_per_20_days": 0.9836065573770492,
+        "test_fa_per_20_days": 0.5245901639344263,
         "recall": 0.56,
         "detection_recall": 0.56,
         "actionable_recall": 0.53
@@ -2381,158 +2396,146 @@
       {
         "threshold": 0.035,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 1.180327868852459,
-        "test_fa_per_20_days": 0.5245901639344263,
-        "recall": 0.59,
-        "detection_recall": 0.59,
-        "actionable_recall": 0.55
-      },
-      {
-        "threshold": [
-          0.035,
-          3.540819667638181
-        ],
-        "calibrated": true,
-        "tune_null_fa_per_20_days": 0.9836065573770492,
-        "test_fa_per_20_days": 0.45901639344262296,
-        "recall": 0.57,
-        "detection_recall": 0.57,
-        "actionable_recall": 0.53
+        "tune_null_fa_per_20_days": 1.4754098360655739,
+        "test_fa_per_20_days": 0.5901639344262295,
+        "recall": 0.6,
+        "detection_recall": 0.6,
+        "actionable_recall": 0.56
       },
       {
         "threshold": 0.04,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 1.3114754098360655,
-        "test_fa_per_20_days": 0.7540983606557377,
-        "recall": 0.63,
-        "detection_recall": 0.63,
-        "actionable_recall": 0.59
+        "tune_null_fa_per_20_days": 1.7049180327868851,
+        "test_fa_per_20_days": 0.8852459016393442,
+        "recall": 0.64,
+        "detection_recall": 0.64,
+        "actionable_recall": 0.6
       },
       {
         "threshold": 0.045,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 1.5081967213114753,
-        "test_fa_per_20_days": 0.819672131147541,
-        "recall": 0.63,
-        "detection_recall": 0.63,
-        "actionable_recall": 0.59
+        "tune_null_fa_per_20_days": 1.9344262295081966,
+        "test_fa_per_20_days": 0.9836065573770492,
+        "recall": 0.64,
+        "detection_recall": 0.64,
+        "actionable_recall": 0.6
       },
       {
         "threshold": 0.05,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 1.5737704918032787,
-        "test_fa_per_20_days": 0.8524590163934426,
-        "recall": 0.64,
-        "detection_recall": 0.64,
-        "actionable_recall": 0.6
+        "tune_null_fa_per_20_days": 2.0655737704918034,
+        "test_fa_per_20_days": 1.0819672131147542,
+        "recall": 0.65,
+        "detection_recall": 0.65,
+        "actionable_recall": 0.62
       },
       {
         "threshold": 0.055,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 1.8360655737704918,
-        "test_fa_per_20_days": 0.9508196721311475,
-        "recall": 0.64,
-        "detection_recall": 0.64,
-        "actionable_recall": 0.6
+        "tune_null_fa_per_20_days": 2.3934426229508197,
+        "test_fa_per_20_days": 1.2131147540983607,
+        "recall": 0.65,
+        "detection_recall": 0.65,
+        "actionable_recall": 0.62
       },
       {
         "threshold": 0.06,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 1.9672131147540983,
-        "test_fa_per_20_days": 0.9508196721311475,
-        "recall": 0.65,
-        "detection_recall": 0.65,
-        "actionable_recall": 0.6
+        "tune_null_fa_per_20_days": 2.5901639344262297,
+        "test_fa_per_20_days": 1.2131147540983607,
+        "recall": 0.67,
+        "detection_recall": 0.67,
+        "actionable_recall": 0.63
       },
       {
         "threshold": 0.065,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 2.0,
-        "test_fa_per_20_days": 1.1147540983606556,
-        "recall": 0.68,
-        "detection_recall": 0.68,
-        "actionable_recall": 0.63
+        "tune_null_fa_per_20_days": 2.721311475409836,
+        "test_fa_per_20_days": 1.4098360655737705,
+        "recall": 0.69,
+        "detection_recall": 0.69,
+        "actionable_recall": 0.65
       },
       {
         "threshold": 0.07,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 2.1639344262295084,
-        "test_fa_per_20_days": 1.1475409836065573,
-        "recall": 0.68,
-        "detection_recall": 0.68,
-        "actionable_recall": 0.63
+        "tune_null_fa_per_20_days": 2.8524590163934427,
+        "test_fa_per_20_days": 1.5081967213114753,
+        "recall": 0.69,
+        "detection_recall": 0.69,
+        "actionable_recall": 0.65
       },
       {
         "threshold": 0.075,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 2.2950819672131146,
-        "test_fa_per_20_days": 1.278688524590164,
-        "recall": 0.69,
-        "detection_recall": 0.69,
-        "actionable_recall": 0.65
+        "tune_null_fa_per_20_days": 3.0163934426229506,
+        "test_fa_per_20_days": 1.7377049180327868,
+        "recall": 0.7,
+        "detection_recall": 0.7,
+        "actionable_recall": 0.67
       },
       {
         "threshold": 0.08,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 2.4262295081967213,
-        "test_fa_per_20_days": 1.3442622950819672,
-        "recall": 0.69,
-        "detection_recall": 0.69,
-        "actionable_recall": 0.65
+        "tune_null_fa_per_20_days": 3.2459016393442623,
+        "test_fa_per_20_days": 1.8032786885245902,
+        "recall": 0.7,
+        "detection_recall": 0.7,
+        "actionable_recall": 0.67
       },
       {
         "threshold": 0.08076406873071404,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 2.4262295081967213,
-        "test_fa_per_20_days": 1.3442622950819672,
-        "recall": 0.69,
-        "detection_recall": 0.69,
-        "actionable_recall": 0.65
+        "tune_null_fa_per_20_days": 3.2459016393442623,
+        "test_fa_per_20_days": 1.8032786885245902,
+        "recall": 0.7,
+        "detection_recall": 0.7,
+        "actionable_recall": 0.67
       },
       {
         "threshold": 0.085,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 2.557377049180328,
-        "test_fa_per_20_days": 1.4426229508196722,
-        "recall": 0.7,
-        "detection_recall": 0.7,
-        "actionable_recall": 0.66
+        "tune_null_fa_per_20_days": 3.377049180327869,
+        "test_fa_per_20_days": 1.9344262295081966,
+        "recall": 0.71,
+        "detection_recall": 0.71,
+        "actionable_recall": 0.68
       },
       {
         "threshold": 0.09,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 2.6557377049180326,
-        "test_fa_per_20_days": 1.540983606557377,
-        "recall": 0.71,
-        "detection_recall": 0.71,
-        "actionable_recall": 0.67
+        "tune_null_fa_per_20_days": 3.5081967213114753,
+        "test_fa_per_20_days": 2.0655737704918034,
+        "recall": 0.72,
+        "detection_recall": 0.72,
+        "actionable_recall": 0.69
       },
       {
         "threshold": 0.095,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 2.7868852459016393,
-        "test_fa_per_20_days": 1.7049180327868851,
-        "recall": 0.71,
-        "detection_recall": 0.71,
-        "actionable_recall": 0.67
+        "tune_null_fa_per_20_days": 3.7049180327868854,
+        "test_fa_per_20_days": 2.2295081967213113,
+        "recall": 0.72,
+        "detection_recall": 0.72,
+        "actionable_recall": 0.69
       },
       {
         "threshold": 0.1,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 2.918032786885246,
-        "test_fa_per_20_days": 1.8688524590163935,
+        "tune_null_fa_per_20_days": 3.901639344262295,
+        "test_fa_per_20_days": 2.3934426229508197,
         "recall": 0.72,
         "detection_recall": 0.72,
-        "actionable_recall": 0.68
+        "actionable_recall": 0.69
       },
       {
         "threshold": 0.25,
         "calibrated": false,
-        "tune_null_fa_per_20_days": 7.344262295081967,
-        "test_fa_per_20_days": 5.180327868852459,
-        "recall": 0.8,
-        "detection_recall": 0.8,
-        "actionable_recall": 0.77
+        "tune_null_fa_per_20_days": 10.032786885245901,
+        "test_fa_per_20_days": 7.60655737704918,
+        "recall": 0.83,
+        "detection_recall": 0.83,
+        "actionable_recall": 0.8
       }
     ]
   },
@@ -2575,64 +2578,64 @@
         }
       },
       "combined": {
-        "recall": 0.21,
-        "fa_per_20_days": 1.639344262295082,
-        "detection_recall": 0.32,
-        "actionable_recall": 0.21,
-        "attribution_accuracy_among_detected": 0.65625,
+        "recall": 0.19,
+        "fa_per_20_days": 1.278688524590164,
+        "detection_recall": 0.26,
+        "actionable_recall": 0.19,
+        "attribution_accuracy_among_detected": 0.7307692307692307,
         "time_to_correct_attribution": {
-          "n": 21,
+          "n": 19,
           "median": 1.0,
           "q1": 1.0,
-          "q3": 2.0
+          "q3": 2.5
         },
-        "pct_detected_by_onset_plus_2": 0.17,
+        "pct_detected_by_onset_plus_2": 0.14,
         "attribution_confusion": {
           "illness": {
-            "illness": 2,
+            "illness": 4,
             "transportation": 1,
-            "other": 2,
+            "other": 0,
             "missed": 25
           },
           "transportation": {
-            "illness": 3,
-            "transportation": 11,
+            "illness": 2,
+            "transportation": 10,
             "other": 3,
-            "missed": 23
+            "missed": 25
           },
           "other": {
-            "illness": 2,
+            "illness": 1,
             "transportation": 0,
-            "other": 8,
-            "missed": 20
+            "other": 5,
+            "missed": 24
           }
         }
       },
       "two_stage": {
-        "recall": 0.57,
-        "fa_per_20_days": 0.45901639344262296,
-        "detection_recall": 0.57,
+        "recall": 0.56,
+        "fa_per_20_days": 0.5245901639344263,
+        "detection_recall": 0.56,
         "actionable_recall": 0.47,
-        "attribution_accuracy_among_detected": 0.8245614035087719,
+        "attribution_accuracy_among_detected": 0.8392857142857143,
         "time_to_correct_attribution": {
           "n": 47,
           "median": 0.0,
           "q1": 0.0,
-          "q3": 1.0
+          "q3": 0.5
         },
-        "pct_detected_by_onset_plus_2": 0.53,
+        "pct_detected_by_onset_plus_2": 0.52,
         "attribution_confusion": {
           "illness": {
-            "illness": 3,
-            "transportation": 3,
-            "other": 1,
+            "illness": 5,
+            "transportation": 2,
+            "other": 0,
             "missed": 23
           },
           "transportation": {
             "illness": 2,
-            "transportation": 25,
+            "transportation": 24,
             "other": 8,
-            "missed": 5
+            "missed": 6
           },
           "other": {
             "illness": 2,
@@ -2681,69 +2684,69 @@
         }
       },
       "combined": {
-        "recall": 0.24,
-        "fa_per_20_days": 1.0163934426229508,
-        "detection_recall": 0.28,
-        "actionable_recall": 0.24,
-        "attribution_accuracy_among_detected": 0.8571428571428571,
+        "recall": 0.18,
+        "fa_per_20_days": 0.7540983606557377,
+        "detection_recall": 0.2,
+        "actionable_recall": 0.18,
+        "attribution_accuracy_among_detected": 0.9,
         "time_to_correct_attribution": {
-          "n": 24,
+          "n": 18,
           "median": 1.0,
-          "q1": 0.0,
+          "q1": 0.25,
           "q3": 2.0
         },
-        "pct_detected_by_onset_plus_2": 0.21,
+        "pct_detected_by_onset_plus_2": 0.16,
         "attribution_confusion": {
           "illness": {
-            "illness": 5,
-            "transportation": 1,
+            "illness": 4,
+            "transportation": 0,
             "other": 0,
-            "missed": 24
+            "missed": 26
           },
           "transportation": {
             "illness": 0,
-            "transportation": 10,
-            "other": 3,
-            "missed": 27
+            "transportation": 8,
+            "other": 2,
+            "missed": 30
           },
           "other": {
             "illness": 0,
-            "transportation": 1,
-            "other": 8,
-            "missed": 21
+            "transportation": 0,
+            "other": 6,
+            "missed": 24
           }
         }
       },
       "two_stage": {
-        "recall": 0.57,
-        "fa_per_20_days": 0.45901639344262296,
-        "detection_recall": 0.57,
+        "recall": 0.56,
+        "fa_per_20_days": 0.5245901639344263,
+        "detection_recall": 0.56,
         "actionable_recall": 0.5,
-        "attribution_accuracy_among_detected": 0.8771929824561403,
+        "attribution_accuracy_among_detected": 0.8928571428571429,
         "time_to_correct_attribution": {
           "n": 50,
           "median": 0.0,
           "q1": 0.0,
           "q3": 0.0
         },
-        "pct_detected_by_onset_plus_2": 0.53,
+        "pct_detected_by_onset_plus_2": 0.52,
         "attribution_confusion": {
           "illness": {
-            "illness": 3,
-            "transportation": 4,
+            "illness": 4,
+            "transportation": 3,
             "other": 0,
             "missed": 23
           },
           "transportation": {
             "illness": 0,
-            "transportation": 33,
+            "transportation": 32,
             "other": 2,
-            "missed": 5
+            "missed": 6
           },
           "other": {
-            "illness": 2,
+            "illness": 1,
             "transportation": 2,
-            "other": 11,
+            "other": 12,
             "missed": 15
           }
         }
@@ -2787,30 +2790,30 @@
         }
       },
       "combined": {
-        "recall": 0.26,
-        "fa_per_20_days": 1.0163934426229508,
-        "detection_recall": 0.29,
-        "actionable_recall": 0.26,
-        "attribution_accuracy_among_detected": 0.896551724137931,
+        "recall": 0.25,
+        "fa_per_20_days": 0.8524590163934426,
+        "detection_recall": 0.28,
+        "actionable_recall": 0.25,
+        "attribution_accuracy_among_detected": 0.8928571428571429,
         "time_to_correct_attribution": {
-          "n": 26,
+          "n": 25,
           "median": 1.0,
           "q1": 0.0,
-          "q3": 1.75
+          "q3": 2.0
         },
-        "pct_detected_by_onset_plus_2": 0.23,
+        "pct_detected_by_onset_plus_2": 0.22,
         "attribution_confusion": {
           "illness": {
-            "illness": 3,
-            "transportation": 1,
+            "illness": 4,
+            "transportation": 0,
             "other": 0,
             "missed": 26
           },
           "transportation": {
             "illness": 1,
-            "transportation": 18,
+            "transportation": 17,
             "other": 2,
-            "missed": 19
+            "missed": 20
           },
           "other": {
             "illness": 0,
@@ -2821,30 +2824,30 @@
         }
       },
       "two_stage": {
-        "recall": 0.57,
-        "fa_per_20_days": 0.45901639344262296,
-        "detection_recall": 0.57,
-        "actionable_recall": 0.51,
-        "attribution_accuracy_among_detected": 0.8947368421052632,
+        "recall": 0.56,
+        "fa_per_20_days": 0.5245901639344263,
+        "detection_recall": 0.56,
+        "actionable_recall": 0.5,
+        "attribution_accuracy_among_detected": 0.8928571428571429,
         "time_to_correct_attribution": {
-          "n": 51,
+          "n": 50,
           "median": 0.0,
           "q1": 0.0,
-          "q3": 0.5
+          "q3": 0.0
         },
-        "pct_detected_by_onset_plus_2": 0.53,
+        "pct_detected_by_onset_plus_2": 0.52,
         "attribution_confusion": {
           "illness": {
-            "illness": 4,
-            "transportation": 3,
+            "illness": 5,
+            "transportation": 2,
             "other": 0,
             "missed": 23
           },
           "transportation": {
             "illness": 0,
-            "transportation": 32,
+            "transportation": 31,
             "other": 3,
-            "missed": 5
+            "missed": 6
           },
           "other": {
             "illness": 1,
@@ -2893,18 +2896,18 @@
         }
       },
       "combined": {
-        "recall": 0.34,
-        "fa_per_20_days": 1.1475409836065573,
-        "detection_recall": 0.39,
-        "actionable_recall": 0.34,
-        "attribution_accuracy_among_detected": 0.8717948717948718,
+        "recall": 0.31,
+        "fa_per_20_days": 0.8524590163934426,
+        "detection_recall": 0.33,
+        "actionable_recall": 0.31,
+        "attribution_accuracy_among_detected": 0.9393939393939394,
         "time_to_correct_attribution": {
-          "n": 34,
+          "n": 31,
           "median": 1.0,
           "q1": 0.0,
-          "q3": 2.0
+          "q3": 1.0
         },
-        "pct_detected_by_onset_plus_2": 0.3,
+        "pct_detected_by_onset_plus_2": 0.28,
         "attribution_confusion": {
           "illness": {
             "illness": 4,
@@ -2914,43 +2917,43 @@
           },
           "transportation": {
             "illness": 1,
-            "transportation": 21,
-            "other": 2,
-            "missed": 16
+            "transportation": 20,
+            "other": 1,
+            "missed": 18
           },
           "other": {
             "illness": 0,
             "transportation": 0,
-            "other": 11,
-            "missed": 19
+            "other": 7,
+            "missed": 23
           }
         }
       },
       "two_stage": {
-        "recall": 0.57,
-        "fa_per_20_days": 0.45901639344262296,
-        "detection_recall": 0.57,
-        "actionable_recall": 0.53,
-        "attribution_accuracy_among_detected": 0.9298245614035088,
+        "recall": 0.56,
+        "fa_per_20_days": 0.5245901639344263,
+        "detection_recall": 0.56,
+        "actionable_recall": 0.52,
+        "attribution_accuracy_among_detected": 0.9285714285714286,
         "time_to_correct_attribution": {
-          "n": 53,
+          "n": 52,
           "median": 0.0,
           "q1": 0.0,
           "q3": 1.0
         },
-        "pct_detected_by_onset_plus_2": 0.53,
+        "pct_detected_by_onset_plus_2": 0.52,
         "attribution_confusion": {
           "illness": {
-            "illness": 3,
-            "transportation": 3,
+            "illness": 4,
+            "transportation": 2,
             "other": 1,
             "missed": 23
           },
           "transportation": {
             "illness": 1,
-            "transportation": 32,
+            "transportation": 31,
             "other": 2,
-            "missed": 5
+            "missed": 6
           },
           "other": {
             "illness": 2,
@@ -2999,64 +3002,64 @@
         }
       },
       "combined": {
-        "recall": 0.43,
-        "fa_per_20_days": 0.8852459016393442,
-        "detection_recall": 0.45,
-        "actionable_recall": 0.43,
-        "attribution_accuracy_among_detected": 0.9555555555555556,
+        "recall": 0.38,
+        "fa_per_20_days": 0.6885245901639344,
+        "detection_recall": 0.38,
+        "actionable_recall": 0.38,
+        "attribution_accuracy_among_detected": 1.0,
         "time_to_correct_attribution": {
-          "n": 43,
+          "n": 38,
           "median": 1.0,
           "q1": 0.0,
           "q3": 1.0
         },
-        "pct_detected_by_onset_plus_2": 0.37,
+        "pct_detected_by_onset_plus_2": 0.33,
         "attribution_confusion": {
           "illness": {
-            "illness": 5,
+            "illness": 4,
             "transportation": 0,
             "other": 0,
-            "missed": 25
+            "missed": 26
           },
           "transportation": {
-            "illness": 1,
-            "transportation": 26,
+            "illness": 0,
+            "transportation": 23,
             "other": 0,
-            "missed": 13
+            "missed": 17
           },
           "other": {
             "illness": 0,
-            "transportation": 1,
-            "other": 12,
-            "missed": 17
+            "transportation": 0,
+            "other": 11,
+            "missed": 19
           }
         }
       },
       "two_stage": {
-        "recall": 0.57,
-        "fa_per_20_days": 0.45901639344262296,
-        "detection_recall": 0.57,
+        "recall": 0.56,
+        "fa_per_20_days": 0.5245901639344263,
+        "detection_recall": 0.56,
         "actionable_recall": 0.54,
-        "attribution_accuracy_among_detected": 0.9473684210526315,
+        "attribution_accuracy_among_detected": 0.9642857142857143,
         "time_to_correct_attribution": {
           "n": 54,
           "median": 0.0,
           "q1": 0.0,
           "q3": 0.0
         },
-        "pct_detected_by_onset_plus_2": 0.53,
+        "pct_detected_by_onset_plus_2": 0.52,
         "attribution_confusion": {
           "illness": {
-            "illness": 4,
-            "transportation": 3,
+            "illness": 5,
+            "transportation": 2,
             "other": 0,
             "missed": 23
           },
           "transportation": {
             "illness": 0,
-            "transportation": 33,
+            "transportation": 32,
             "other": 2,
-            "missed": 5
+            "missed": 6
           },
           "other": {
             "illness": 0,
@@ -3105,18 +3108,18 @@
         }
       },
       "combined": {
-        "recall": 0.46,
-        "fa_per_20_days": 0.7540983606557377,
-        "detection_recall": 0.46,
-        "actionable_recall": 0.46,
+        "recall": 0.4,
+        "fa_per_20_days": 0.7213114754098361,
+        "detection_recall": 0.4,
+        "actionable_recall": 0.4,
         "attribution_accuracy_among_detected": 1.0,
         "time_to_correct_attribution": {
-          "n": 46,
+          "n": 40,
           "median": 1.0,
           "q1": 0.0,
           "q3": 1.0
         },
-        "pct_detected_by_onset_plus_2": 0.42,
+        "pct_detected_by_onset_plus_2": 0.35,
         "attribution_confusion": {
           "illness": {
             "illness": 5,
@@ -3126,43 +3129,43 @@
           },
           "transportation": {
             "illness": 0,
-            "transportation": 29,
+            "transportation": 24,
             "other": 0,
-            "missed": 11
+            "missed": 16
           },
           "other": {
             "illness": 0,
             "transportation": 0,
-            "other": 12,
-            "missed": 18
+            "other": 11,
+            "missed": 19
           }
         }
       },
       "two_stage": {
-        "recall": 0.57,
-        "fa_per_20_days": 0.45901639344262296,
-        "detection_recall": 0.57,
+        "recall": 0.56,
+        "fa_per_20_days": 0.5245901639344263,
+        "detection_recall": 0.56,
         "actionable_recall": 0.54,
-        "attribution_accuracy_among_detected": 0.9473684210526315,
+        "attribution_accuracy_among_detected": 0.9642857142857143,
         "time_to_correct_attribution": {
           "n": 54,
           "median": 0.0,
           "q1": 0.0,
           "q3": 0.0
         },
-        "pct_detected_by_onset_plus_2": 0.53,
+        "pct_detected_by_onset_plus_2": 0.52,
         "attribution_confusion": {
           "illness": {
-            "illness": 4,
-            "transportation": 3,
+            "illness": 5,
+            "transportation": 2,
             "other": 0,
             "missed": 23
           },
           "transportation": {
             "illness": 0,
-            "transportation": 34,
+            "transportation": 33,
             "other": 1,
-            "missed": 5
+            "missed": 6
           },
           "other": {
             "illness": 0,

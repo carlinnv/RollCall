@@ -43,11 +43,11 @@ DETECTORS: Tuple[str, ...] = ("content_only", "graph_only", "combined")
 ALL_DETECTORS: Tuple[str, ...] = DETECTORS + ("two_stage",)
 LABEL_DETECTORS: Tuple[str, ...] = ("content_only", "combined", "two_stage")
 ANY_DETECTORS: Tuple[str, ...] = ("graph_only", "two_stage")   # all-cause scan: detection ignores the cause
-# By default the detectors see only what a real school has: class rosters, bus routes, neighborhoods
-# (households are always collapsed). A real school cannot collect sensor proximity data, so the
-# SocioPatterns contact network is only "nature" in the simulator (illness spreads along it).
-# DETECTOR_USE_CONTACTS=1 adds sensor contact circles to the detector, for comparison only.
-RECORDS_ONLY = os.environ.get("DETECTOR_USE_CONTACTS", "0") != "1"
+# By default the detectors use the sensor contact network (close-contact circles from SocioPatterns)
+# plus school records: class rosters, bus routes, neighborhoods (households are always collapsed).
+# DETECTOR_RECORDS_ONLY=1 limits them to records a school already keeps (no sensors). Held-out
+# right-cause recall is the same either way, so a school without sensors loses nothing measurable.
+RECORDS_ONLY = os.environ.get("DETECTOR_RECORDS_ONLY", "0") == "1"
 DETECT_LAYERS: Tuple[str, ...] = tuple(l for l in SPATIAL_LAYERS if not (RECORDS_ONLY and l == "contact"))
 
 DETECTOR_LAYERS: Dict[str, Tuple[str, ...]] = {

@@ -10,7 +10,7 @@
 
 **Insight to test and report honestly:** SocioPatterns contacts are mostly within a class. Measure what contact ego-nets add *beyond* class sections (e.g., cross-class contagion that section-level zones miss). A null result is still worth reporting.
 
-**Result:** they add nothing measurable. Held-out right-cause recall is 0.53 with school records only and 0.53 with sensor contact circles added (illness 0.13 vs 0.17, 4 vs 5 of 30 events). 83% (Lyon) and 94% (Marseille) of contact time is within a class, so class rosters capture most of it. The detector therefore uses school records only.
+**Result:** they add nothing measurable. Held-out right-cause recall is 0.53 with school records only and 0.53 with sensor contact circles added (illness 0.13 vs 0.17, 4 vs 5 of 30 events). 83% (Lyon) and 94% (Marseille) of contact time is within a class, so class rosters capture most of it. A school without sensors can therefore run on records only; the evaluation keeps sensor contacts on by default.
 
 ---
 
@@ -23,7 +23,7 @@
   * **Optional extra held-out graphs:** Utah Elem1 (339) and Mid1 (591) from *Toth et al., J. R. Soc. Interface 2015*, available via HypergraphX. License not stated there; check the paper's supplementary material before use.
   * **Do not merge schools into one graph.** They have no edges between them and come from different sensors and time resolutions.
 * **Daily graph construction:** `w_ij` = seconds of contact per day; keep each node's top-k edges by weight (rank-based, robust across sensors) rather than an absolute threshold. Cycle the recorded days across the simulated calendar.
-* **No sensors in production:** a real school cannot collect proximity data. The sensor network plays "nature" in the simulator (illness spreads along real contacts); the detector uses only records a school already keeps (class rosters, bus rosters, households, neighborhoods); this is the default. Held-out right-cause recall: 0.53 with records only (`eval/ablation.json`), the same as with sensor contact circles added (`DETECTOR_USE_CONTACTS=1`, comparison only, `eval/ablation_with_contacts.json`).
+* **No sensors in production:** a real school cannot collect proximity data. The sensor network plays "nature" in the simulator (illness spreads along real contacts); the detector uses sensor contact circles plus school records by default (`eval/ablation.json`); `DETECTOR_RECORDS_ONLY=1` limits it to records a school already keeps (class rosters, bus rosters, households, neighborhoods; `eval/ablation_records_only.json`). Held-out right-cause recall is 0.53 both ways, so a school without sensors loses nothing measurable.
 * **Graph handling rules:** re-key node IDs and drop original class names; contact edges are used only for illness-spread scoring; never attach safety or housing labels to real-graph nodes.
 * **Logistics Layers (Synthetic):** Assign synthetic bus routes, household IDs, and neighborhoods to every student node.
 * **Scaling benchmark (synthetic):** a 10k–50k-student stochastic block model with class structure matched to the real graphs, used only for a runtime-vs-N chart (Arlequin "responsible compute").
@@ -66,7 +66,7 @@
 * **Learning From Corrections (F8):** staff-confirmed corrections are stored per school; the most similar past corrections are added to the prompt as examples. Corrections used as examples must come from a split that does not overlap the test set.
 
 ### 3.2 Root-Cause Cluster Detection (F3 — P0)
-* **Zones Z:** every group in each logistics layer (class section, route, neighborhood), (comparison only: k-nearest sensor-contact ego-nets, k ∈ {5, 10, 20}; a real school has no sensor data). Households are collapsed to one unit (siblings out together is expected, not a cluster).
+* **Zones Z:** every group in each logistics layer (class section, route, neighborhood), plus k-nearest sensor-contact ego-nets for every student, k ∈ {5, 10, 20} (off with `DETECTOR_RECORDS_ONLY=1`; a real school has no sensor data). Households are collapsed to one unit (siblings out together is expected, not a cluster).
 * **Windows W:** the last w ∈ {1, 2, 3} school days, run prospectively each day with an `as_of` date (needed for replay and lead time).
 * **Statistic:** for each barrier *b*, a Kulldorff space-time permutation scan. With `c` = b-absences in Z×W, `C_Z`, `C_W` the zone and window totals, `C` the total over a baseline of ≥ 40 simulated days, and `μ = C_Z · C_W / C` (which conditions out school-wide waves):
   `LLR = c · ln(c/μ) + (C − c) · ln((C − c)/(C − μ))` when `c > μ`, else 0.

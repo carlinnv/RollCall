@@ -13,8 +13,8 @@ const pct = (x: number | null | undefined) => (x == null ? "–" : `${Math.round
 
 export default function Evidence() {
   const ab = useLoad(api.ablation);
-  const sens = useLoad(api.ablationContacts);
-  const sensTest = sens.data?.test ?? {};
+  const rec = useLoad(api.ablationRecords);
+  const recTest = rec.data?.test ?? {};
   const rt = useLoad(api.retrieval);
   const sc = useLoad(api.scaling);
   const test = ab.data?.test ?? {};
@@ -25,7 +25,7 @@ export default function Evidence() {
   return (
     <Page
       title="Evidence"
-      subtitle="Held-out evaluation: illness spreads over a real, sensor-recorded contact network (SocioPatterns, Lyon primary school) while the detector sees only school records. Tuned on a different school (Marseille); tested once."
+      subtitle="Held-out evaluation on a real, sensor-recorded contact network (SocioPatterns, Lyon primary school) with simulated absences. Tuned on a different school (Marseille); tested once."
     >
       <ErrorNote error={ab.error} />
       <div className="stats">
@@ -45,7 +45,7 @@ export default function Evidence() {
         </p>
         <table>
           <thead>
-            <tr><th>Detector</th><th>Uses</th><th>Found the cluster</th><th>Right cause, in time</th><th>With research sensor data (comparison)</th></tr>
+            <tr><th>Detector</th><th>Uses</th><th>Found the cluster</th><th>Right cause, in time</th><th>School records only (no sensors)</th></tr>
           </thead>
           <tbody>
             {DETECTORS.map((d) => (
@@ -54,15 +54,15 @@ export default function Evidence() {
                 <td className="muted small">{d.uses}</td>
                 <td>{pct(test[d.key]?.detection_recall)}</td>
                 <td><b>{pct(test[d.key]?.actionable_recall)}</b></td>
-                <td className="muted">{pct(sensTest[d.key]?.actionable_recall)}</td>
+                <td className="muted">{pct(recTest[d.key]?.actionable_recall)}</td>
               </tr>
             ))}
           </tbody>
         </table>
         <p className="muted small">
-          No sensors needed: the detector only uses records a school already keeps (class rosters, bus routes,
-          households, neighborhoods). The real sensor contact network is used only to simulate how illness actually
-          spreads. Adding sensor data to the detector (last column) does not change the result.
+          The detector uses the real sensor contact network plus school records (class rosters, bus routes,
+          households, neighborhoods). Schools cannot collect sensor data, so the last column repeats the test with
+          school records only: the result is the same, because most contact happens inside the classroom.
         </p>
       </div>
 
