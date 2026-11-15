@@ -93,6 +93,7 @@ class Store:
         self.case_reports: Dict[str, List[CaseReport]] = {}  # escalation_id -> saved versions, oldest first
         self.plans: Dict[str, ActionPlan] = {}
         self.messages: List[Message] = []  # every inbound and outbound text, oldest first
+        self.demo_seen: Set[str] = set()  # demo mode: "view" steps the presenter has shown (services/demo.py)
         self._held_keys: Dict[str, str] = {}  # message_id -> idempotency key, for messages held for quiet hours
         self.completed_learning: Dict[str, int] = {}  # student_id -> days recovered
         self.settings: RevenueSettings = revenue.STATE_DEFAULTS["CA"].model_copy()

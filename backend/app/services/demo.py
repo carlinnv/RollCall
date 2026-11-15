@@ -97,6 +97,8 @@ def _absence_for(store, step: dict) -> Optional[str]:
 
 
 def _done(store, step: dict) -> bool:
+    if step["kind"] == "view":  # only opens a page; nothing in the data changes
+        return step["id"] in store.demo_seen
     if step["kind"] == "reply":
         return _reply_message(store, step["id"]) is not None
     absence_id = _absence_for(store, step)
@@ -147,6 +149,9 @@ def _play(store, step: dict) -> None:
     from ..models import Barrier
     from . import outreach, photon_channel
 
+    if step["kind"] == "view":
+        store.demo_seen.add(step["id"])
+        return
     if step["kind"] == "correct":
         absence_id = _absence_for(store, step)
         if absence_id is None:

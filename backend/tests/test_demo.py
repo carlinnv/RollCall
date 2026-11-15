@@ -45,6 +45,9 @@ def test_script_runs_in_order_from_recordings(demo_mode):
     for step in script:
         out = client.post("/api/demo/next").json()
         assert out["id"] == step["id"] and out["done"]
+        if step["kind"] == "view":  # only opens a page
+            assert out["outcome"] is None
+            continue
         expected = step.get("expect", {}).get("barrier") or step.get("label")
         assert out["outcome"]["barrier"] == expected
         if step["id"] == "route7":
@@ -56,9 +59,16 @@ def test_script_runs_in_order_from_recordings(demo_mode):
     assert client.post("/api/demo/next").status_code == 409  # finished
 
 
+def play_through(step_id):
+    """Play steps up to and including `step_id`; returns that step's state."""
+    while True:
+        out = client.post("/api/demo/next").json()
+        if out["id"] == step_id:
+            return out
+
+
 def test_correction_beat_cites_the_correction(demo_mode):
-    for _ in range(4):
-        client.post("/api/demo/next")
+    play_through("custody2")
     steps = {s["id"]: s for s in client.get("/api/demo").json()["steps"]}
     first, second = steps["custody"]["outcome"]["absence_id"], steps["custody2"]["outcome"]["absence_id"]
     label = store.absences[second].classification
@@ -66,13 +76,12 @@ def test_correction_beat_cites_the_correction(demo_mode):
 
 
 def test_correcting_by_hand_counts_as_the_step(demo_mode):
-    client.post("/api/demo/next")
-    client.post("/api/demo/next")
+    play_through("custody")
     absence_id = next(m.absence_id for m in store.messages if m.external_id == "demo-custody")
     r = client.post(f"/api/absences/{absence_id}/correct",
                     json={"label": "caregiving or family obligation", "corrected_by": "clerk"})
     assert r.status_code == 200
-    assert client.get("/api/demo").json()["steps"][2]["done"]
+    assert next(s for s in client.get("/api/demo").json()["steps"] if s["id"] == "fix")["done"]
     assert client.post("/api/demo/next").json()["id"] == "custody2"  # skips the correction step
 
 
@@ -84,9 +93,8 @@ def test_replies_use_the_replay_channel(demo_mode):
 
 
 def test_safety_step_escalates_and_sends_no_reply(demo_mode):
-    for _ in range(5):
-        out = client.post("/api/demo/next").json()
-    assert out["id"] == "safety" and out["outcome"]["escalated"]
+    out = play_through("safety")
+    assert out["outcome"]["escalated"]
     absence_id = out["outcome"]["absence_id"]
     assert not [m for m in store.messages if m.absence_id == absence_id and m.kind == "ack"]
 
@@ -97,7 +105,7 @@ def test_off_script_text_gets_keyword_label_without_network(demo_mode):
 
 
 def test_reset_rewinds_the_script(demo_mode):
-    client.post("/api/demo/next")
+    play_through("route7-cluster")  # a reply step and a view step
     client.post("/api/reset")
     assert client.get("/api/demo").json()["next"] == 0
 
